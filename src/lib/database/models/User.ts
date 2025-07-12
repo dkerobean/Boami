@@ -3,7 +3,7 @@ import bcrypt from 'bcryptjs';
 
 /**
  * User interface matching the Mongoose schema
- * Always define TypeScript interfaces that match Mongoose schemas
+ * Enhanced with email verification fields for authentication system
  */
 export interface IUser {
   email: string;
@@ -12,6 +12,8 @@ export interface IUser {
   lastName: string;
   role: 'admin' | 'user' | 'manager';
   isActive: boolean;
+  isEmailVerified: boolean;
+  emailVerifiedAt?: Date;
   avatar?: string;
   lastLogin?: Date;
   createdAt: Date;
@@ -26,6 +28,7 @@ export interface IUserDocument extends IUser, Document {
   comparePassword(candidatePassword: string): Promise<boolean>;
   getFullName(): string;
   toJSON(): Partial<IUser>;
+  markEmailAsVerified(): Promise<void>;
 }
 
 /**
@@ -34,11 +37,13 @@ export interface IUserDocument extends IUser, Document {
 export interface IUserModel extends Model<IUserDocument> {
   findByEmail(email: string): Promise<IUserDocument | null>;
   findActiveUsers(): Promise<IUserDocument[]>;
+  findVerifiedUsers(): Promise<IUserDocument[]>;
+  findUnverifiedUsers(): Promise<IUserDocument[]>;
 }
 
 /**
  * User schema definition with validation and middleware
- * Follows MongoDB best practices for e-commerce applications
+ * Enhanced for authentication system with email verification
  */
 const userSchema = new Schema<IUserDocument, IUserModel>({
   email: {
@@ -82,6 +87,14 @@ const userSchema = new Schema<IUserDocument, IUserModel>({
     type: Boolean,
     default: true
   },
+  isEmailVerified: {
+    type: Boolean,
+    default: false
+  },
+  emailVerifiedAt: {
+    type: Date,
+    default: null
+  },
   avatar: {
     type: String,
     default: null
@@ -102,10 +115,11 @@ const userSchema = new Schema<IUserDocument, IUserModel>({
 });
 
 // Indexes for better query performance
-userSchema.index({ email: 1 });
 userSchema.index({ role: 1 });
 userSchema.index({ isActive: 1 });
+userSchema.index({ isEmailVerified: 1 });
 userSchema.index({ createdAt: -1 });
+userSchema.index({ email: 1, isEmailVerified: 1 });
 
 /**
  * Pre-save middleware to hash passwords
@@ -149,6 +163,16 @@ userSchema.methods.getFullName = function(): string {
 };
 
 /**
+ * Instance method to mark email as verified
+ * @returns Promise<void>
+ */
+userSchema.methods.markEmailAsVerified = async function(): Promise<void> {
+  this.isEmailVerified = true;
+  this.emailVerifiedAt = new Date();
+  await this.save();
+};
+
+/**
  * Static method to find user by email
  * @param email - User's email address
  * @returns Promise<IUserDocument | null> - User document or null
@@ -165,7 +189,24 @@ userSchema.statics.findActiveUsers = function() {
   return this.find({ isActive: true }).sort({ createdAt: -1 });
 };
 
+/**
+ * Static method to find all verified users
+ * @returns Promise<IUserDocument[]> - Array of verified user documents
+ */
+userSchema.statics.findVerifiedUsers = function() {
+  return this.find({ isEmailVerified: true, isActive: true }).sort({ createdAt: -1 });
+};
+
+/**
+ * Static method to find all unverified users
+ * @returns Promise<IUserDocument[]> - Array of unverified user documents
+ */
+userSchema.statics.findUnverifiedUsers = function() {
+  return this.find({ isEmailVerified: false, isActive: true }).sort({ createdAt: -1 });
+};
+
 // Prevent model re-compilation during development
 const User = (mongoose.models.User || mongoose.model<IUserDocument, IUserModel>('User', userSchema)) as IUserModel;
 
 export default User;
+export { User };

@@ -16,7 +16,6 @@ export interface IProductVariant {
  * Product interface for e-commerce platform
  */
 export interface IProduct {
-  _id?: string;
   name: string;
   description: string;
   category: string;
