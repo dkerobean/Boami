@@ -71,6 +71,7 @@ const AuthResetPassword = ({ title, subtitle, subtext }: AuthResetPasswordProps)
   const [isResending, setIsResending] = useState(false);
   const [countdown, setCountdown] = useState(0);
   const [email, setEmail] = useState('');
+  const [verificationCode, setVerificationCode] = useState('');
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
   // Get email from URL params if available
@@ -147,6 +148,7 @@ const AuthResetPassword = ({ title, subtitle, subtext }: AuthResetPasswordProps)
     try {
       // Just validate the code format here, actual verification happens in password reset
       if (values.code.length === 4) {
+        setVerificationCode(values.code); // Save the code to state
         setStep('password');
         toast.success('Code verified! Please enter your new password.');
       } else {
@@ -170,7 +172,7 @@ const AuthResetPassword = ({ title, subtitle, subtext }: AuthResetPasswordProps)
         body: JSON.stringify({
           action: 'reset',
           email: email,
-          code: searchParams.get('code') || '', // Get code from previous step
+          code: verificationCode, // Use the stored verification code
           newPassword: values.newPassword
         }),
       });
@@ -317,13 +319,13 @@ const AuthResetPassword = ({ title, subtitle, subtext }: AuthResetPasswordProps)
                           inputMode="numeric"
                           variant="outlined"
                           value={values.code[index] || ''}
-                          onChange={(e) => {
+                          onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
                             const value = e.target.value.replace(/\D/g, '');
                             if (value.length <= 1) {
                               handleCodeInputChange(index, value, setFieldValue, values);
                             }
                           }}
-                          onKeyDown={(e) => handleCodeKeyDown(index, e, setFieldValue, values)}
+                          onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => handleCodeKeyDown(index, e, setFieldValue, values)}
                           sx={{
                             width: 60,
                             height: 60,
