@@ -3,7 +3,7 @@ import { filter, map } from 'lodash';
 import { createSlice } from '@reduxjs/toolkit';
 import { AppDispatch } from '../../store';
 
-const API_URL = '/api/data/eCommerce/ProductsData';
+const API_URL = '/api/products';
 
 interface StateType {
   products: any[];
@@ -134,6 +134,25 @@ export const EcommerceSlice = createSlice({
       const updateCart = filter(state.cart, (item) => item.id !== action.payload);
       state.cart = updateCart;
     },
+
+    // DELETE PRODUCT
+    deleteProduct(state: StateType, action) {
+      const productId = action.payload;
+      state.products = state.products.filter((product) => 
+        (product.id || product._id) !== productId
+      );
+    },
+
+    // UPDATE PRODUCT
+    updateProduct(state: StateType, action) {
+      const updatedProduct = action.payload;
+      const index = state.products.findIndex((product) => 
+        (product.id || product._id) === (updatedProduct.id || updatedProduct._id)
+      );
+      if (index !== -1) {
+        state.products[index] = updatedProduct;
+      }
+    },
   },
 });
 export const {
@@ -150,14 +169,57 @@ export const {
   sortByPrice,
   filterReset,
   sortByColor,
+  deleteProduct,
+  updateProduct,
 } = EcommerceSlice.actions;
 
 export const fetchProducts = () => async (dispatch: AppDispatch) => {
   try {
+    console.log('Fetching products from:', API_URL);
     const response = await axios.get(`${API_URL}`);
-    dispatch(getProducts(response.data));
+    console.log('API Response:', response.data);
+    
+    // Our API returns { success: true, data: { products: [...], pagination: {...} } }
+    let products = response.data.data?.products || response.data.products || response.data;
+    
+    // Ensure products is an array
+    if (!Array.isArray(products)) {
+      console.warn('Products data is not an array:', products);
+      products = [];
+    }
+    
+    // Validate and clean product data
+    const validatedProducts = products.map((product: any, index: number) => {
+      try {
+        return {
+          ...product,
+          id: product.id || product._id || `temp-${index}`,
+          title: product.title || 'Untitled Product',
+          price: product.price || product.salesPrice || 0,
+          created: product.created || product.createdAt || new Date(),
+          category: Array.isArray(product.category) ? product.category : [product.category].filter(Boolean),
+          stock: product.stock !== undefined ? product.stock : (product.qty || 0) > 0,
+          qty: product.qty || 0,
+          rating: product.rating || 0,
+          photo: product.photo || '',
+          colors: product.colors || [],
+          description: product.description || '',
+          related: product.related || false,
+          salesPrice: product.salesPrice || product.price || 0,
+          discount: product.discount || 0,
+          gender: product.gender || 'unisex'
+        };
+      } catch (productError) {
+        console.error(`Error processing product at index ${index}:`, productError, product);
+        return null;
+      }
+    }).filter(Boolean); // Remove null entries
+    
+    console.log('Validated products:', validatedProducts);
+    dispatch(getProducts(validatedProducts));
   } catch (error) {
-    dispatch(hasError(error));
+    console.error('Failed to fetch products:', error);
+    dispatch(hasError(error instanceof Error ? error.message : 'Failed to fetch products'));
   }
 };
 

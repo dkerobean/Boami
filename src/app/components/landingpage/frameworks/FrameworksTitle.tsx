@@ -18,7 +18,7 @@ const FrameworksTitle = () => {
                         xs: '30px'
                     }
                 }}>Increase speed of your development and
-                    launch quickly with Modernize</Typography>
+                    launch quickly with BOAMI</Typography>
             </Grid>
         </Grid>
     );

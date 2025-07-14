@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useTheme } from "@mui/material/styles";
 import "./Quill.css";
 
@@ -19,19 +19,33 @@ const ReactQuill: any = dynamic(
 
 import Paper from "@mui/material/Paper";
 
-const QuillEdit = () => {
-  const [text, setText] = useState("");
+interface QuillEditProps {
+  value?: string;
+  onChange?: (content: string) => void;
+}
+
+const QuillEdit = ({ value = "", onChange }: QuillEditProps) => {
+  const [text, setText] = useState(value);
+
+  useEffect(() => {
+    setText(value);
+  }, [value]);
 
   const theme = useTheme();
   const borderColor = theme.palette.divider;
+
+  const handleChange = (content: string) => {
+    setText(content);
+    if (onChange) {
+      onChange(content);
+    }
+  };
 
   return (
     <Paper sx={{ border: `1px solid ${borderColor}` }} variant="outlined">
       <ReactQuill
         value={text}
-        onChange={(value: any) => {
-          setText(value);
-        }}
+        onChange={handleChange}
         placeholder="Type here..."
       />
     </Paper>

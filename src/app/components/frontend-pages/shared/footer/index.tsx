@@ -23,7 +23,7 @@ const footerLinks = [
           {
               title: false,
               titleText: 'Kanban',
-              link: 'https://modernize-nextjs.adminmart.com/apps/kanban',
+              link: 'https://BOAMI-nextjs.adminmart.com/apps/kanban',
           },
           {
               title: false,
@@ -121,7 +121,7 @@ const footerLinks = [
           {
               title: false,
               titleText: 'Drag n Drop Table',
-              link: 'https://modernize-nextjs.adminmart.com/react-tables/drag-drop',
+              link: 'https://BOAMI-nextjs.adminmart.com/react-tables/drag-drop',
           },
       ],
   },
@@ -226,7 +226,7 @@ const Footer = () => {
               alt="logo"
             />
             <Typography variant="body1" fontSize="15px">
-              All rights reserved by Modernize.{" "}
+              All rights reserved by BOAMI.{" "}
             </Typography>
           </Stack>
           <Typography variant="body1" fontSize="15px">

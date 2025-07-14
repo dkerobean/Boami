@@ -17,13 +17,13 @@ const keys = [
         text: 'Customers',
         title: '300k+',
         isMargin: true,
-        subtext: 'Customers on Modernize',
+        subtext: 'Customers on BOAMI',
     },
     {
         text: 'Dashboards',
         title: '25k+',
         isMargin: true,
-        subtext: 'Dashboards built using Modernize',
+        subtext: 'Dashboards built using BOAMI',
     },
 ]
 

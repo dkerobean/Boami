@@ -1,38 +1,46 @@
 "use client";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Box from "@mui/material/Box";
 import {
   Typography,
-  FormControlLabel,
-  RadioGroup,
-  Stack,
   useTheme,
 } from "@mui/material";
 import { Grid } from "@mui/material";
+import { useFormikContext } from "formik";
 import CustomFormLabel from "@/app/components/forms/theme-elements/CustomFormLabel";
 import CustomTextField from "@/app/components/forms/theme-elements/CustomTextField";
-import CustomSelect from "@/app/components/forms/theme-elements/CustomSelect";
-import { MenuItem } from "@mui/material";
-import CustomRadio from "@/app/components/forms/theme-elements/CustomRadio";
-import CustomSlider from "@/app/components/forms/theme-elements/CustomSlider";
 
 const PricingCard = () => {
   const theme = useTheme();
+  const { values, errors, touched, handleChange, handleBlur, setFieldValue } = useFormikContext<any>();
 
-  const [age, setAge] = React.useState("0");
-  const handleChange = (event: any) => {
-    setAge(event.target.value);
-  };
+  // Auto-generate SKU when title or category changes (background only - hidden from user)
+  useEffect(() => {
+    if (values.title && values.category && values.category.length > 0) {
+      generateSKU();
+    }
+  }, [values.title, values.category]);
 
-  const [selectedValue, setSelectedValue] = useState("");
-
-  const handleValue = (event: any) => {
-    setSelectedValue(event.target.value);
-  };
-
-  const [value3, setValue3] = React.useState(30);
-  const handleChange6 = (event: any, newValue: any) => {
-    setValue3(newValue);
+  const generateSKU = async () => {
+    if (!values.title || !values.category || values.category.length === 0) return;
+    
+    try {
+      // Generate SKU on the client side using a simpler approach
+      const categoryCode = values.category[0].substring(0, 3).toUpperCase();
+      const titleCode = values.title
+        .replace(/[^a-zA-Z0-9\s]/g, '')
+        .split(' ')
+        .slice(0, 2)
+        .map((word: string) => word.charAt(0).toUpperCase())
+        .join('');
+      const timestamp = Date.now().toString().slice(-4);
+      const randomSuffix = Math.random().toString(36).substr(2, 2).toUpperCase();
+      
+      const generatedSKU = `${categoryCode}-${titleCode}-${timestamp}-${randomSuffix}`;
+      setFieldValue("sku", generatedSKU);
+    } catch (error) {
+      console.error('Error generating SKU:', error);
+    }
   };
 
   return (
@@ -42,156 +50,67 @@ const PricingCard = () => {
       </Typography>
 
       <Grid container spacing={3}>
-        {/* 1 */}
-        <Grid item xs={12}>
-          <CustomFormLabel htmlFor="p_price" sx={{ mt: 0 }}>
-            Base Price{" "}
+        <Grid item xs={12} lg={6}>
+          <CustomFormLabel htmlFor="price" sx={{ mt: 0 }}>
+            Price{" "}
             <Typography color="error.main" component="span">
               *
             </Typography>
           </CustomFormLabel>
-          <CustomTextField id="p_price" placeholder="Product Price" fullWidth />
+          <CustomTextField 
+            id="price"
+            name="price"
+            type="number"
+            placeholder="Product Price" 
+            fullWidth 
+            value={values.price}
+            onChange={handleChange}
+            onBlur={handleBlur}
+            error={touched.price && Boolean(errors.price)}
+            helperText={touched.price && errors.price}
+          />
           <Typography variant="body2">Set the product price.</Typography>
         </Grid>
-        <Grid item xs={12}>
-          <CustomFormLabel htmlFor="p_price" sx={{ mt: 0 }}>
-            Discount Type{" "}
-            <Typography color="error.main" component="span">
-              *
-            </Typography>
-          </CustomFormLabel>
-          <RadioGroup
-            row
-            aria-labelledby="demo-form-control-label-placement"
-            name="position"
-            value={selectedValue}
-            onChange={handleValue}
-          >
-            <Stack
-              direction="row"
-              spacing={3}
-              width="100%"
-              useFlexGap
-              flexWrap="wrap"
-            >
-              <Box
-                px={2}
-                py={1}
-                flexGrow={1}
-                sx={{
-                  border: `1px dashed ${theme.palette.divider}`,
-                  textAlign: "center",
-                }}
-              >
-                <FormControlLabel
-                  value="no_discount"
-                  control={<CustomRadio />}
-                  label="No Discount"
-                />
-              </Box>
-              <Box
-                px={2}
-                py={1}
-                flexGrow={1}
-                sx={{
-                  border: `1px dashed ${theme.palette.divider}`,
-                  textAlign: "center",
-                }}
-              >
-                <FormControlLabel
-                  value="percentage"
-                  control={<CustomRadio />}
-                  label="Percentage %"
-                />
-              </Box>
-              <Box
-                px={2}
-                py={1}
-                flexGrow={1}
-                sx={{
-                  border: `1px dashed ${theme.palette.divider}`,
-                  textAlign: "center",
-                }}
-              >
-                <FormControlLabel
-                  value="fixed"
-                  control={<CustomRadio />}
-                  label="Fixed Price"
-                />
-              </Box>
-            </Stack>
-          </RadioGroup>
-
-          {selectedValue === "no_discount" && null}
-
-          {selectedValue === "percentage" && (
-            <>
-              <CustomFormLabel>
-                Set Discount Percentage{" "}
-                <Typography color="error.main" component="span">
-                  *
-                </Typography>
-              </CustomFormLabel>
-              <CustomSlider
-                aria-label="Volume"
-                value={value3}
-                onChange={handleChange6}
-              />
-              <Typography variant="body2">
-                Set a percentage discount to be applied on this product.
-              </Typography>
-            </>
-          )}
-
-          {selectedValue === "fixed" && (
-            <>
-              <CustomFormLabel htmlFor="p_fixed">
-                Fixed Discounted Price{" "}
-                <Typography color="error.main" component="span">
-                  *
-                </Typography>
-              </CustomFormLabel>
-              <CustomTextField
-                id="p_fixed"
-                placeholder="Discounted Price"
-                fullWidth
-              />
-              <Typography variant="body2">
-                Set the discounted product price. The product will be reduced at
-                the determined fixed price.
-              </Typography>
-            </>
-          )}
-        </Grid>
+        
         <Grid item xs={12} lg={6}>
-          <CustomFormLabel htmlFor="p_tax" sx={{ mt: 0 }}>
-            Tax Class{" "}
+          <CustomFormLabel htmlFor="qty" sx={{ mt: 0 }}>
+            Stock Quantity{" "}
             <Typography color="error.main" component="span">
               *
             </Typography>
           </CustomFormLabel>
-          <CustomSelect
-            id="p_tax"
-            value={age}
+          <CustomTextField 
+            id="qty"
+            name="qty"
+            type="number"
+            placeholder="Stock Quantity" 
+            fullWidth 
+            value={values.qty}
             onChange={handleChange}
-            fullWidth
-          >
-            <MenuItem value={0}>Select an option</MenuItem>
-            <MenuItem value={1}>Tax Free</MenuItem>
-            <MenuItem value={2}>Taxable Goods</MenuItem>
-            <MenuItem value={3}>Downloadable Products</MenuItem>
-          </CustomSelect>
-          <Typography variant="body2">Set the product tax class.</Typography>
+            onBlur={handleBlur}
+            error={touched.qty && Boolean(errors.qty)}
+            helperText={touched.qty && errors.qty}
+          />
+          <Typography variant="body2">Set the stock quantity.</Typography>
         </Grid>
+        
         <Grid item xs={12} lg={6}>
-          <CustomFormLabel htmlFor="p_vat" sx={{ mt: 0 }}>
-            VAT Amount (%){" "}
-            <Typography color="error.main" component="span">
-              *
-            </Typography>
+          <CustomFormLabel htmlFor="lowStockThreshold" sx={{ mt: 0 }}>
+            Low Stock Threshold
           </CustomFormLabel>
-          <CustomTextField id="p_vat" fullWidth />
-          <Typography variant="body2">Set the product VAT about.</Typography>
+          <CustomTextField 
+            id="lowStockThreshold"
+            name="lowStockThreshold"
+            type="number"
+            placeholder="Low Stock Alert Level" 
+            fullWidth 
+            value={values.lowStockThreshold}
+            onChange={handleChange}
+            onBlur={handleBlur}
+            error={touched.lowStockThreshold && Boolean(errors.lowStockThreshold)}
+            helperText={touched.lowStockThreshold && errors.lowStockThreshold}
+          />
+          <Typography variant="body2">Alert when stock falls below this level.</Typography>
         </Grid>
       </Grid>
     </Box>

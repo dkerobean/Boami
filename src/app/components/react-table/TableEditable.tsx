@@ -64,7 +64,7 @@ export const basicsTableData: EditableDataType[] = [
     status: "pending",
     avatar: "/images/profile/user-6.jpg",
     name: "Isabel Vasquez",
-    project: "Modernize admin",
+    project: "BOAMI admin",
     percent: 32,
   },
   {

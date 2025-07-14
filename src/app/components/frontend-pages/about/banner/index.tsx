@@ -52,7 +52,7 @@ const Banner = () => {
           <Grid item xs={12} lg={5} display="flex" alignItems="center">
             <Typography lineHeight={1.9}>
               Do you need a highly customizable and developer friendly premium
-              next.js admin template packed with numerous features? Modernize
+              next.js admin template packed with numerous features? BOAMI
               Next.js Admin Template has everything you need. This bootstrap
               based admin template is designed in accordance with industry
               standards and best practices to provide you.

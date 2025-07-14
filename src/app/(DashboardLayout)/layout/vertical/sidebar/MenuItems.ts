@@ -74,102 +74,17 @@ const Menuitems: MenuitemsType[] = [
     subheader: "Home",
   },
 
+  
   {
     id: uniqueId(),
-    title: "Modern",
-    icon: IconAperture,
-    href: "/",
-    chip: "New",
-    chipColor: "secondary",
-  },
-  {
-    id: uniqueId(),
-    title: "eCommerce",
+    title: "Dashboard",
     icon: IconShoppingCart,
-    href: "/dashboards/ecommerce",
+    href: "/",
   },
-  {
-    id: uniqueId(),
-    title: "Frontend pages",
-    icon: IconAppWindow,
-    href: "/frontend-pages/",
-    children: [
-      {
-        id: uniqueId(),
-        title: "Homepage",
-        icon: IconPoint,
-        href: "/frontend-pages/homepage",
-      },
-      {
-        id: uniqueId(),
-        title: "About Us",
-        icon: IconPoint,
-        href: "/frontend-pages/about",
-      },
-      {
-        id: uniqueId(),
-        title: "Blog",
-        icon: IconPoint,
-        href: "/frontend-pages/blog",
-      },
-      {
-        id: uniqueId(),
-        title: "Blog Details",
-        icon: IconPoint,
-        href: "/frontend-pages/blog/Blog_1",
-      },
-      {
-        id: uniqueId(),
-        title: "Contact",
-        icon: IconPoint,
-        href: "/frontend-pages/contact",
-      },
-      {
-        id: uniqueId(),
-        title: "Portfolio",
-        icon: IconPoint,
-        href: "/frontend-pages/portfolio",
-      },
-      {
-        id: uniqueId(),
-        title: "Pricing",
-        icon: IconPoint,
-        href: "/frontend-pages/pricing",
-      },
-    ],
-  },
+  
   {
     navlabel: true,
     subheader: "Apps",
-  },
-  {
-    id: uniqueId(),
-    title: "Contacts",
-    icon: IconPackage,
-    chip: "2",
-    chipColor: "secondary",
-    href: "/apps/contacts",
-  },
-
-  {
-    id: uniqueId(),
-    title: "Blog",
-    icon: IconChartDonut3,
-    href: "/apps/blog/",
-    children: [
-      {
-        id: uniqueId(),
-        title: "Posts",
-        icon: IconPoint,
-        href: "/apps/blog/post",
-      },
-      {
-        id: uniqueId(),
-        title: "Detail",
-        icon: IconPoint,
-        href: "/apps/blog/detail/streaming-video-way-before-it-was-cool-go-dark-tomorrow",
-      },
-    ],
   },
   {
     id: uniqueId(),
@@ -212,6 +127,34 @@ const Menuitems: MenuitemsType[] = [
         title: "Edit Product",
         icon: IconPoint,
         href: "/apps/ecommerce/edit-product",
+      },
+    ],
+  },
+  {
+    id: uniqueId(),
+    title: "Contacts",
+    icon: IconPackage,
+    chip: "2",
+    chipColor: "secondary",
+    href: "/apps/contacts",
+  },
+  {
+    id: uniqueId(),
+    title: "Blog",
+    icon: IconChartDonut3,
+    href: "/apps/blog/",
+    children: [
+      {
+        id: uniqueId(),
+        title: "Posts",
+        icon: IconPoint,
+        href: "/apps/blog/post",
+      },
+      {
+        id: uniqueId(),
+        title: "Detail",
+        icon: IconPoint,
+        href: "/apps/blog/detail/streaming-video-way-before-it-was-cool-go-dark-tomorrow",
       },
     ],
   },

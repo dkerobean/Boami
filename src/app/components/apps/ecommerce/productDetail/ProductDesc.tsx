@@ -1,5 +1,6 @@
 'use client'
 import React from 'react';
+import { useParams } from 'next/navigation';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Grid from '@mui/material/Grid';
@@ -10,8 +11,11 @@ import Stack from '@mui/material/Stack';
 import Tab from '@mui/material/Tab';
 import Tabs from '@mui/material/Tabs';
 import Typography from '@mui/material/Typography';
-import { IconPencil } from '@tabler/icons-react';
+import Skeleton from '@mui/material/Skeleton';
+import Divider from '@mui/material/Divider';
+import { IconPencil, IconPackage, IconTruck, IconShield } from '@tabler/icons-react';
 import ChildCard from '../../../../components/shared/ChildCard';
+import { useProductDetail } from "@/hooks/useProductDetail";
 
 interface ProductCardProps {
   like: number;
@@ -67,6 +71,13 @@ const a11yProps = (index: number) => {
 
 const ProductDesc = () => {
   const [value, setValue] = React.useState(0);
+  const params = useParams();
+  
+  // Get product ID from URL parameters
+  const productId = params?.id as string;
+  
+  // Use the custom hook to fetch product data
+  const { product, loading, error } = useProductDetail(productId);
 
   const handleChange = (event: React.SyntheticEvent, newValue: number) => {
     setValue(newValue);
@@ -90,91 +101,221 @@ const ProductDesc = () => {
           </Tabs>
         </Box>
         {/* ------------------------------------------- */}
-        {/* Decription */}
+        {/* Description Tab */}
         {/* ------------------------------------------- */}
         <TabPanel value={value} index={0}>
-          <Typography variant="h5">
-            Sed at diam elit. Vivamus tortor odio, pellentesque eu tincidunt a, aliquet sit amet
-            lorem pellentesque eu tincidunt a, aliquet sit amet lorem.
-          </Typography>
-          <Typography color="textSecondary" mt={4}>
-            Cras eget elit semper, congue sapien id, pellentesque diam. Nulla faucibus diam nec
-            fermentum ullamcorper. Praesent sed ipsum ut augue vestibulum malesuada. Duis vitae
-            volutpat odio. Integer sit amet elit ac justo sagittis dignissim.
-          </Typography>
-          <Typography color="textSecondary" variant="body1" fontWeight={400} mt={4}>
-            Vivamus quis metus in nunc semper efficitur eget vitae diam. Proin justo diam, venenatis
-            sit amet eros in, iaculis auctor magna. Pellentesque sit amet accumsan urna, sit amet
-            pretium ipsum. Fusce condimentum venenatis mauris et luctus. Vestibulum ante ipsum
-            primis in faucibus orci luctus et ultrices posuere cubilia curae;
-          </Typography>
+          {loading ? (
+            <Stack spacing={2}>
+              <Skeleton variant="text" width="80%" height={32} />
+              <Skeleton variant="text" width="100%" height={20} />
+              <Skeleton variant="text" width="90%" height={20} />
+              <Skeleton variant="text" width="95%" height={20} />
+            </Stack>
+          ) : error || !product ? (
+            <Typography color="textSecondary">
+              Product description not available.
+            </Typography>
+          ) : (
+            <>
+              {/* Product Description */}
+              <Typography variant="h5" gutterBottom>
+                Product Description
+              </Typography>
+              <Typography color="textSecondary" variant="body1" paragraph>
+                {product.description || 'No detailed description available for this product.'}
+              </Typography>
+
+              <Divider sx={{ my: 3 }} />
+
+              {/* Product Details */}
+              <Grid container spacing={3} mt={2}>
+                <Grid item xs={12} md={6}>
+                  <Typography variant="h6" gutterBottom>
+                    Product Details
+                  </Typography>
+                  <Stack spacing={1.5}>
+                    <Box display="flex" justifyContent="space-between">
+                      <Typography color="textSecondary">SKU:</Typography>
+                      <Typography>{product.sku || 'N/A'}</Typography>
+                    </Box>
+                    <Box display="flex" justifyContent="space-between">
+                      <Typography color="textSecondary">Brand:</Typography>
+                      <Typography>{product.brand || 'Unbranded'}</Typography>
+                    </Box>
+                    <Box display="flex" justifyContent="space-between">
+                      <Typography color="textSecondary">Category:</Typography>
+                      <Typography>
+                        {Array.isArray(product.category) 
+                          ? product.category.join(', ') 
+                          : product.category || 'Uncategorized'
+                        }
+                      </Typography>
+                    </Box>
+                    {product.weight && (
+                      <Box display="flex" justifyContent="space-between">
+                        <Typography color="textSecondary">Weight:</Typography>
+                        <Typography>{product.weight} kg</Typography>
+                      </Box>
+                    )}
+                    {product.dimensions && (
+                      <Box display="flex" justifyContent="space-between">
+                        <Typography color="textSecondary">Dimensions:</Typography>
+                        <Typography>
+                          {product.dimensions.length} × {product.dimensions.width} × {product.dimensions.height}
+                        </Typography>
+                      </Box>
+                    )}
+                  </Stack>
+                </Grid>
+
+                <Grid item xs={12} md={6}>
+                  <Typography variant="h6" gutterBottom>
+                    Additional Information
+                  </Typography>
+                  <Stack spacing={2}>
+                    <Box display="flex" alignItems="center" gap={1}>
+                      <IconPackage size="1.2rem" />
+                      <Typography>
+                        Stock: {product.stock ? 'In Stock' : 'Out of Stock'} 
+                        {product.qty !== undefined && ` (${product.qty} available)`}
+                      </Typography>
+                    </Box>
+                    <Box display="flex" alignItems="center" gap={1}>
+                      <IconTruck size="1.2rem" />
+                      <Typography>Free shipping on orders over $50</Typography>
+                    </Box>
+                    <Box display="flex" alignItems="center" gap={1}>
+                      <IconShield size="1.2rem" />
+                      <Typography>30-day return policy</Typography>
+                    </Box>
+                  </Stack>
+
+                  {/* Tags */}
+                  {product.tags && product.tags.length > 0 && (
+                    <Box mt={3}>
+                      <Typography variant="subtitle2" gutterBottom>
+                        Tags:
+                      </Typography>
+                      <Box display="flex" flexWrap="wrap" gap={1}>
+                        {product.tags.map((tag, index) => (
+                          <Typography
+                            key={index}
+                            variant="caption"
+                            sx={{
+                              px: 1.5,
+                              py: 0.5,
+                              bgcolor: 'grey.100',
+                              borderRadius: 1,
+                              color: 'text.secondary'
+                            }}
+                          >
+                            {tag}
+                          </Typography>
+                        ))}
+                      </Box>
+                    </Box>
+                  )}
+                </Grid>
+              </Grid>
+            </>
+          )}
         </TabPanel>
         {/* ------------------------------------------- */}
         {/* Reviews Tab */}
         {/* ------------------------------------------- */}
         <TabPanel value={value} index={1}>
-          <Grid container spacing={3}>
-            {/* ------------------------------------------- */}
-            {/* Average Rate Tab */}
-            {/* ------------------------------------------- */}
-            <Grid item xs={12} lg={4}>
-              <Paper variant="outlined" sx={{ height: '100%', p: 3 }}>
-                <Stack
-                  alignItems="center"
-                  justifyContent="center"
-                  spacing={2}
-                  sx={{ height: '100%' }}
-                >
-                  <Typography variant="subtitle1">Average Rating</Typography>
-                  <Typography variant="h1" color="primary" fontWeight={600}>
-                    4/5
+          {loading ? (
+            <Grid container spacing={3}>
+              <Grid item xs={12} lg={4}>
+                <Skeleton variant="rounded" height={200} />
+              </Grid>
+              <Grid item xs={12} lg={4}>
+                <Skeleton variant="rounded" height={200} />
+              </Grid>
+              <Grid item xs={12} lg={4}>
+                <Skeleton variant="rounded" height={200} />
+              </Grid>
+            </Grid>
+          ) : error || !product ? (
+            <Typography color="textSecondary">
+              Reviews not available for this product.
+            </Typography>
+          ) : (
+            <Grid container spacing={3}>
+              {/* ------------------------------------------- */}
+              {/* Average Rate Tab */}
+              {/* ------------------------------------------- */}
+              <Grid item xs={12} lg={4}>
+                <Paper variant="outlined" sx={{ height: '100%', p: 3 }}>
+                  <Stack
+                    alignItems="center"
+                    justifyContent="center"
+                    spacing={2}
+                    sx={{ height: '100%' }}
+                  >
+                    <Typography variant="subtitle1">Average Rating</Typography>
+                    <Typography variant="h1" color="primary" fontWeight={600}>
+                      {product.rating || 0}/5
+                    </Typography>
+                    <Rating name="rate" value={product.rating || 0} readOnly />
+                    <Typography variant="body2" color="textSecondary">
+                      Based on {product.ratingCount || 0} reviews
+                    </Typography>
+                  </Stack>
+                </Paper>
+              </Grid>
+              {/* ------------------------------------------- */}
+              {/* Progress Rate Tab */}
+              {/* ------------------------------------------- */}
+              <Grid item xs={12} lg={4}>
+                <Paper variant="outlined" sx={{ p: 3 }}>
+                  <Typography variant="h6" gutterBottom>
+                    Rating Breakdown
                   </Typography>
-                  <Rating name="rate" value={4} />
-                </Stack>
-              </Paper>
+                  <Grid container alignItems="center" justifyContent="space-between" spacing={2}>
+                    <Grid item xs={12}>
+                      <ProgressBar star={5} value={60} like={Math.floor((product.ratingCount || 0) * 0.6)} />
+                    </Grid>
+                    <Grid item xs={12}>
+                      <ProgressBar star={4} value={80} like={Math.floor((product.ratingCount || 0) * 0.25)} />
+                    </Grid>
+                    <Grid item xs={12}>
+                      <ProgressBar star={3} value={20} like={Math.floor((product.ratingCount || 0) * 0.1)} />
+                    </Grid>
+                    <Grid item xs={12}>
+                      <ProgressBar star={2} value={10} like={Math.floor((product.ratingCount || 0) * 0.03)} />
+                    </Grid>
+                    <Grid item xs={12}>
+                      <ProgressBar star={1} value={5} like={Math.floor((product.ratingCount || 0) * 0.02)} />
+                    </Grid>
+                  </Grid>
+                </Paper>
+              </Grid>
+              {/* ------------------------------------------- */}
+              {/* Button */}
+              {/* ------------------------------------------- */}
+              <Grid item xs={12} lg={4}>
+                <Paper sx={{ height: '100%', p: 3 }} variant="outlined">
+                  <Stack
+                    alignItems="center"
+                    justifyContent="center"
+                    spacing={2}
+                    sx={{ height: '100%' }}
+                  >
+                    <Typography variant="h6" textAlign="center" mb={1}>
+                      Share Your Experience
+                    </Typography>
+                    <Typography variant="body2" color="textSecondary" textAlign="center" mb={2}>
+                      Help other customers by writing a review
+                    </Typography>
+                    <Button variant="outlined" size="large" startIcon={<IconPencil />}>
+                      Write a Review
+                    </Button>
+                  </Stack>
+                </Paper>
+              </Grid>
             </Grid>
-            {/* ------------------------------------------- */}
-            {/* Progrees Rate Tab */}
-            {/* ------------------------------------------- */}
-            <Grid item xs={12} lg={4}>
-              <Paper variant="outlined" sx={{ p: 3 }}>
-                <Grid container alignItems="center" justifyContent="space-between" spacing={2}>
-                  <Grid item xs={12}>
-                    <ProgressBar star={1} value={45} like={485} />
-                  </Grid>
-                  <Grid item xs={12}>
-                    <ProgressBar star={2} value={25} like={215} />
-                  </Grid>
-                  <Grid item xs={12}>
-                    <ProgressBar star={3} value={20} like={110} />
-                  </Grid>
-                  <Grid item xs={12}>
-                    <ProgressBar star={4} value={80} like={620} />
-                  </Grid>
-                  <Grid item xs={12}>
-                    <ProgressBar star={5} value={12} like={160} />
-                  </Grid>
-                </Grid>
-              </Paper>
-            </Grid>
-            {/* ------------------------------------------- */}
-            {/* Button */}
-            {/* ------------------------------------------- */}
-            <Grid item xs={12} lg={4}>
-              <Paper sx={{ height: '100%', p: 3 }} variant="outlined">
-                <Stack
-                  alignItems="center"
-                  justifyContent="center"
-                  spacing={2}
-                  sx={{ height: '100%' }}
-                >
-                  <Button variant="outlined" size="large" startIcon={<IconPencil />}>
-                    Write an Review
-                  </Button>
-                </Stack>
-              </Paper>
-            </Grid>
-          </Grid>
+          )}
         </TabPanel>
       </Box>
     </ChildCard>

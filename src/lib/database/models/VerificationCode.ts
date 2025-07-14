@@ -154,7 +154,6 @@ verificationCodeSchema.statics.findValidCode = function(
     userId,
     code,
     type,
-    isUsed: false,
     expiresAt: { $gt: new Date() }
   });
 };

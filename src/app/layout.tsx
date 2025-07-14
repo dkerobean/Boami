@@ -5,8 +5,8 @@ import "./global.css";
 
 
 export const metadata = {
-  title: "Modernize Main Demo",
-  description: "Modernize Main kit",
+  title: "BOAMI",
+  description: "BOAMI is a comprehensive e-commerce management platform built with Next.js 14, TypeScript, and Material-UI. It provides end-to-end business management capabilities including product inventory, order processing, customer relationship management, financial analytics, and AI-powered insights.",
 };
 
 export default function RootLayout({

@@ -1,9 +1,17 @@
 'use client'
 import * as React from 'react';
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { alpha, useTheme } from '@mui/material/styles';
 import { format } from 'date-fns';
 import Avatar from '@mui/material/Avatar';
 import Box from '@mui/material/Box';
+import Button from '@mui/material/Button';
+import Dialog from '@mui/material/Dialog';
+import DialogActions from '@mui/material/DialogActions';
+import DialogContent from '@mui/material/DialogContent';
+import DialogContentText from '@mui/material/DialogContentText';
+import DialogTitle from '@mui/material/DialogTitle';
 import FormControlLabel from '@mui/material/FormControlLabel';
 import IconButton from '@mui/material/IconButton';
 import InputAdornment from '@mui/material/InputAdornment';
@@ -22,11 +30,14 @@ import Tooltip from '@mui/material/Tooltip';
 import Typography from '@mui/material/Typography';
 import { visuallyHidden } from '@mui/utils';
 import { useSelector, useDispatch } from '@/store/hooks';
-import { fetchProducts } from '@/store/apps/eCommerce/ECommerceSlice';
+import { fetchProducts, deleteProduct } from '@/store/apps/eCommerce/ECommerceSlice';
 import CustomCheckbox from '../../../forms/theme-elements/CustomCheckbox';
 import CustomSwitch from '../../../forms/theme-elements/CustomSwitch';
-import { IconDotsVertical, IconFilter, IconSearch, IconTrash } from '@tabler/icons-react';
+import { IconDotsVertical, IconFilter, IconSearch, IconTrash, IconEdit, IconEye } from '@tabler/icons-react';
 import { ProductType } from '../../../../(DashboardLayout)/types/apps/eCommerce';
+import ProductImage from '../../../shared/ProductImage';
+import { getImageSource, createImageAltText, shouldPrioritizeImage, IMAGE_SIZES } from '@/lib/utils/image-utils';
+import { ToastProvider, useToast } from '../../../shared/ToastContext';
 
 function descendingComparator<T>(a: T, b: T, orderBy: keyof T) {
   if (b[orderBy] < a[orderBy]) {
@@ -101,7 +112,7 @@ const headCells: readonly HeadCell[] = [
     id: 'action',
     numeric: false,
     disablePadding: false,
-    label: 'Action',
+    label: 'Actions',
   },
 ];
 
@@ -218,15 +229,22 @@ const EnhancedTableToolbar = (props: EnhancedTableToolbarProps) => {
   );
 };
 
-const ProductTableList = () => {
+const ProductTableListContent = () => {
   const [order, setOrder] = React.useState<Order>('asc');
   const [orderBy, setOrderBy] = React.useState<any>('calories');
   const [selected, setSelected] = React.useState<readonly string[]>([]);
   const [page, setPage] = React.useState(0);
   const [dense, setDense] = React.useState(false);
   const [rowsPerPage, setRowsPerPage] = React.useState(5);
+  
+  // Delete dialog state
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [productToDelete, setProductToDelete] = useState<any>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const dispatch = useDispatch();
+  const router = useRouter();
+  const { showToast } = useToast();
 
   //Fetch Products
   React.useEffect(() => {
@@ -234,17 +252,125 @@ const ProductTableList = () => {
   }, [dispatch]);
 
   const getProducts: ProductType[] = useSelector((state) => state.ecommerceReducer.products);
+  const error = useSelector((state) => state.ecommerceReducer.error);
 
   const [rows, setRows] = React.useState<any>(getProducts);
   const [search, setSearch] = React.useState('');
+  const [loading, setLoading] = React.useState(true);
 
   React.useEffect(() => {
-    setRows(getProducts);
+    // Validate products data before setting
+    const validProducts = Array.isArray(getProducts) ? getProducts : [];
+    setRows(validProducts);
+    setLoading(false);
   }, [getProducts]);
 
+  // Handle loading state
+  if (loading) {
+    return (
+      <Box display="flex" flexDirection="column" justifyContent="center" alignItems="center" minHeight="400px" gap={2}>
+        <Box 
+          sx={{
+            width: 40,
+            height: 40,
+            border: '3px solid',
+            borderColor: 'primary.light',
+            borderTopColor: 'primary.main',
+            borderRadius: '50%',
+            animation: 'spin 1s linear infinite',
+            '@keyframes spin': {
+              '0%': { transform: 'rotate(0deg)' },
+              '100%': { transform: 'rotate(360deg)' }
+            }
+          }}
+        />
+        <Typography variant="body1" color="textSecondary">
+          Loading products...
+        </Typography>
+      </Box>
+    );
+  }
+
+  // Handle error state
+  if (error) {
+    return (
+      <Box display="flex" flexDirection="column" justifyContent="center" alignItems="center" minHeight="400px" gap={2}>
+        <Box 
+          sx={{
+            width: 60,
+            height: 60,
+            borderRadius: '50%',
+            bgcolor: 'error.light',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            color: 'error.main'
+          }}
+        >
+          <IconSearch size={24} />
+        </Box>
+        <Typography variant="h6" color="error" textAlign="center">
+          Failed to load products
+        </Typography>
+        <Typography variant="body2" color="textSecondary" textAlign="center" maxWidth={400}>
+          {error}
+        </Typography>
+        <Box mt={2}>
+          <IconButton 
+            onClick={() => dispatch(fetchProducts())} 
+            color="primary"
+            sx={{ 
+              bgcolor: 'primary.light',
+              '&:hover': { bgcolor: 'primary.main', color: 'white' }
+            }}
+          >
+            <IconSearch size={20} />
+          </IconButton>
+        </Box>
+      </Box>
+    );
+  }
+
+  // Handle empty state
+  if (!rows || rows.length === 0) {
+    return (
+      <Box display="flex" flexDirection="column" justifyContent="center" alignItems="center" minHeight="400px" gap={2}>
+        <Box 
+          sx={{
+            width: 80,
+            height: 80,
+            borderRadius: 2,
+            bgcolor: 'grey.100',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            color: 'grey.500'
+          }}
+        >
+          <IconSearch size={32} />
+        </Box>
+        <Typography variant="h6" color="textPrimary" textAlign="center">
+          No products found
+        </Typography>
+        <Typography variant="body2" color="textSecondary" textAlign="center" maxWidth={400}>
+          {search ? 
+            `No products match "${search}". Try adjusting your search terms.` : 
+            "Create your first product to get started!"
+          }
+        </Typography>
+      </Box>
+    );
+  }
+
   const handleSearch = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const searchValue = event.target.value.toLowerCase();
     const filteredRows: ProductType[] = getProducts.filter((row) => {
-      return row.title.toLowerCase().includes(event.target.value);
+      const title = row.title || '';
+      const description = row.description || '';
+      const category = Array.isArray(row.category) ? row.category.join(' ') : (row.category || '');
+      return title.toLowerCase().includes(searchValue) || 
+             description.toLowerCase().includes(searchValue) ||
+             category.toLowerCase().includes(searchValue);
     });
     setSearch(event.target.value);
     setRows(filteredRows);
@@ -304,6 +430,65 @@ const ProductTableList = () => {
 
   const isSelected = (name: string) => selected.indexOf(name) !== -1;
 
+  // Handle view product
+  const handleView = (product: any) => {
+    router.push(`/apps/ecommerce/detail/${product.id || product._id}`);
+  };
+
+  // Handle edit product
+  const handleEdit = (product: any) => {
+    router.push(`/apps/ecommerce/edit-product?id=${product.id || product._id}`);
+  };
+
+  // Handle delete product
+  const handleDeleteClick = (product: any) => {
+    setProductToDelete(product);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!productToDelete) return;
+    
+    setIsDeleting(true);
+    const productId = productToDelete.id || productToDelete._id;
+    
+    try {
+      const response = await fetch(`/api/products/${productId}`, {
+        method: 'DELETE',
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to delete product');
+      }
+
+      // Update Redux store - remove product from list
+      dispatch(deleteProduct(productId));
+      
+      // Show success message
+      showToast({
+        message: `Product "${productToDelete.title}" has been deleted successfully`,
+        severity: 'success'
+      });
+      
+      // Close dialog and reset state
+      setDeleteDialogOpen(false);
+      setProductToDelete(null);
+    } catch (error) {
+      console.error('Error deleting product:', error);
+      showToast({
+        message: 'Failed to delete product. Please try again.',
+        severity: 'error'
+      });
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  const handleDeleteCancel = () => {
+    setDeleteDialogOpen(false);
+    setProductToDelete(null);
+  };
+
   // Avoid a layout jump when reaching the last page with empty rows.
   const emptyRows = page > 0 ? Math.max(0, (1 + page) * rowsPerPage - rows.length) : 0;
 
@@ -362,30 +547,59 @@ const ProductTableList = () => {
 
                         <TableCell>
                           <Box display="flex" alignItems="center">
-                            <Avatar src={row.photo} alt="product" sx={{ width: 56, height: 56 }} />
+                            <ProductImage
+                              src={getImageSource(
+                                row.photo,
+                                row.gallery?.[0],
+                                row.title || row.id?.toString()
+                              )}
+                              alt={createImageAltText(row.title)}
+                              title={row.title}
+                              width={IMAGE_SIZES.thumbnail.width}
+                              height={IMAGE_SIZES.thumbnail.height}
+                              variant="circular"
+                              placeholder="text"
+                              priority={shouldPrioritizeImage(index, page === 0, true)}
+                              sx={{
+                                border: '2px solid',
+                                borderColor: 'divider',
+                                transition: 'border-color 0.2s ease',
+                                '&:hover': {
+                                  borderColor: 'primary.main',
+                                }
+                              }}
+                            />
                             <Box
                               sx={{
                                 ml: 2,
                               }}
                             >
                               <Typography variant="h6" fontWeight="600">
-                                {row.title}
+                                {row.title || 'Untitled Product'}
                               </Typography>
                               <Typography color="textSecondary" variant="subtitle2">
-                                {row.category}
+                                {Array.isArray(row.category) 
+                                  ? row.category.join(', ') || 'Uncategorized'
+                                  : row.category || 'Uncategorized'
+                                }
                               </Typography>
                             </Box>
                           </Box>
                         </TableCell>
                         <TableCell>
-                          <Typography>{format(new Date(row.created), 'E, MMM d yyyy')}</Typography>
+                          <Typography>
+                            {row.created && !isNaN(new Date(row.created).getTime()) 
+                              ? format(new Date(row.created), 'E, MMM d yyyy')
+                              : 'Invalid Date'
+                            }
+                          </Typography>
                         </TableCell>
 
                         <TableCell>
                           <Box display="flex" alignItems="center">
                             <Box
                               sx={{
-                                backgroundColor: row.stock
+                                backgroundColor: (row.stock !== undefined ? row.stock : (row.qty || 0) > 0)
                                   ? (theme) => theme.palette.success.main
                                   : (theme) => theme.palette.error.main,
                                 borderRadius: '100%',
@@ -400,22 +614,55 @@ const ProductTableList = () => {
                                 ml: 1,
                               }}
                             >
-                              {row.stock ? 'InStock' : 'Out of Stock'}
+                              {(row.stock !== undefined ? row.stock : (row.qty || 0) > 0) ? 'InStock' : 'Out of Stock'}
                             </Typography>
                           </Box>
                         </TableCell>
 
                         <TableCell>
                           <Typography fontWeight={600} variant="h6">
-                            ${row.price}
+                            ${row.price || row.salesPrice || 0}
                           </Typography>
                         </TableCell>
                         <TableCell>
-                          <Tooltip title="Edit">
-                            <IconButton size="small">
-                              <IconDotsVertical size="1.1rem" />
-                            </IconButton>
-                          </Tooltip>
+                          <Box display="flex" alignItems="center" gap={1}>
+                            <Tooltip title="View Product">
+                              <IconButton 
+                                size="small" 
+                                color="info"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleView(row);
+                                }}
+                              >
+                                <IconEye size="1.1rem" />
+                              </IconButton>
+                            </Tooltip>
+                            <Tooltip title="Edit Product">
+                              <IconButton 
+                                size="small" 
+                                color="primary"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleEdit(row);
+                                }}
+                              >
+                                <IconEdit size="1.1rem" />
+                              </IconButton>
+                            </Tooltip>
+                            <Tooltip title="Delete Product">
+                              <IconButton 
+                                size="small" 
+                                color="error"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleDeleteClick(row);
+                                }}
+                              >
+                                <IconTrash size="1.1rem" />
+                              </IconButton>
+                            </Tooltip>
+                          </Box>
                         </TableCell>
                       </TableRow>
                     );
@@ -449,7 +696,49 @@ const ProductTableList = () => {
           />
         </Box>
       </Box>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog
+        open={deleteDialogOpen}
+        onClose={handleDeleteCancel}
+        aria-labelledby="delete-dialog-title"
+        aria-describedby="delete-dialog-description"
+      >
+        <DialogTitle id="delete-dialog-title">
+          Delete Product
+        </DialogTitle>
+        <DialogContent>
+          <DialogContentText id="delete-dialog-description">
+            Are you sure you want to delete "{productToDelete?.title}"? This action cannot be undone.
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button 
+            onClick={handleDeleteCancel} 
+            disabled={isDeleting}
+          >
+            Cancel
+          </Button>
+          <Button 
+            onClick={handleDeleteConfirm} 
+            color="error" 
+            variant="contained"
+            disabled={isDeleting}
+          >
+            {isDeleting ? 'Deleting...' : 'Delete'}
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
+  );
+};
+
+// Main wrapper component with ToastProvider
+const ProductTableList = () => {
+  return (
+    <ToastProvider>
+      <ProductTableListContent />
+    </ToastProvider>
   );
 };
 

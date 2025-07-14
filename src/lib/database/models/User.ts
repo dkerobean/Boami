@@ -10,11 +10,18 @@ export interface IUser {
   password: string;
   firstName: string;
   lastName: string;
+  name: string; // Full name computed field
+  designation?: string; // Job title/role designation
   role: 'admin' | 'user' | 'manager';
   isActive: boolean;
   isEmailVerified: boolean;
   emailVerifiedAt?: Date;
   avatar?: string;
+  profileImage?: string; // Profile image path/URL
+  phone?: string;
+  bio?: string;
+  company?: string;
+  department?: string;
   lastLogin?: Date;
   createdAt: Date;
   updatedAt: Date;
@@ -95,8 +102,45 @@ const userSchema = new Schema<IUserDocument, IUserModel>({
     type: Date,
     default: null
   },
+  designation: {
+    type: String,
+    trim: true,
+    maxlength: [100, 'Designation cannot exceed 100 characters'],
+    default: null
+  },
   avatar: {
     type: String,
+    default: null
+  },
+  profileImage: {
+    type: String,
+    default: null
+  },
+  phone: {
+    type: String,
+    trim: true,
+    match: [
+      /^[\+]?[1-9][\d]{0,15}$/,
+      'Please enter a valid phone number'
+    ],
+    default: null
+  },
+  bio: {
+    type: String,
+    trim: true,
+    maxlength: [500, 'Bio cannot exceed 500 characters'],
+    default: null
+  },
+  company: {
+    type: String,
+    trim: true,
+    maxlength: [100, 'Company name cannot exceed 100 characters'],
+    default: null
+  },
+  department: {
+    type: String,
+    trim: true,
+    maxlength: [100, 'Department cannot exceed 100 characters'],
     default: null
   },
   lastLogin: {
@@ -106,12 +150,19 @@ const userSchema = new Schema<IUserDocument, IUserModel>({
 }, {
   timestamps: true, // Automatically adds createdAt and updatedAt
   toJSON: { 
+    virtuals: true,
     transform: function(doc, ret) {
       delete (ret as any).password;
       delete (ret as any).__v;
       return ret;
     }
-  }
+  },
+  toObject: { virtuals: true }
+});
+
+// Virtual field for full name
+userSchema.virtual('name').get(function() {
+  return `${this.firstName} ${this.lastName}`;
 });
 
 // Indexes for better query performance

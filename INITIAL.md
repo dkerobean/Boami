@@ -5,7 +5,6 @@
 **Boami** is a comprehensive e-commerce management platform built with Next.js 14, TypeScript, and Material-UI. It provides end-to-end business management capabilities including product inventory, order processing, customer relationship management, financial analytics, and AI-powered insights.
 
 ## CORE FEATURES:
-
 ### 🔹 1. Product & Inventory Management
 Manage your products and inventory with full control and visibility.
 - **Product Management**: Add or edit products with multiple variants (e.g., size, color), SKU codes, pricing, images, and categories

@@ -113,7 +113,7 @@ const Navigations = () => {
                     </Paper>
                 )}
             </Box>
-            <StyledButton color="inherit" variant="text" href="https://demos.adminmart.com/premium/nextjs/modernize-nextjs/docs/index.html">
+            <StyledButton color="inherit" variant="text" href="https://demos.adminmart.com/premium/nextjs/BOAMI-nextjs/docs/index.html">
                 Documentation
             </StyledButton>
             <StyledButton color="inherit" variant="text" href="https://adminmart.com/support">

@@ -27,7 +27,7 @@ interface DemoTypes {
 
 const demos: DemoTypes[] = [
   {
-    link: "https://modernize-nextjs.adminmart.com/landingpage",
+    link: "https://BOAMI-nextjs.adminmart.com/landingpage",
     img: mainDemo,
     title: "Main",
   },

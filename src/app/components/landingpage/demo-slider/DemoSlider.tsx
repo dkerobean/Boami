@@ -49,7 +49,7 @@ interface DemoTypes {
 
 const demos: DemoTypes[] = [
   {
-    link: "https://modernize-nextjs.adminmart.com/dashboards/modern",
+    link: "https://BOAMI-nextjs.adminmart.com/dashboards/modern",
     img: mainDemo,
     title: "Main",
   },
@@ -157,7 +157,7 @@ const apps: DemoTypes[] = [
     title: "eCommerce Checkout App",
   },
   {
-    link: "https://modernize-nextjs.adminmart.com/apps/ecommerce/list",
+    link: "https://BOAMI-nextjs.adminmart.com/apps/ecommerce/list",
     img: app12,
     title: "eCommerce List App",
   },

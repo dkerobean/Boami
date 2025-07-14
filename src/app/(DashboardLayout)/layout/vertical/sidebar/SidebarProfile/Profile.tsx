@@ -3,11 +3,29 @@ import { useSelector } from '@/store/hooks';
 import { IconPower } from '@tabler/icons-react';
 import { AppState } from '@/store/store';
 import Link from 'next/link';
+import { useState, useEffect } from 'react';
+import axios from 'axios';
 
 export const Profile = () => {
   const customizer = useSelector((state: AppState) => state.customizer);
   const lgUp = useMediaQuery((theme: any) => theme.breakpoints.up('lg'));
   const hideMenu = lgUp ? customizer.isCollapse && !customizer.isSidebarHover : '';
+  const [user, setUser] = useState<any>(null);
+
+  useEffect(() => {
+    const fetchUser = async () => {
+      try {
+        const response = await axios.get('/api/user');
+        if (response.data.success) {
+          setUser(response.data.data);
+        }
+      } catch (error) {
+        console.error('Failed to fetch user in sidebar:', error);
+      }
+    };
+
+    fetchUser();
+  }, []);
 
   return (
     <Box
@@ -18,11 +36,19 @@ export const Profile = () => {
     >
       {!hideMenu ? (
         <>
-          <Avatar alt="Remy Sharp" src={"/images/profile/user-1.jpg"} sx={{height: 40, width: 40}} />
+          <Avatar 
+            alt="User Profile" 
+            src={user?.profileImage || user?.avatar || "/images/profile/user-1.jpg"} 
+            sx={{height: 40, width: 40}} 
+          />
 
           <Box>
-            <Typography variant="h6">Mathew</Typography>
-            <Typography variant="caption">Designer</Typography>
+            <Typography variant="h6">
+              {user?.firstName || 'Mathew'}
+            </Typography>
+            <Typography variant="caption">
+              {user?.designation || 'Designer'}
+            </Typography>
           </Box>
           <Box sx={{ ml: 'auto' }}>
             <Tooltip title="Logout" placement="top">

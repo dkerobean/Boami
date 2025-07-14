@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import axios from 'axios';
 import Link from 'next/link';
 import {
   Box,
@@ -9,15 +10,55 @@ import {
   Button,
   IconButton,
 } from '@mui/material';
-import * as dropdownData from './data';
+
 
 import { IconMail } from '@tabler/icons-react';
 import { Stack } from '@mui/system';
 import Image from 'next/image';
 
+const profile: any[] = [
+  {
+    href: "/apps/user-profile/profile",
+    title: "My Profile",
+    subtitle: "Account Settings",
+    icon: "/images/svgs/icon-account.svg",
+  },
+  {
+    href: "/apps/email",
+    title: "My Inbox",
+    subtitle: "Messages & Emails",
+    icon: "/images/svgs/icon-inbox.svg",
+  },
+  {
+    href: "/apps/notes",
+    title: "My Tasks",
+    subtitle: "To-do and Daily Tasks",
+    icon: "/images/svgs/icon-tasks.svg",
+  },
+];
+
 
 const Profile = () => {
   const [anchorEl2, setAnchorEl2] = useState(null);
+  const [user, setUser] = useState<any>(null);
+
+  useEffect(() => {
+    const fetchUser = async () => {
+      try {
+        const response = await axios.get('/api/user');
+        if (response.data.success) {
+          setUser(response.data.data);
+        } else {
+          console.error('Failed to fetch user:', response.data.message);
+        }
+      } catch (error) {
+        console.error('Failed to fetch user', error);
+        // Keep user as null to show fallback data
+      }
+    };
+
+    fetchUser();
+  }, []);
   const handleClick2 = (event: any) => {
     setAnchorEl2(event.currentTarget);
   };
@@ -40,7 +81,7 @@ const Profile = () => {
         onClick={handleClick2}
       >
         <Avatar
-          src={"/images/profile/user-1.jpg"}
+          src={user?.profileImage || user?.avatar || "/images/profile/user-1.jpg"}
           alt={'ProfileImg'}
           sx={{
             width: 35,
@@ -68,13 +109,17 @@ const Profile = () => {
       >
         <Typography variant="h5">User Profile</Typography>
         <Stack direction="row" py={3} spacing={2} alignItems="center">
-        <Avatar src={"/images/profile/user-1.jpg"} alt={"ProfileImg"} sx={{ width: 95, height: 95 }} />
+        <Avatar 
+          src={user?.profileImage || user?.avatar || "/images/profile/user-1.jpg"} 
+          alt={"ProfileImg"} 
+          sx={{ width: 95, height: 95 }} 
+        />
           <Box>
             <Typography variant="subtitle2" color="textPrimary" fontWeight={600}>
-              Mathew Anderson
+              {user?.name || user?.firstName && user?.lastName ? `${user.firstName} ${user.lastName}` : 'Mathew Anderson'}
             </Typography>
             <Typography variant="subtitle2" color="textSecondary">
-              Designer
+              {user?.designation || 'Designer'}
             </Typography>
             <Typography
               variant="subtitle2"
@@ -84,12 +129,12 @@ const Profile = () => {
               gap={1}
             >
               <IconMail width={15} height={15} />
-              info@modernize.com
+              {user?.email || 'info@BOAMI.com'}
             </Typography>
           </Box>
         </Stack>
         <Divider />
-        {dropdownData.profile.map((profile) => (
+        {profile.map((profile) => (
           <Box key={profile.title}>
             <Box sx={{ py: 2, px: 0 }} className="hover-text-primary">
               <Link href={profile.href}>

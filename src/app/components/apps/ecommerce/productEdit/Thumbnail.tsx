@@ -1,14 +1,23 @@
 "use client";
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import Box from "@mui/material/Box";
 import { Typography } from "@mui/material";
 
-const Thumbnail = () => {
+interface ThumbnailProps {
+  product: any;
+  onImageChange: (file: File) => void;
+}
+
+const Thumbnail = ({ product, onImageChange }: ThumbnailProps) => {
   const [imageFile, setImageFile] = useState<File | null>(null);
-  const [imageUrl, setImageUrl] = useState<string | null>(
-    "/images/blog/blog-img1.jpg"
-  );
+  const [imageUrl, setImageUrl] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (product && product.photo) {
+      setImageUrl(product.photo);
+    }
+  }, [product]);
 
   // Open file input dialog on image click
   const handleImageClick = () => {
@@ -35,6 +44,7 @@ const Thumbnail = () => {
 
     // Set the image file for upload
     setImageFile(file);
+    onImageChange(file);
   };
 
   return (
