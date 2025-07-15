@@ -1,31 +1,105 @@
 "use client";
-import React from "react";
+import React, { useState, useEffect } from "react";
 import Box from "@mui/material/Box";
-import { Autocomplete, Button, Grid, Typography, Chip } from "@mui/material";
+import { Autocomplete, Button, Grid, Typography, Chip, Alert, CircularProgress } from "@mui/material";
 import CustomFormLabel from "@/app/components/forms/theme-elements/CustomFormLabel";
 import CustomTextField from "@/app/components/forms/theme-elements/CustomTextField";
 import { IconPlus } from "@tabler/icons-react";
+import { 
+  fetchProductCategories, 
+  fetchProductTags, 
+  formatCategoriesForAutocomplete, 
+  formatTagsForAutocomplete,
+  extractLabelsFromAutocomplete
+} from "@/lib/utils/product-data";
 
-const new_category = [
-  { label: "Computer" },
-  { label: "Watches" },
-  { label: "Headphones" },
-  { label: "Beauty" },
-  { label: "Fashion" },
-  { label: "Footwear" },
-];
+interface ProductDetailsProps {
+  productData?: any;
+  onCategoriesChange?: (categories: string[]) => void;
+  onTagsChange?: (tags: string[]) => void;
+}
 
-const new_tags = [
-  { label: "New" },
-  { label: "Trending" },
-  { label: "Footwear" },
-  { label: "Latest" },
-];
+const ProductDetails = ({ productData, onCategoriesChange, onTagsChange }: ProductDetailsProps) => {
+  const [availableCategories, setAvailableCategories] = useState<{ label: string }[]>([]);
+  const [availableTags, setAvailableTags] = useState<{ label: string }[]>([]);
+  const [selectedCategories, setSelectedCategories] = useState<{ label: string }[]>([]);
+  const [selectedTags, setSelectedTags] = useState<{ label: string }[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string>("");
 
-const ProductDetails = () => {
+  // Load categories and tags on component mount
+  useEffect(() => {
+    loadCategoriesAndTags();
+  }, []);
+
+  // Update selected values when productData changes
+  useEffect(() => {
+    if (productData) {
+      // Set selected categories
+      if (productData.category) {
+        const categories = Array.isArray(productData.category) 
+          ? productData.category 
+          : [productData.category];
+        setSelectedCategories(formatCategoriesForAutocomplete(categories));
+      }
+      
+      // Set selected tags
+      if (productData.tags) {
+        setSelectedTags(formatTagsForAutocomplete(productData.tags));
+      }
+    }
+  }, [productData]);
+
+  const loadCategoriesAndTags = async () => {
+    try {
+      setLoading(true);
+      setError("");
+      
+      const [categories, tags] = await Promise.all([
+        fetchProductCategories(),
+        fetchProductTags()
+      ]);
+      
+      setAvailableCategories(formatCategoriesForAutocomplete(categories));
+      setAvailableTags(formatTagsForAutocomplete(tags));
+    } catch (err) {
+      console.error('Error loading categories and tags:', err);
+      setError('Failed to load categories and tags');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleCategoriesChange = (event: any, newValue: { label: string }[]) => {
+    setSelectedCategories(newValue);
+    const categoryValues = extractLabelsFromAutocomplete(newValue);
+    onCategoriesChange?.(categoryValues);
+  };
+
+  const handleTagsChange = (event: any, newValue: { label: string }[]) => {
+    setSelectedTags(newValue);
+    const tagValues = extractLabelsFromAutocomplete(newValue);
+    onTagsChange?.(tagValues);
+  };
+
+  if (loading) {
+    return (
+      <Box p={3} textAlign="center">
+        <CircularProgress size={24} />
+        <Typography variant="body2" mt={1}>Loading categories and tags...</Typography>
+      </Box>
+    );
+  }
   return (
     <Box p={3}>
       <Typography variant="h5">Product Details</Typography>
+      
+      {error && (
+        <Alert severity="error" sx={{ mb: 3 }}>
+          {error}
+        </Alert>
+      )}
+      
       <Grid container mt={3}>
         {/* 1 */}
         <Grid item xs={12} display="flex" alignItems="center">
@@ -38,9 +112,10 @@ const ProductDetails = () => {
             multiple
             fullWidth
             id="new-category"
-            options={new_category}
+            options={availableCategories}
             getOptionLabel={(option) => option.label}
-            defaultValue={[new_category[0], new_category[1]]}
+            value={selectedCategories}
+            onChange={handleCategoriesChange}
             filterSelectedOptions
             renderInput={(params) => (
               <CustomTextField {...params} placeholder="Categories" />
@@ -52,11 +127,6 @@ const ProductDetails = () => {
             Add product to a category.
           </Typography>
         </Grid>
-        <Grid item xs={12}>
-          <Button variant="text" startIcon={<IconPlus size={18} />}>
-            Create New Category
-          </Button>
-        </Grid>
         {/* 1 */}
         <Grid item xs={12} display="flex" alignItems="center">
           <CustomFormLabel htmlFor="p_tag">Tags</CustomFormLabel>
@@ -66,9 +136,10 @@ const ProductDetails = () => {
             multiple
             fullWidth
             id="new-tags"
-            options={new_tags}
+            options={availableTags}
             getOptionLabel={(option) => option.label}
-            defaultValue={[new_tags[1], new_category[2]]}
+            value={selectedTags}
+            onChange={handleTagsChange}
             filterSelectedOptions
             renderInput={(params) => (
               <CustomTextField {...params} placeholder="Tags" />

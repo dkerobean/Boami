@@ -70,7 +70,7 @@ const apps: DemoTypes[] = [
     title: "Email",
   },
   {
-    link: "https://modernize-nextjs.adminmart.com/apps/notes",
+    link: "https://BOAMI-nextjs.adminmart.com/apps/notes",
     img: app5,
     title: "Note",
   },

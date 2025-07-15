@@ -6,7 +6,13 @@ import CustomFormLabel from "@/app/components/forms/theme-elements/CustomFormLab
 import CustomTextField from "@/app/components/forms/theme-elements/CustomTextField";
 import QuillEdit from "@/app/components/forms/form-quill/QuillEdit";
 
-const GeneralCard = () => {
+interface GeneralCardProps {
+  productData?: any;
+  onNameChange?: (name: string) => void;
+  onDescriptionChange?: (description: string) => void;
+}
+
+const GeneralCard = ({ productData, onNameChange, onDescriptionChange }: GeneralCardProps) => {
   return (
     <Box p={3}>
       <Typography variant="h5">General</Typography>
@@ -25,8 +31,9 @@ const GeneralCard = () => {
           <CustomTextField
             id="p_name"
             placeholder="Product Name"
-            value="Sample Product"
+            value={productData?.title || ""}
             fullWidth
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) => onNameChange?.(e.target.value)}
           />
           <Typography variant="body2">
             A product name is required and recommended to be unique.
@@ -37,7 +44,10 @@ const GeneralCard = () => {
           <CustomFormLabel htmlFor="desc">Description</CustomFormLabel>
         </Grid>
         <Grid item xs={12}>
-          <QuillEdit />
+          <QuillEdit 
+            value={productData?.description || ""} 
+            onChange={(value: string) => onDescriptionChange?.(value)}
+          />
           <Typography variant="body2">
             Set a description to the product for better visibility.
           </Typography>

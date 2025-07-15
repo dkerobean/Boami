@@ -9,10 +9,11 @@ const userUpdateSchema = yup.object({
   firstName: yup.string().max(50, 'First name cannot exceed 50 characters'),
   lastName: yup.string().max(50, 'Last name cannot exceed 50 characters'),
   designation: yup.string().max(100, 'Designation cannot exceed 100 characters'),
-  phone: yup.string().matches(/^[\+]?[1-9][\d]{0,15}$/, 'Please enter a valid phone number'),
-  bio: yup.string().max(500, 'Bio cannot exceed 500 characters'),
-  company: yup.string().max(100, 'Company name cannot exceed 100 characters'),
-  department: yup.string().max(100, 'Department cannot exceed 100 characters')
+  phone: yup.string().nullable().transform((value) => value || null).test('phone-length', 'Please enter a valid phone number', function(value) {
+    if (!value) return true; // Allow empty
+    return value.length >= 10 && value.length <= 15; // Basic length validation
+  }),
+  company: yup.string().max(100, 'Company name cannot exceed 100 characters')
 });
 
 /**

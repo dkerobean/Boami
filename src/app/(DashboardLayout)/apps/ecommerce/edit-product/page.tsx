@@ -12,8 +12,6 @@ import PricingCard from "@/app/components/apps/ecommerce/productEdit/Pricing";
 import Thumbnail from "@/app/components/apps/ecommerce/productEdit/Thumbnail";
 import StatusCard from "@/app/components/apps/ecommerce/productEdit/Status";
 import ProductDetails from "@/app/components/apps/ecommerce/productEdit/ProductDetails";
-import ProductTemplate from "@/app/components/apps/ecommerce/productEdit/ProductTemplate";
-import CustomersReviews from "@/app/components/apps/ecommerce/productEdit/CustomersReviews";
 import ProductAvgSales from "@/app/components/apps/ecommerce/productEdit/ProductAvgSales";
 import BlankCard from "@/app/components/shared/BlankCard";
 
@@ -31,9 +29,12 @@ const EcommerceEditProduct = () => {
   const searchParams = useSearchParams();
   const router = useRouter();
   const [productData, setProductData] = useState<any>(null);
+  const [originalProductData, setOriginalProductData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string>("");
+  const [saving, setSaving] = useState(false);
   const [imageFile, setImageFile] = useState<File | null>(null);
+  const [hasChanges, setHasChanges] = useState(false);
   
   const productId = searchParams.get('id');
 
@@ -57,6 +58,7 @@ const EcommerceEditProduct = () => {
         
         if (result.success) {
           setProductData(result.data.product);
+          setOriginalProductData(result.data.product);
         } else {
           throw new Error(result.error || 'Failed to fetch product');
         }
@@ -75,35 +77,92 @@ const EcommerceEditProduct = () => {
     setImageFile(file);
   };
 
+  // Handle product data changes
+  const handleProductDataChange = (field: string, value: any) => {
+    setProductData((prev: any) => ({
+      ...prev,
+      [field]: value
+    }));
+    setHasChanges(true);
+  };
+
+  // Handle categories change
+  const handleCategoriesChange = (categories: string[]) => {
+    handleProductDataChange('category', categories);
+  };
+
+  // Handle tags change
+  const handleTagsChange = (tags: string[]) => {
+    handleProductDataChange('tags', tags);
+  };
+
+  // Handle variations change
+  const handleVariationsChange = (variations: any[]) => {
+    handleProductDataChange('variations', variations);
+  };
+
+  // Handle name change
+  const handleNameChange = (name: string) => {
+    handleProductDataChange('title', name);
+  };
+
+  // Handle description change
+  const handleDescriptionChange = (description: string) => {
+    handleProductDataChange('description', description);
+  };
+
+  // Handle price change
+  const handlePriceChange = (price: string) => {
+    handleProductDataChange('price', price);
+  };
+
+  // Handle stock change
+  const handleStockChange = (stock: string) => {
+    handleProductDataChange('qty', stock);
+  };
+
+  // Handle status change
+  const handleStatusChange = (status: string) => {
+    handleProductDataChange('status', status);
+  };
+
   const handleSaveChanges = async () => {
-    let imageUrl = productData.photo;
+    if (!hasChanges && !imageFile) {
+      router.push("/apps/ecommerce/list");
+      return;
+    }
 
-    if (imageFile) {
-      const formData = new FormData();
-      formData.append("file", imageFile);
+    setSaving(true);
+    setError("");
 
-      try {
-        const response = await fetch("/api/upload", {
+    try {
+      let imageUrl = productData.photo;
+
+      // Upload image if changed
+      if (imageFile) {
+        const formData = new FormData();
+        formData.append("file", imageFile);
+
+        const uploadResponse = await fetch("/api/upload/product-image", {
           method: "POST",
           body: formData,
         });
 
-        if (!response.ok) {
+        if (!uploadResponse.ok) {
           throw new Error("Failed to upload image");
         }
 
-        const result = await response.json();
-        imageUrl = result.data.url;
-      } catch (error) {
-        console.error("Error uploading image:", error);
-        setError("Failed to upload image");
-        return;
+        const uploadResult = await uploadResponse.json();
+        if (uploadResult.success && uploadResult.url) {
+          imageUrl = uploadResult.url;
+        } else {
+          throw new Error(uploadResult.error || "Image upload failed");
+        }
       }
-    }
 
-    const updatedProduct = { ...productData, photo: imageUrl };
+      // Save product data
+      const updatedProduct = { ...productData, photo: imageUrl };
 
-    try {
       const response = await fetch(`/api/products/${productId}`, {
         method: "PUT",
         headers: {
@@ -113,13 +172,26 @@ const EcommerceEditProduct = () => {
       });
 
       if (!response.ok) {
-        throw new Error("Failed to save product");
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Failed to save product");
       }
 
-      router.push("/apps/ecommerce/list");
+      const result = await response.json();
+      if (result.success) {
+        // Reset change tracking
+        setHasChanges(false);
+        setOriginalProductData(updatedProduct);
+        
+        // Navigate back to list
+        router.push("/apps/ecommerce/list");
+      } else {
+        throw new Error(result.error || "Failed to save product");
+      }
     } catch (error) {
       console.error("Error saving product:", error);
-      setError("Failed to save product");
+      setError(error instanceof Error ? error.message : "Failed to save product");
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -170,24 +242,32 @@ const EcommerceEditProduct = () => {
           <Grid item lg={8}>
             <Stack spacing={3}>
               <BlankCard>
-                <GeneralCard />
+                <GeneralCard 
+                  productData={productData} 
+                  onNameChange={handleNameChange}
+                  onDescriptionChange={handleDescriptionChange}
+                />
               </BlankCard>
 
               <BlankCard>
-                <MediaCard />
+                <MediaCard productData={productData} />
               </BlankCard>
 
               <BlankCard>
-                <VariationCard />
+                <VariationCard 
+                  productData={productData} 
+                  onVariationsChange={handleVariationsChange}
+                />
               </BlankCard>
 
               <BlankCard>
-                <PricingCard />
+                <PricingCard 
+                  productData={productData} 
+                  onPriceChange={handlePriceChange}
+                  onStockChange={handleStockChange}
+                />
               </BlankCard>
 
-              <BlankCard>
-                <CustomersReviews />
-              </BlankCard>
             </Stack>
           </Grid>
 
@@ -198,20 +278,24 @@ const EcommerceEditProduct = () => {
               </BlankCard>
 
               <BlankCard>
-                <StatusCard />
+                <StatusCard 
+                  productData={productData} 
+                  onStatusChange={handleStatusChange}
+                />
               </BlankCard>
 
               <BlankCard>
-                <ProductDetails />
+                <ProductDetails 
+                  productData={productData}
+                  onCategoriesChange={handleCategoriesChange}
+                  onTagsChange={handleTagsChange}
+                />
               </BlankCard>
 
               <BlankCard>
                 <ProductAvgSales />
               </BlankCard>
 
-              <BlankCard>
-                <ProductTemplate />
-              </BlankCard>
             </Stack>
           </Grid>
         </Grid>
@@ -221,16 +305,24 @@ const EcommerceEditProduct = () => {
             variant="contained" 
             color="primary"
             onClick={handleSaveChanges}
+            disabled={saving}
+            startIcon={saving ? <CircularProgress size={20} color="inherit" /> : null}
           >
-            Save Changes
+            {saving ? 'Saving...' : hasChanges ? 'Save Changes' : 'No Changes'}
           </Button>
           <Button 
             variant="outlined" 
             color="error"
             onClick={() => router.push('/apps/ecommerce/list')}
+            disabled={saving}
           >
             Cancel
           </Button>
+          {hasChanges && (
+            <Typography variant="body2" color="warning.main" sx={{ alignSelf: 'center' }}>
+              You have unsaved changes
+            </Typography>
+          )}
         </Stack>
         </form>
       </>

@@ -1,12 +1,13 @@
 "use client";
 import { Box, Button, Grid, Stack, Alert } from "@mui/material";
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { Formik, Form } from "formik";
 import * as yup from "yup";
 import Breadcrumb from "@/app/(DashboardLayout)/layout/shared/breadcrumb/Breadcrumb";
 import PageContainer from "@/app/components/container/PageContainer";
 import { isBlobUrl, isValidImageUrl } from "@/lib/utils/image-utils";
 import { isUploadedImageUrl } from "@/lib/utils/file-upload";
+import ValidationSummary, { formatFormikErrors, focusFirstInvalidField } from "@/app/components/forms/ValidationSummary";
 
 import GeneralCard from "@/app/components/apps/ecommerce/productAdd/GeneralCard";
 import MediaCard from "@/app/components/apps/ecommerce/productAdd/Media";
@@ -106,6 +107,35 @@ const EcommerceAddProduct = () => {
     type: "success" | "error" | null;
     message: string;
   }>({ type: null, message: "" });
+  const [showValidationSummary, setShowValidationSummary] = useState(false);
+  const formRef = useRef<HTMLFormElement>(null);
+
+  // Field labels for better error messages
+  const fieldLabels = {
+    title: "Product Name",
+    description: "Description", 
+    price: "Price",
+    category: "Category",
+    photo: "Product Image",
+    qty: "Quantity",
+    weight: "Weight",
+    lowStockThreshold: "Low Stock Threshold"
+  };
+
+  // Section mapping for organized error display
+  const sectionMap = {
+    title: "General Information",
+    description: "General Information",
+    category: "General Information",
+    brand: "General Information",
+    price: "Pricing",
+    qty: "Pricing",
+    weight: "Product Details",
+    lowStockThreshold: "Product Details",
+    photo: "Product Media",
+    gallery: "Product Media",
+    variations: "Variations"
+  };
 
   const handleSubmit = async (values: any, { setSubmitting, resetForm }: any) => {
     setLoading(true);
@@ -239,10 +269,50 @@ const EcommerceAddProduct = () => {
         initialValues={initialValues}
         validationSchema={productValidationSchema}
         onSubmit={handleSubmit}
+        validate={(values) => {
+          // Reset validation summary when user starts fixing errors
+          setShowValidationSummary(false);
+          return {};
+        }}
       >
-        {({ isSubmitting, resetForm }) => (
-          <Form>
-            <Grid container spacing={3}>
+        {({ isSubmitting, resetForm, errors, touched, isValid, validateForm, handleSubmit: formikSubmit }) => {
+          return (
+            <form 
+              ref={formRef} 
+              onSubmit={async (e) => {
+                e.preventDefault();
+                
+                // Validate form
+                const formErrors = await validateForm();
+                
+                if (Object.keys(formErrors).length > 0) {
+                  // Show validation summary
+                  setShowValidationSummary(true);
+                  
+                  // Focus first invalid field
+                  setTimeout(() => {
+                    focusFirstInvalidField(formErrors, formRef);
+                  }, 100);
+                  
+                  return;
+                }
+                
+                // If validation passes, hide summary and submit
+                setShowValidationSummary(false);
+                formikSubmit(e);
+              }}
+            >
+              {/* Validation Summary */}
+              <ValidationSummary
+                errors={formatFormikErrors(errors, fieldLabels, sectionMap)}
+                show={showValidationSummary}
+                onFieldClick={(fieldName) => {
+                  // Custom click handler to focus specific fields
+                  focusFirstInvalidField({ [fieldName]: true }, formRef);
+                }}
+              />
+              
+              <Grid container spacing={3}>
               <Grid item lg={8}>
                 <Stack spacing={3}>
                   <BlankCard>
@@ -288,14 +358,18 @@ const EcommerceAddProduct = () => {
               <Button 
                 variant="outlined" 
                 color="error"
-                onClick={() => resetForm()}
+                onClick={() => {
+                  resetForm();
+                  setShowValidationSummary(false);
+                }}
                 disabled={isSubmitting || loading}
               >
                 Reset Form
               </Button>
             </Stack>
-          </Form>
-        )}
+          </form>
+        );
+        }}
       </Formik>
     </PageContainer>
   );

@@ -7,6 +7,8 @@ import Fab from "@mui/material/Fab";
 import Grid from "@mui/material/Grid";
 import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
+import CircularProgress from "@mui/material/CircularProgress";
+import Alert from "@mui/material/Alert";
 import { styled } from "@mui/material/styles";
 import {
   IconBrandDribbble,
@@ -19,9 +21,12 @@ import {
 } from "@tabler/icons-react";
 import ProfileTab from "./ProfileTab";
 import BlankCard from "../../../shared/BlankCard";
+import { useAuth } from "@/hooks/useAuth";
 import React from "react";
 
 const ProfileBanner = () => {
+  const { user, loading, error } = useAuth();
+  
   const ProfileImage = styled(Box)(() => ({
     backgroundImage: "linear-gradient(#50b2fc,#f44c66)",
     borderRadius: "50%",
@@ -32,6 +37,39 @@ const ProfileBanner = () => {
     justifyContent: "center",
     margin: "0 auto"
   }));
+
+  const getDisplayName = () => {
+    if (!user) return "Guest User";
+    return `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.email;
+  };
+
+  const getUserDesignation = () => {
+    return user?.designation || "User";
+  };
+
+  const getProfileImage = () => {
+    return user?.profileImage || user?.avatar || "/images/profile/user-1.jpg";
+  };
+
+  if (loading) {
+    return (
+      <BlankCard>
+        <Box display="flex" justifyContent="center" alignItems="center" height="400px">
+          <CircularProgress />
+        </Box>
+      </BlankCard>
+    );
+  }
+
+  if (error) {
+    return (
+      <BlankCard>
+        <Alert severity="error" sx={{ m: 2 }}>
+          Error loading profile: {error}
+        </Alert>
+      </BlankCard>
+    );
+  }
 
   return (
     <>
@@ -127,7 +165,7 @@ const ProfileBanner = () => {
               <Box>
                 <ProfileImage>
                   <Avatar
-                    src={"/images/profile/user-1.jpg"}
+                    src={getProfileImage()}
                     alt="profileImage"
                     sx={{
                       borderRadius: "50%",
@@ -139,14 +177,14 @@ const ProfileBanner = () => {
                 </ProfileImage>
                 <Box mt={1}>
                   <Typography fontWeight={600} variant="h5">
-                    Mathew Anderson
+                    {getDisplayName()}
                   </Typography>
                   <Typography
                     color="textSecondary"
                     variant="h6"
                     fontWeight={400}
                   >
-                    Designer
+                    {getUserDesignation()}
                   </Typography>
                 </Box>
               </Box>

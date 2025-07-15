@@ -79,7 +79,7 @@ const Menuitems: MenuitemsType[] = [
     id: uniqueId(),
     title: "Dashboard",
     icon: IconShoppingCart,
-    href: "/",
+    href: "/dashboards/ecommerce",
   },
   
   {

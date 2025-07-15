@@ -51,9 +51,13 @@ const PricingCard = () => {
 
       <Grid container spacing={3}>
         <Grid item xs={12} lg={6}>
-          <CustomFormLabel htmlFor="price" sx={{ mt: 0 }}>
+          <CustomFormLabel 
+            htmlFor="price" 
+            sx={{ mt: 0 }}
+            error={touched.price && Boolean(errors.price)}
+          >
             Price{" "}
-            <Typography color="error.main" component="span">
+            <Typography color="error.main" component="span" className="required-asterisk">
               *
             </Typography>
           </CustomFormLabel>

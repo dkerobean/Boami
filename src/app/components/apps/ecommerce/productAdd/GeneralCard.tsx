@@ -20,9 +20,13 @@ const GeneralCard = () => {
 
       <Grid container mt={3}>
         <Grid item xs={12} display="flex" alignItems="center">
-          <CustomFormLabel htmlFor="title" sx={{ mt: 0 }}>
+          <CustomFormLabel 
+            htmlFor="title" 
+            sx={{ mt: 0 }}
+            error={touched.title && Boolean(errors.title)}
+          >
             Product Name{" "}
-            <Typography color="error.main" component="span">
+            <Typography color="error.main" component="span" className="required-asterisk">
               *
             </Typography>
           </CustomFormLabel>
@@ -46,9 +50,12 @@ const GeneralCard = () => {
 
 
         <Grid item xs={12} display="flex" alignItems="center" mt={3}>
-          <CustomFormLabel htmlFor="description">
+          <CustomFormLabel 
+            htmlFor="description"
+            error={touched.description && Boolean(errors.description)}
+          >
             Description{" "}
-            <Typography color="error.main" component="span">
+            <Typography color="error.main" component="span" className="required-asterisk">
               *
             </Typography>
           </CustomFormLabel>

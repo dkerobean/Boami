@@ -5,12 +5,29 @@ import { Grid, Typography } from '@mui/material';
 import { MenuItem, Avatar } from '@mui/material';
 import CustomSelect from '@/app/components/forms/theme-elements/CustomSelect';
 
-const StatusCard = () => {
+interface StatusCardProps {
+  productData?: any;
+  onStatusChange?: (status: string) => void;
+}
 
-    const [status, setStatus] = useState(2);
+const StatusCard = ({ productData, onStatusChange }: StatusCardProps) => {
+    // Convert product status to select value
+    const getStatusValue = (productStatus: string) => {
+        switch(productStatus?.toLowerCase()) {
+            case 'published': return 0;
+            case 'draft': return 1;
+            case 'scheduled': return 2;
+            case 'inactive': return 3;
+            default: return 1; // Default to draft
+        }
+    };
+
+    const [status, setStatus] = useState(getStatusValue(productData?.status));
     const handleChange = (event: any) => {
         setStatus(event.target.value);
-        console.log('test')
+        const statusValues = ['published', 'draft', 'scheduled', 'inactive'];
+        const statusString = statusValues[event.target.value] || 'draft';
+        onStatusChange?.(statusString);
     };
 
     return (

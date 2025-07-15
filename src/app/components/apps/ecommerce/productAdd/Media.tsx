@@ -191,9 +191,12 @@ const MediaCard = () => {
       <Grid container spacing={3}>
         {/* Main Product Image Section */}
         <Grid item xs={12} md={6}>
-          <CustomFormLabel htmlFor="photo">
+          <CustomFormLabel 
+            htmlFor="photo"
+            error={touched.photo && (Boolean(errors.photo) || hasPhotoError)}
+          >
             Product Image URL{" "}
-            <Typography color="error.main" component="span">
+            <Typography color="error.main" component="span" className="required-asterisk">
               *
             </Typography>
           </CustomFormLabel>
