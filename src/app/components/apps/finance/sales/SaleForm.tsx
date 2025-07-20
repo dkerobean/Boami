@@ -24,6 +24,7 @@ import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { IconAlertTriangle, IconCheck } from '@tabler/icons-react';
+import { useToast } from '@/app/components/shared/ToastContext';
 
 interface Sale {
   _id: string;
@@ -81,6 +82,8 @@ interface StockValidation {
 }
 
 const SaleForm: React.FC<SaleFormProps> = ({ sale, onSuccess, onCancel }) => {
+  const { showToast } = useToast();
+  
   const [formData, setFormData] = useState<FormData>({
     productId: sale?.productId._id || '',
     quantity: sale?.quantity.toString() || '1',
@@ -120,14 +123,21 @@ const SaleForm: React.FC<SaleFormProps> = ({ sale, onSuccess, onCancel }) => {
   const fetchProducts = async () => {
     try {
       setProductsLoading(true);
-      const response = await fetch('/api/products?status=active');
+      const response = await fetch('/api/products?status=active', {
+        credentials: 'include',
+      });
       if (!response.ok) {
         throw new Error('Failed to fetch products');
       }
       const data = await response.json();
-      setProducts(data.products || []);
+      setProducts(data.data?.products || []);
     } catch (err) {
-      setErrors({ general: 'Failed to load products' });
+      const errorMessage = 'Failed to load products';
+      setErrors({ general: errorMessage });
+      showToast({
+        message: errorMessage,
+        severity: 'error'
+      });
     } finally {
       setProductsLoading(false);
     }
@@ -282,6 +292,7 @@ const SaleForm: React.FC<SaleFormProps> = ({ sale, onSuccess, onCancel }) => {
         headers: {
           'Content-Type': 'application/json',
         },
+        credentials: 'include',
         body: JSON.stringify(submitData),
       });
 
@@ -300,11 +311,21 @@ const SaleForm: React.FC<SaleFormProps> = ({ sale, onSuccess, onCancel }) => {
         }
         return;
       }
+      
+      showToast({
+        message: sale ? 'Sale updated successfully!' : 'Sale recorded successfully!',
+        severity: 'success'
+      });
 
       onSuccess();
     } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'An unexpected error occurred';
       setErrors({
-        general: err instanceof Error ? err.message : 'An unexpected error occurred'
+        general: errorMessage
+      });
+      showToast({
+        message: errorMessage,
+        severity: 'error'
       });
     } finally {
       setLoading(false);

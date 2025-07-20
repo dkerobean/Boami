@@ -58,15 +58,17 @@ interface ExpenseData {
   description: string;
   date: string;
   categoryId: string;
-  category?: {
+  category: {
+    _id: string;
     name: string;
     isDefault: boolean;
-  };
+  } | null;
   vendorId?: string;
   vendor?: {
+    _id: string;
     name: string;
     email?: string;
-  };
+  } | null;
   isRecurring: boolean;
   createdAt: string;
 }
@@ -128,9 +130,22 @@ const fetchExpenseData = async (page: number, limit: number, filters?: any) => {
   }
 };
 
-// Mock delete function - replace with actual API call
+// Real API function to delete expense
 const deleteExpense = async (id: string) => {
-  console.log(`Deleting expense with ID: ${id}`);
+  const response = await fetch(`/api/finance/expenses/${id}`, {
+    method: 'DELETE',
+    credentials: 'include',
+  });
+  
+  if (!response.ok) {
+    throw new Error('Failed to delete expense');
+  }
+  
+  const result = await response.json();
+  if (!result.success) {
+    throw new Error(result.error?.message || 'Failed to delete expense');
+  }
+  
   return { success: true };
 };
 

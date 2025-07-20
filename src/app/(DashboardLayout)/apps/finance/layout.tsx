@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { Box } from '@mui/material';
+import { ToastProvider } from '@/app/components/shared/ToastContext';
 
 interface FinanceLayoutProps {
   children: React.ReactNode;
@@ -12,9 +13,11 @@ const FinanceLayout: React.FC<FinanceLayoutProps> = ({ children }) => {
   // such as authentication checks, common headers, or breadcrumbs
 
   return (
-    <Box sx={{ width: '100%', height: '100%' }}>
-      {children}
-    </Box>
+    <ToastProvider>
+      <Box sx={{ width: '100%', height: '100%' }}>
+        {children}
+      </Box>
+    </ToastProvider>
   );
 };
 

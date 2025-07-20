@@ -7,11 +7,19 @@ import { Stack, Typography, Avatar, Box } from "@mui/material";
 import DashboardCard from "../../shared/DashboardCard";
 import SkeletonRevenueUpdatesCards from "../skeleton/RevenueUpdatesCard";
 
-interface RevenueupdatesCardProps {
-  isLoading ?: boolean;
+interface SalesData {
+  date: string;
+  revenue: number;
+  orders: number;
 }
 
-const RevenueUpdates = ({ isLoading }: RevenueupdatesCardProps) => {
+interface RevenueupdatesCardProps {
+  isLoading?: boolean;
+  salesData?: SalesData[];
+  totalRevenue?: number;
+}
+
+const RevenueUpdates = ({ isLoading, salesData = [], totalRevenue = 0 }: RevenueupdatesCardProps) => {
   // chart color
   const theme = useTheme();
   const primary = theme.palette.primary.main;

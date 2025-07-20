@@ -86,134 +86,22 @@ interface DashboardData {
   }>;
 }
 
-// Mock API function - replace with actual API call
+// Real API function to fetch dashboard data from MongoDB
 const fetchDashboardData = async (dateRange: string): Promise<DashboardData> => {
-  // Simulate API delay
-  await new Promise(resolve => setTimeout(resolve, 1000));
-
-  return {
-    summary: {
-      totalIncome: 45250.00,
-      totalExpenses: 28750.00,
-      netProfit: 16500.00,
-      profitMargin: 36.5,
-      totalSales: 32100.00,
-      averageSale: 267.50
-    },
-    previousSummary: {
-      totalIncome: 38900.00,
-      totalExpenses: 31200.00,
-      netProfit: 7700.00,
-      totalSales: 28400.00
-    },
-    monthlyData: [
-      { month: 'Jan', income: 38000, expenses: 25000, profit: 13000, sales: 28000 },
-      { month: 'Feb', income: 42000, expenses: 27000, profit: 15000, sales: 31000 },
-      { month: 'Mar', income: 45250, expenses: 28750, profit: 16500, sales: 32100 },
-      { month: 'Apr', income: 41000, expenses: 26500, profit: 14500, sales: 29800 },
-      { month: 'May', income: 47500, expenses: 30000, profit: 17500, sales: 34200 },
-      { month: 'Jun', income: 44800, expenses: 29200, profit: 15600, sales: 33100 }
-    ],
-    categoryBreakdown: {
-      income: [
-        { name: 'Product Sales', value: 32100, percentage: 71 },
-        { name: 'Service Fees', value: 8900, percentage: 20 },
-        { name: 'Consulting', value: 4250, percentage: 9 }
-      ],
-      expenses: [
-        { name: 'Rent', value: 12000, percentage: 42 },
-        { name: 'Office Supplies', value: 6750, percentage: 23 },
-        { name: 'Marketing', value: 5200, percentage: 18 },
-        { name: 'Travel', value: 3800, percentage: 13 },
-        { name: 'Other', value: 1000, percentage: 4 }
-      ]
-    },
-    recentTransactions: [
-      {
-        id: '1',
-        type: 'sale',
-        description: 'Wireless Headphones Sale',
-        amount: 159.99,
-        date: '2023-07-20T10:30:00Z',
-        category: 'Product Sales'
-      },
-      {
-        id: '2',
-        type: 'expense',
-        description: 'Office Supplies Purchase',
-        amount: 245.50,
-        date: '2023-07-19T14:20:00Z',
-        category: 'Office Supplies'
-      },
-      {
-        id: '3',
-        type: 'income',
-        description: 'Consulting Service',
-        amount: 750.00,
-        date: '2023-07-18T09:15:00Z',
-        category: 'Consulting'
-      },
-      {
-        id: '4',
-        type: 'sale',
-        description: 'Smart Watch Sale',
-        amount: 299.99,
-        date: '2023-07-17T16:45:00Z',
-        category: 'Product Sales'
-      },
-      {
-        id: '5',
-        type: 'expense',
-        description: 'Monthly Rent Payment',
-        amount: 1200.00,
-        date: '2023-07-15T08:00:00Z',
-        category: 'Rent'
-      }
-    ],
-    upcomingPayments: [
-      {
-        id: '1',
-        description: 'Monthly Software License',
-        amount: 99.99,
-        dueDate: '2023-07-25T00:00:00Z',
-        type: 'expense'
-      },
-      {
-        id: '2',
-        description: 'Quarterly Consulting Payment',
-        amount: 2500.00,
-        dueDate: '2023-07-28T00:00:00Z',
-        type: 'income'
-      },
-      {
-        id: '3',
-        description: 'Insurance Premium',
-        amount: 450.00,
-        dueDate: '2023-08-01T00:00:00Z',
-        type: 'expense'
-      }
-    ],
-    lowStockProducts: [
-      {
-        id: '1',
-        name: 'Wireless Bluetooth Headphones',
-        currentStock: 3,
-        threshold: 10
-      },
-      {
-        id: '2',
-        name: 'USB-C Charging Cable',
-        currentStock: 5,
-        threshold: 15
-      },
-      {
-        id: '3',
-        name: 'Phone Case - iPhone 14',
-        currentStock: 2,
-        threshold: 8
-      }
-    ]
-  };
+  const response = await fetch(`/api/finance/dashboard?dateRange=${dateRange}`, {
+    credentials: 'include',
+  });
+  
+  if (!response.ok) {
+    throw new Error('Failed to fetch dashboard data');
+  }
+  
+  const result = await response.json();
+  if (!result.success) {
+    throw new Error(result.error?.message || 'Failed to fetch dashboard data');
+  }
+  
+  return result.data;
 };
 
 const FinanceDashboard: React.FC = () => {

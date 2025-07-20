@@ -9,11 +9,19 @@ import { IconArrowUpLeft } from "@tabler/icons-react";
 import DashboardCard from "../../shared/DashboardCard";
 import SkeletonMonthlyEarningsCard from "../skeleton/MonthlyEarningsCard";
 
-interface monthlyearningsCardProps {
-  isLoading ?: boolean;
+interface SalesData {
+  date: string;
+  revenue: number;
+  orders: number;
 }
 
-const MonthlyEarnings = ({ isLoading }: monthlyearningsCardProps) => {
+interface monthlyearningsCardProps {
+  isLoading?: boolean;
+  monthlyRevenue?: number;
+  salesData?: SalesData[];
+}
+
+const MonthlyEarnings = ({ isLoading, monthlyRevenue = 0, salesData = [] }: monthlyearningsCardProps) => {
   // chart color
   const theme = useTheme();
   const primary = theme.palette.primary.main;

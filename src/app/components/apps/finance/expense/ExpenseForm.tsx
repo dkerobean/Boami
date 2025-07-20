@@ -20,6 +20,7 @@ import {
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
+import { useToast } from '@/app/components/shared/ToastContext';
 
 interface Expense {
   _id: string;
@@ -77,6 +78,8 @@ interface FormErrors {
 }
 
 const ExpenseForm: React.FC<ExpenseFormProps> = ({ expense, onSuccess, onCancel }) => {
+  const { showToast } = useToast();
+  
   const [formData, setFormData] = useState<FormData>({
     amount: expense?.amount.toString() || '',
     description: expense?.description || '',
@@ -230,6 +233,11 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ expense, onSuccess, onCancel 
         return;
       }
 
+      showToast({
+        message: expense ? 'Expense updated successfully!' : 'Expense created successfully!',
+        severity: 'success'
+      });
+      
       onSuccess();
     } catch (err) {
       setErrors({

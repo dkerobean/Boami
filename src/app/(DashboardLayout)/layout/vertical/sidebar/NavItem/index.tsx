@@ -14,6 +14,7 @@ import { styled, useTheme } from '@mui/material/styles';
 import { useSelector } from "@/store/hooks";
 import { useTranslation } from "react-i18next";
 import { AppState } from "@/store/store";
+import { NavigationWrapper } from "@/app/components/shared/navigation/NavigationWrapper";
 
 type NavGroup = {
   [x: string]: any;
@@ -98,11 +99,14 @@ export default function NavItem({
 
   return (
     <List component="li" disablePadding key={item?.id && item.title}>
-      <Link href={item.href}>
+      <NavigationWrapper
+        href={item.href}
+        onClick={lgDown ? onClick : undefined}
+      >
         <ListItemStyled
           disabled={item?.disabled}
           selected={pathDirect === item?.href}
-          onClick={lgDown ? onClick : undefined}
+          component="div"
         >
           <ListItemIcon
             sx={{
@@ -137,7 +141,7 @@ export default function NavItem({
             />
           )}
         </ListItemStyled>
-      </Link>
+      </NavigationWrapper>
     </List>
   );
 }

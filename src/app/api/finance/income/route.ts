@@ -72,7 +72,7 @@ export async function GET(request: NextRequest) {
     // Enrich income data with category information
     const enrichedIncomes = incomes.map(income => ({
       ...income,
-      category: categoryMap[income.categoryId] || null
+      categoryId: categoryMap[income.categoryId] || { _id: income.categoryId, name: 'Unknown Category', isDefault: false }
     }));
 
     // Calculate totals

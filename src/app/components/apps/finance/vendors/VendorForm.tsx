@@ -11,6 +11,7 @@ import {
   Typography,
   Divider
 } from '@mui/material';
+import { useToast } from '@/app/components/shared/ToastContext';
 
 interface Vendor {
   _id: string;
@@ -51,6 +52,8 @@ interface FormErrors {
 }
 
 const VendorForm: React.FC<VendorFormProps> = ({ vendor, onSuccess, onCancel }) => {
+  const { showToast } = useToast();
+  
   const [formData, setFormData] = useState<FormData>({
     name: vendor?.name || '',
     email: vendor?.email || '',
@@ -168,6 +171,7 @@ const VendorForm: React.FC<VendorFormProps> = ({ vendor, onSuccess, onCancel }) 
         headers: {
           'Content-Type': 'application/json',
         },
+        credentials: 'include',
         body: JSON.stringify(submitData),
       });
 
@@ -186,11 +190,21 @@ const VendorForm: React.FC<VendorFormProps> = ({ vendor, onSuccess, onCancel }) 
         }
         return;
       }
+      
+      showToast({
+        message: vendor ? 'Vendor updated successfully!' : 'Vendor created successfully!',
+        severity: 'success'
+      });
 
       onSuccess();
     } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'An unexpected error occurred';
       setErrors({
-        general: err instanceof Error ? err.message : 'An unexpected error occurred'
+        general: errorMessage
+      });
+      showToast({
+        message: errorMessage,
+        severity: 'error'
       });
     } finally {
       setLoading(false);

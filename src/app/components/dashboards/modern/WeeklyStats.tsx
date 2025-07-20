@@ -6,11 +6,18 @@ import DashboardCard from '../../shared/DashboardCard';
 import { IconGridDots } from '@tabler/icons-react';
 import SkeletonWeeklyStatsCard from "../skeleton/WeeklyStats";
 
-interface WeeklyCardProps {
-  isLoading ?: boolean;
+interface SalesData {
+  date: string;
+  revenue: number;
+  orders: number;
 }
 
-const WeeklyStats = ({ isLoading }: WeeklyCardProps) => {
+interface WeeklyCardProps {
+  isLoading?: boolean;
+  salesData?: SalesData[];
+}
+
+const WeeklyStats = ({ isLoading, salesData = [] }: WeeklyCardProps) => {
   // chart color
   const theme = useTheme();
   const primary = theme.palette.primary.main;

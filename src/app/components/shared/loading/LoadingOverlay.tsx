@@ -7,6 +7,7 @@ import LoadingAnimation from './LoadingAnimation';
 import { LoadingOverlayProps } from './types';
 import { LOADING_Z_INDEX, LOADING_OVERLAY_ID, LOADING_ANIMATION_DURATION } from './constants';
 import { prefersReducedMotion, logLoadingEvent } from './utils';
+import { usePathname } from 'next/navigation';
 
 /**
  * LoadingOverlay component that displays a full-screen overlay during page transitions
@@ -18,8 +19,12 @@ export const LoadingOverlay: React.FC<LoadingOverlayProps> = React.memo(({
   onAnimationComplete,
 }) => {
   const theme = useTheme();
+  const pathname = usePathname();
   const [shouldRender, setShouldRender] = useState(isVisible);
   const reducedMotion = prefersReducedMotion();
+
+  // Check if we're in dashboard routes
+  const isDashboardRoute = pathname.includes('/apps/') || pathname.includes('/dashboard') || pathname.startsWith('/(DashboardLayout)');
 
   // Handle visibility changes with proper timing
   useEffect(() => {
@@ -130,6 +135,47 @@ export const LoadingOverlay: React.FC<LoadingOverlayProps> = React.memo(({
   // Don't render if not needed
   if (!shouldRender) {
     return null;
+  }
+
+  // For dashboard routes with linear animation, render full-width loading bar
+  if (isDashboardRoute && config.animationType === 'linear') {
+    return (
+      <AnimatePresence
+        mode="wait"
+        onExitComplete={() => {
+          onAnimationComplete?.();
+          logLoadingEvent('Dashboard overlay animation completed');
+        }}
+      >
+        {isVisible && (
+          <motion.div
+            key="dashboard-loading-overlay"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{
+              duration: reducedMotion ? 0 : (config.fadeInDuration || LOADING_ANIMATION_DURATION.FADE_IN) / 1000,
+              ease: 'easeInOut',
+            }}
+            style={{
+              position: 'fixed',
+              top: 0,
+              left: 0,
+              right: 0,
+              zIndex: LOADING_Z_INDEX,
+              pointerEvents: 'none',
+            }}
+          >
+            <LoadingAnimation
+              type="linear"
+              size="medium"
+              color={config.color || 'primary'}
+              fullWidth={true}
+            />
+          </motion.div>
+        )}
+      </AnimatePresence>
+    );
   }
 
   return (

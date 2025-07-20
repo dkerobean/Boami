@@ -13,7 +13,21 @@ import {
 } from '@mui/lab';
 import { Link, Typography } from '@mui/material';
 
-const RecentTransactions = () => {
+interface RecentTransaction {
+  _id: string;
+  customerName: string;
+  customerEmail: string;
+  amount: number;
+  status: 'completed' | 'pending' | 'failed';
+  date: Date;
+  products: string[];
+}
+
+interface RecentTransactionsProps {
+  transactions?: RecentTransaction[];
+}
+
+const RecentTransactions = ({ transactions = [] }: RecentTransactionsProps) => {
   return (
     <DashboardCard title="Recent Transactions">
       <>

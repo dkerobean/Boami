@@ -3,6 +3,7 @@ import { Box, Button, Grid, Stack, Alert } from "@mui/material";
 import { useState, useRef } from "react";
 import { Formik, Form } from "formik";
 import * as yup from "yup";
+import { useRouter } from "next/navigation";
 import Breadcrumb from "@/app/(DashboardLayout)/layout/shared/breadcrumb/Breadcrumb";
 import PageContainer from "@/app/components/container/PageContainer";
 import { isBlobUrl, isValidImageUrl } from "@/lib/utils/image-utils";
@@ -102,6 +103,7 @@ const initialValues = {
 };
 
 const EcommerceAddProduct = () => {
+  const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [submitStatus, setSubmitStatus] = useState<{
     type: "success" | "error" | null;
@@ -235,9 +237,14 @@ const EcommerceAddProduct = () => {
       const result = await response.json();
       setSubmitStatus({
         type: "success",
-        message: "Product created successfully!",
+        message: "Product created successfully! Redirecting to product list...",
       });
       resetForm();
+      
+      // Redirect to product list page after 2 seconds
+      setTimeout(() => {
+        router.push("/apps/ecommerce/list");
+      }, 2000);
     } catch (error) {
       setSubmitStatus({
         type: "error",

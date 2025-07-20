@@ -9,11 +9,19 @@ import SkeletonYearlySalesCard from '../skeleton/YearlySalesCard';
 import { Box } from '@mui/material';
 
 
-interface YearlysalesCardProps {
-  isLoading ?: boolean;
+interface SalesData {
+  date: string;
+  revenue: number;
+  orders: number;
 }
 
-const YearlySales = ({ isLoading }: YearlysalesCardProps) => {
+interface YearlysalesCardProps {
+  isLoading?: boolean;
+  salesData?: SalesData[];
+  totalRevenue?: number;
+}
+
+const YearlySales = ({ isLoading, salesData = [], totalRevenue = 0 }: YearlysalesCardProps) => {
   // chart color
   const theme = useTheme();
   const primary = theme.palette.primary.main;

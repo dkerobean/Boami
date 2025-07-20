@@ -8,11 +8,18 @@ import { IconGridDots } from '@tabler/icons-react';
 import DashboardCard from '../../shared/DashboardCard';
 import SkeletonSalesOverviewCard from '../skeleton/SalesOverviewCard';
 
-interface SalesOverviewCardProps {
-  isLoading ?: boolean;
+interface SalesData {
+  date: string;
+  revenue: number;
+  orders: number;
 }
 
-const SalesOverview = ({ isLoading }: SalesOverviewCardProps) => {
+interface SalesOverviewCardProps {
+  isLoading?: boolean;
+  salesData?: SalesData[];
+}
+
+const SalesOverview = ({ isLoading, salesData = [] }: SalesOverviewCardProps) => {
   // chart color
   const theme = useTheme();
   const primary = theme.palette.primary.main;

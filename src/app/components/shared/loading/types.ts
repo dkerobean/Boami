@@ -84,6 +84,7 @@ export interface LoadingAnimationProps {
   showLogo?: boolean;
   showText?: boolean;
   text?: string;
+  fullWidth?: boolean;
 }
 
 export interface UseLoadingReturn {

@@ -31,7 +31,7 @@ const requiredFiles = [
   'src/__tests__/components/shared/loading/LoadingOverlay.test.tsx',
   'src/__tests__/components/shared/loading/LoadingAnimation.test.tsx',
   'src/__tests__/components/shared/loading/integration.test.tsx',
-  'src/__tes_/components/shared/loading/utils.test.ts',
+  'src/__tests__/components/shared/loading/utils.test.ts',
   'src/__tests__/components/shared/loading/ConfigManager.test.ts',
   'src/__tests__/components/shared/loading/ErrorHandler.test.ts',
   'src/__tests__/hooks/useLoading.test.tsx',

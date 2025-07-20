@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
+import { StockAlertsService } from '@/lib/services/stock-alerts';
 
 // Validation schemas
 const updateStockAlertSchema = z.object({
@@ -10,63 +11,7 @@ const updateStockAlertSchema = z.object({
   isActive: z.boolean().optional(),
 });
 
-// Mock data for development
-const mockStockAlert = {
-  id: '1',
-  productId: 'prod_001',
-  productName: 'Premium Wireless Headphones',
-  sku: 'WH-001',
-  alertType: 'low_stock',
-  priority: 'critical',
-  currentStock: 2,
-  threshold: 10,
-  status: 'active',
-  notificationChannels: ['email', 'dashboard'],
-  isActive: true,
-  createdAt: new Date('2024-01-15T10:30:00Z'),
-  lastUpdated: new Date('2024-01-15T10:30:00Z'),
-  triggeredCount: 3,
-  lastTriggered: new Date('2024-01-15T10:30:00Z'),
-  history: [
-    {
-      id: '1',
-      action: 'created',
-      timestamp: new Date('2024-01-15T10:30:00Z'),
-      user: 'system',
-      details: 'Alert created automatically when stock fell below threshold',
-    },
-    {
-      id: '2',
-      action: 'triggered',
-      timestamp: new Date('2024-01-15T12:15:00Z'),
-      user: 'system',
-      details: 'Stock level: 2 units (below threshold of 10)',
-    },
-    {
-      id: '3',
-      action: 'triggered',
-      timestamp: new Date('2024-01-15T14:30:00Z'),
-      user: 'system',
-      details: 'Stock level: 1 unit (below threshold of 10)',
-    },
-  ],
-  relatedProducts: [
-    {
-      id: 'prod_002',
-      name: 'Wireless Headphones Pro',
-      sku: 'WH-002',
-      currentStock: 5,
-      status: 'low_stock',
-    },
-    {
-      id: 'prod_003',
-      name: 'Wireless Headphones Lite',
-      sku: 'WH-003',
-      currentStock: 15,
-      status: 'in_stock',
-    },
-  ],
-};
+// This file now uses real MongoDB data through StockAlertsService
 
 /**
  * GET /api/stock-alerts/[id]
@@ -86,13 +31,10 @@ export async function GET(
       }, { status: 400 });
     }
     
-    // In a real implementation, you would:
-    // 1. Fetch alert from database
-    // 2. Include related product information
-    // 3. Include alert history
-    // 4. Include related alerts for same product
+    // Get alert from database using StockAlertsService
+    const alert = await StockAlertsService.getStockAlertById(id);
     
-    if (id !== '1') {
+    if (!alert) {
       return NextResponse.json({
         success: false,
         error: 'Stock alert not found',
@@ -101,7 +43,7 @@ export async function GET(
     
     return NextResponse.json({
       success: true,
-      data: mockStockAlert,
+      data: alert,
     });
     
   } catch (error) {
@@ -135,18 +77,21 @@ export async function PUT(
     const body = await request.json();
     const validatedData = updateStockAlertSchema.parse(body);
     
-    // In a real implementation, you would:
-    // 1. Validate alert exists
-    // 2. Update alert in database
-    // 3. Log the change
-    // 4. Send notifications if needed
-    // 5. Update monitoring job if threshold changed
+    // Update alert using StockAlertsService
+    const success = await StockAlertsService.updateAlertStatus(
+      [id],
+      validatedData.status || 'acknowledged'
+    );
     
-    const updatedAlert = {
-      ...mockStockAlert,
-      ...validatedData,
-      lastUpdated: new Date(),
-    };
+    if (!success) {
+      return NextResponse.json({
+        success: false,
+        error: 'Failed to update alert or alert not found',
+      }, { status: 404 });
+    }
+    
+    // Get updated alert
+    const updatedAlert = await StockAlertsService.getStockAlertById(id);
     
     return NextResponse.json({
       success: true,

@@ -26,18 +26,17 @@ import {
 } from '@mui/material';
 import {
   IconSearch,
-  IconEye,
-  IconCheck,
-  IconX,
   IconAlertCircle,
   IconPackage,
   IconTruck,
   IconTrendingUp,
+  IconPlus,
 } from '@tabler/icons-react';
 import { formatDistanceToNow } from 'date-fns';
 
 interface StockAlert {
-  id: string;
+  id?: string;
+  _id?: string;
   productName: string;
   sku: string;
   alertType: 'low_stock' | 'out_of_stock' | 'overstock' | 'high_demand';
@@ -54,6 +53,9 @@ interface StockAlertsTableProps {
   loading: boolean;
   selectedAlerts: string[];
   onSelectionChange: (selected: string[]) => void;
+  onRefresh?: () => void;
+  onRestock?: (alertId: string, quantity: number, reason: string) => Promise<boolean>;
+  onOpenRestockModal?: (alert: StockAlert) => void;
 }
 
 const StockAlertsTable: React.FC<StockAlertsTableProps> = ({
@@ -61,6 +63,9 @@ const StockAlertsTable: React.FC<StockAlertsTableProps> = ({
   loading,
   selectedAlerts,
   onSelectionChange,
+  onRefresh,
+  onRestock,
+  onOpenRestockModal,
 }) => {
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
@@ -68,6 +73,16 @@ const StockAlertsTable: React.FC<StockAlertsTableProps> = ({
   const [priorityFilter, setPriorityFilter] = useState<string>('all');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [alertTypeFilter, setAlertTypeFilter] = useState<string>('all');
+
+  // Helper function to safely get alert ID
+  const getAlertId = (alert: StockAlert): string => {
+    const alertId = alert.id || alert._id;
+    if (!alertId) {
+      console.error('Alert missing ID:', alert);
+      return '';
+    }
+    return alertId;
+  };
 
   const getAlertTypeIcon = (type: string) => {
     switch (type) {
@@ -144,7 +159,7 @@ const StockAlertsTable: React.FC<StockAlertsTableProps> = ({
 
   const handleSelectAll = (event: React.ChangeEvent<HTMLInputElement>) => {
     if (event.target.checked) {
-      onSelectionChange(paginatedAlerts.map(alert => alert.id));
+      onSelectionChange(paginatedAlerts.map(alert => getAlertId(alert)).filter(Boolean));
     } else {
       onSelectionChange([]);
     }
@@ -167,8 +182,21 @@ const StockAlertsTable: React.FC<StockAlertsTableProps> = ({
     setPage(0);
   };
 
-  const handleAction = (alertId: string, action: 'acknowledge' | 'resolve' | 'view') => {
-    console.log(`Action: ${action} on alert: ${alertId}`);
+
+  const handleQuickRestock = (alert: StockAlert) => {
+    const alertId = getAlertId(alert);
+    if (!alertId) {
+      console.error('Cannot restock: Alert ID is missing');
+      return;
+    }
+
+    // Open the QuickRestockModal if available, otherwise fallback to direct API call
+    if (onOpenRestockModal) {
+      onOpenRestockModal(alert);
+    } else if (onRestock) {
+      const suggestedQuantity = Math.max(1, alert.threshold - alert.currentStock + 5);
+      onRestock(alertId, suggestedQuantity, 'Quick restock from alert');
+    }
   };
 
   if (loading) {
@@ -279,12 +307,14 @@ const StockAlertsTable: React.FC<StockAlertsTableProps> = ({
                 </TableCell>
               </TableRow>
             ) : (
-              paginatedAlerts.map((alert) => (
-                <TableRow key={alert.id} hover>
+              paginatedAlerts.map((alert) => {
+                const alertId = getAlertId(alert);
+                return (
+                <TableRow key={alertId} hover>
                   <TableCell padding="checkbox">
                     <Checkbox
-                      checked={selectedAlerts.includes(alert.id)}
-                      onChange={() => handleSelectAlert(alert.id)}
+                      checked={selectedAlerts.includes(alertId)}
+                      onChange={() => handleSelectAlert(alertId)}
                     />
                   </TableCell>
                   <TableCell>
@@ -336,29 +366,23 @@ const StockAlertsTable: React.FC<StockAlertsTableProps> = ({
                   </TableCell>
                   <TableCell>
                     <Box display="flex" gap={1}>
-                      <Tooltip title="View Details">
-                        <IconButton size="small" onClick={() => handleAction(alert.id, 'view')}>
-                          <IconEye size={18} />
-                        </IconButton>
-                      </Tooltip>
-                      {alert.status === 'active' && (
-                        <Tooltip title="Acknowledge">
-                          <IconButton size="small" onClick={() => handleAction(alert.id, 'acknowledge')}>
-                            <IconCheck size={18} />
-                          </IconButton>
-                        </Tooltip>
-                      )}
-                      {alert.status !== 'resolved' && (
-                        <Tooltip title="Resolve">
-                          <IconButton size="small" onClick={() => handleAction(alert.id, 'resolve')}>
-                            <IconX size={18} />
+                      {/* Quick Restock Button - Show for low stock, out of stock, or critical priority */}
+                      {(alert.alertType === 'low_stock' || alert.alertType === 'out_of_stock' || alert.priority === 'critical') && (
+                        <Tooltip title="Quick Restock">
+                          <IconButton 
+                            size="small" 
+                            color="primary"
+                            onClick={() => handleQuickRestock(alert)}
+                          >
+                            <IconPlus size={18} />
                           </IconButton>
                         </Tooltip>
                       )}
                     </Box>
                   </TableCell>
                 </TableRow>
-              ))
+                );
+              })
             )}
           </TableBody>
         </Table>
@@ -374,6 +398,7 @@ const StockAlertsTable: React.FC<StockAlertsTableProps> = ({
         onPageChange={handleChangePage}
         onRowsPerPageChange={handleChangeRowsPerPage}
       />
+
     </Paper>
   );
 };

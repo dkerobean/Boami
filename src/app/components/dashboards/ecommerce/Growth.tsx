@@ -10,10 +10,12 @@ import SkeletonGrowthCard from '../skeleton/GrowthCard';
 
 
 interface GrowthCardProps {
-  isLoading ?: boolean;
+  isLoading?: boolean;
+  totalCustomers?: number;
+  growth?: number;
 }
 
-const Growth = ({ isLoading }: GrowthCardProps) => {
+const Growth = ({ isLoading, totalCustomers = 0, growth = 0 }: GrowthCardProps) => {
   // chart color
   const theme = useTheme();
   const secondary = theme.palette.secondary.main;

@@ -53,7 +53,7 @@ const AuthLogin = ({ title, subtitle, subtext }: loginType) => {
   const handleSubmit = async (values: LoginFormValues) => {
     setIsLoading(true);
     setVerificationRequired(null);
-    
+
     try {
       const response = await fetch('/api/auth/login', {
         method: 'POST',
@@ -67,9 +67,9 @@ const AuthLogin = ({ title, subtitle, subtext }: loginType) => {
 
       if (data.success) {
         toast.success('Login successful! Welcome back!');
-        
+
         setTimeout(() => {
-          router.push('/dashboards/modern');
+          router.push('/dashboards/ecommerce');
         }, 1500);
       } else if (data.requiresVerification) {
         setVerificationRequired(data.email);
@@ -93,17 +93,17 @@ const AuthLogin = ({ title, subtitle, subtext }: loginType) => {
 
   return (
     <>
-      <Toaster 
-        position="top-right" 
+      <Toaster
+        position="top-right"
         toastOptions={{
           duration: 4000,
           style: {
             background: '#333',
             color: '#fff',
           },
-        }} 
+        }}
       />
-      
+
       {title ? (
         <Typography fontWeight="700" variant="h3" mb={1}>
           {title}
@@ -129,13 +129,13 @@ const AuthLogin = ({ title, subtitle, subtext }: loginType) => {
       </Box>
 
       {verificationRequired && (
-        <Alert 
-          severity="warning" 
+        <Alert
+          severity="warning"
           sx={{ mb: 3 }}
           action={
-            <Button 
-              color="inherit" 
-              size="small" 
+            <Button
+              color="inherit"
+              size="small"
               onClick={handleGoToVerification}
             >
               Verify Now
@@ -160,12 +160,12 @@ const AuthLogin = ({ title, subtitle, subtext }: loginType) => {
             <Stack mb={3}>
               <Box>
                 <CustomFormLabel htmlFor="email">Email Address</CustomFormLabel>
-                <CustomTextField 
+                <CustomTextField
                   id="email"
                   name="email"
                   type="email"
-                  variant="outlined" 
-                  fullWidth 
+                  variant="outlined"
+                  fullWidth
                   value={values.email}
                   onChange={handleChange}
                   onBlur={handleBlur}
@@ -199,7 +199,7 @@ const AuthLogin = ({ title, subtitle, subtext }: loginType) => {
                 <FormGroup>
                   <FormControlLabel
                     control={
-                      <CustomCheckbox 
+                      <CustomCheckbox
                         checked={values.rememberMe}
                         onChange={(e) => setFieldValue('rememberMe', e.target.checked)}
                         disabled={isLoading}
@@ -245,7 +245,7 @@ const AuthLogin = ({ title, subtitle, subtext }: loginType) => {
           </Form>
         )}
       </Formik>
-      
+
       {subtitle}
     </>
   );

@@ -41,9 +41,10 @@ const CircularAnimation: React.FC<Pick<LoadingAnimationProps, 'size' | 'color'>>
 /**
  * Linear loading animation using Material-UI LinearProgress
  */
-const LinearAnimation: React.FC<Pick<LoadingAnimationProps, 'size' | 'color'>> = ({
+const LinearAnimation: React.FC<Pick<LoadingAnimationProps, 'size' | 'color' | 'fullWidth'>> = ({
   size = 'medium',
-  color = 'primary'
+  color = 'primary',
+  fullWidth = false
 }) => {
   const widthMap = {
     small: 120,
@@ -52,13 +53,22 @@ const LinearAnimation: React.FC<Pick<LoadingAnimationProps, 'size' | 'color'>> =
   };
 
   return (
-    <Box sx={{ width: widthMap[size] }}>
+    <Box sx={{
+      width: fullWidth ? '100vw' : widthMap[size],
+      position: fullWidth ? 'fixed' : 'relative',
+      top: fullWidth ? 0 : 'auto',
+      left: fullWidth ? 0 : 'auto',
+      zIndex: fullWidth ? 9999 : 'auto'
+    }}>
       <LinearProgress
         color={color}
         sx={{
-          height: size === 'small' ? 3 : size === 'medium' ? 4 : 6,
-          borderRadius: 2,
+          height: fullWidth ? 4 : (size === 'small' ? 3 : size === 'medium' ? 4 : 6),
+          borderRadius: fullWidth ? 0 : 2,
           animationDuration: '2s',
+          '& .MuiLinearProgress-bar': {
+            transition: 'transform 0.4s ease-in-out',
+          }
         }}
       />
     </Box>
@@ -202,6 +212,7 @@ export const LoadingAnimation: React.FC<LoadingAnimationProps> = React.memo(({
   showLogo = false,
   showText = false,
   text = 'Loading...',
+  fullWidth = false,
 }) => {
   const theme = useTheme();
 
@@ -210,7 +221,7 @@ export const LoadingAnimation: React.FC<LoadingAnimationProps> = React.memo(({
       case 'circular':
         return <CircularAnimation size={size} color={color} />;
       case 'linear':
-        return <LinearAnimation size={size} color={color} />;
+        return <LinearAnimation size={size} color={color} fullWidth={fullWidth} />;
       case 'dots':
         return <DotsAnimation size={size} color={color} />;
       case 'pulse':
@@ -219,6 +230,11 @@ export const LoadingAnimation: React.FC<LoadingAnimationProps> = React.memo(({
         return <CircularAnimation size={size} color={color} />;
     }
   };
+
+  // For full-width linear animations, render differently
+  if (type === 'linear' && fullWidth) {
+    return renderAnimation();
+  }
 
   return (
     <Box

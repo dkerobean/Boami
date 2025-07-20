@@ -16,6 +16,7 @@ import {
   MenuItem,
   FormHelperText
 } from '@mui/material';
+import { useToast } from '@/app/components/shared/ToastContext';
 
 interface Category {
   _id: string;
@@ -46,6 +47,8 @@ interface FormErrors {
 }
 
 const CategoryForm: React.FC<CategoryFormProps> = ({ category, type, onSuccess, onCancel }) => {
+  const { showToast } = useToast();
+  
   const [formData, setFormData] = useState<FormData>({
     name: category?.name || '',
     description: category?.description || '',
@@ -118,6 +121,7 @@ const CategoryForm: React.FC<CategoryFormProps> = ({ category, type, onSuccess, 
         headers: {
           'Content-Type': 'application/json',
         },
+        credentials: 'include',
         body: JSON.stringify(submitData),
       });
 
@@ -136,11 +140,21 @@ const CategoryForm: React.FC<CategoryFormProps> = ({ category, type, onSuccess, 
         }
         return;
       }
+      
+      showToast({
+        message: category ? 'Category updated successfully!' : 'Category created successfully!',
+        severity: 'success'
+      });
 
       onSuccess();
     } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'An unexpected error occurred';
       setErrors({
-        general: err instanceof Error ? err.message : 'An unexpected error occurred'
+        general: errorMessage
+      });
+      showToast({
+        message: errorMessage,
+        severity: 'error'
       });
     } finally {
       setLoading(false);

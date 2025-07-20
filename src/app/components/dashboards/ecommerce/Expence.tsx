@@ -9,10 +9,12 @@ import DashboardCard from "../../shared/DashboardCard";
 import SkeletonExpenceCard from "../skeleton/ExpanceCard";
 
 interface ExpanceCardProps {
-  isLoading ?: boolean;
+  isLoading?: boolean;
+  totalExpenses?: number;
+  growth?: number;
 }
 
-const Expence = ({ isLoading }: ExpanceCardProps) => {
+const Expence = ({ isLoading, totalExpenses = 0, growth = 0 }: ExpanceCardProps) => {
   // chart color
   const theme = useTheme();
   const primary = theme.palette.primary.main;

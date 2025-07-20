@@ -10,6 +10,7 @@ import Navigation from "./layout/horizontal/navbar/Navigation";
 import HorizontalHeader from "./layout/horizontal/header/Header";
 import { useSelector } from "@/store/hooks";
 import { AppState } from "@/store/store";
+import { useDashboardLoading } from "@/hooks/useDashboardLoading";
 
 const MainWrapper = styled("div")(() => ({
   display: "flex",
@@ -40,6 +41,9 @@ export default function RootLayout({
   const [isMobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const customizer = useSelector((state: AppState) => state.customizer);
   const theme = useTheme();
+
+  // Initialize dashboard loading for sub-menu navigation
+  useDashboardLoading();
 
   return (
     <MainWrapper className={customizer.activeMode === 'dark' ? 'darkbg mainwrapper' : 'mainwrapper'}>

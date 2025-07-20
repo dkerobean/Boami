@@ -110,6 +110,11 @@ const LoadingManager: React.FC = () => {
         to: currentPathname
       });
 
+      // Check if this is dashboard navigation
+      const isDashboardNavigation =
+        (currentPathname.includes('/apps/') || currentPathname.includes('/dashboard')) &&
+        (previousPathname.includes('/apps/') || previousPathname.includes('/dashboard'));
+
       // Start loading for new navigation
       if (!isLoading && !isNavigatingRef.current) {
         debouncedStartLoading();
@@ -118,12 +123,13 @@ const LoadingManager: React.FC = () => {
       // Update previous pathname
       previousPathnameRef.current = currentPathname;
 
-      // Stop loading after a short delay to allow page to render
+      // Stop loading after a shorter delay for dashboard navigation
+      const delay = isDashboardNavigation ? 150 : 300;
       setTimeout(() => {
         if (isNavigatingRef.current) {
           debouncedStopLoading();
         }
-      }, 100);
+      }, delay);
     }
   }, [pathname, isLoading, debouncedStartLoading, debouncedStopLoading]);
 

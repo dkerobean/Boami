@@ -42,6 +42,7 @@ import {
 
 import DashboardCard from '@/app/components/shared/DashboardCard';
 import CategoryForm from './CategoryForm';
+import { useToast } from '@/app/components/shared/ToastContext';
 
 // Define category data type
 interface CategoryData {
@@ -54,95 +55,48 @@ interface CategoryData {
   createdAt: string;
 }
 
-// Mock API functions - replace with actual API calls
+// Real API function to fetch categories from MongoDB
 const fetchCategories = async (type: 'income' | 'expense') => {
-  // This would be replaced with an actual API call
-  const mockData = {
-    income: [
-      {
-        _id: '1',
-        name: 'Product Sales',
-        description: 'Revenue from product sales',
-        isDefault: true,
-        type: 'income' as const,
-        usageCount: 15,
-        createdAt: '2023-01-01T00:00:00.000Z'
-      },
-      {
-        _id: '2',
-        name: 'Service Fees',
-        description: 'Income from services provided',
-        isDefault: true,
-        type: 'income' as const,
-        usageCount: 8,
-        createdAt: '2023-01-01T00:00:00.000Z'
-      },
-      {
-        _id: '3',
-        name: 'Consulting',
-        description: 'Consulting and advisory services',
-        isDefault: false,
-        type: 'income' as const,
-        usageCount: 3,
-        createdAt: '2023-06-15T00:00:00.000Z'
-      },
-    ],
-    expense: [
-      {
-        _id: '4',
-        name: 'Office Supplies',
-        description: 'Office equipment and supplies',
-        isDefault: true,
-        type: 'expense' as const,
-        usageCount: 12,
-        createdAt: '2023-01-01T00:00:00.000Z'
-      },
-      {
-        _id: '5',
-        name: 'Travel',
-        description: 'Business travel expenses',
-        isDefault: true,
-        type: 'expense' as const,
-        usageCount: 6,
-        createdAt: '2023-01-01T00:00:00.000Z'
-      },
-      {
-        _id: '6',
-        name: 'Marketing',
-        description: 'Marketing and advertising costs',
-        isDefault: false,
-        type: 'expense' as const,
-        usageCount: 4,
-        createdAt: '2023-05-20T00:00:00.000Z'
-      },
-      {
-        _id: '7',
-        name: 'Rent',
-        description: 'Office rent and utilities',
-        isDefault: true,
-        type: 'expense' as const,
-        usageCount: 12,
-        createdAt: '2023-01-01T00:00:00.000Z'
-      },
-    ]
-  };
-
+  const response = await fetch(`/api/finance/categories/${type}`, {
+    credentials: 'include',
+  });
+  
+  if (!response.ok) {
+    throw new Error('Failed to fetch categories');
+  }
+  
+  const result = await response.json();
+  if (!result.success) {
+    throw new Error(result.error?.message || 'Failed to fetch categories');
+  }
+  
   return {
-    categories: mockData[type],
-    summary: {
-      total: mockData[type].length,
-      default: mockData[type].filter(c => c.isDefault).length,
-      custom: mockData[type].filter(c => !c.isDefault).length
-    }
+    categories: result.data?.categories || [],
+    summary: result.data?.summary || { total: 0, default: 0, custom: 0 }
   };
 };
 
 const deleteCategory = async (id: string, type: 'income' | 'expense') => {
-  console.log(`Deleting ${type} category with ID: ${id}`);
+  const response = await fetch(`/api/finance/categories/${type}/${id}`, {
+    method: 'DELETE',
+    credentials: 'include',
+  });
+  
+  if (!response.ok) {
+    throw new Error('Failed to delete category');
+  }
+  
+  const result = await response.json();
+  if (!result.success) {
+    throw new Error(result.error?.message || 'Failed to delete category');
+  }
+  
   return { success: true };
 };
 
 const CategoryManagement = () => {
+  const { showToast } = useToast();
+  
   // State for active tab
   const [activeTab, setActiveTab] = useState<'income' | 'expense'>('income');
 
@@ -269,11 +223,21 @@ const CategoryManagement = () => {
               : prev[categoryToDelete.type].custom
           }
         }));
+        
+        showToast({
+          message: 'Category deleted successfully!',
+          severity: 'success'
+        });
       } else {
         setError('Failed to delete category. Please try again.');
       }
     } catch (err) {
-      setError('An error occurred while deleting the category.');
+      const errorMessage = err instanceof Error ? err.message : 'An error occurred while deleting the category.';
+      setError(errorMessage);
+      showToast({
+        message: errorMessage,
+        severity: 'error'
+      });
       console.error('Error deleting category:', err);
     }
   };

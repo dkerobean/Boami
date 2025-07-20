@@ -10,10 +10,28 @@ import {
   Divider,
   Stack,
 } from "@mui/material";
-import { IconArrowUpRight } from "@tabler/icons-react";
+import { IconArrowUpRight, IconArrowDownRight } from "@tabler/icons-react";
 import Image from "next/image";
+import { DashboardStats } from "@/lib/services/ecommerce-dashboard";
 
-const WelcomeCard = () => {
+interface WelcomeCardProps {
+  stats?: DashboardStats | null;
+}
+
+const WelcomeCard: React.FC<WelcomeCardProps> = ({ stats }) => {
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    }).format(amount);
+  };
+
+  const formatPercentage = (percentage: number) => {
+    return `${percentage >= 0 ? '+' : ''}${percentage.toFixed(1)}%`;
+  };
+
   return (
     <Card
       elevation={0}
@@ -44,7 +62,7 @@ const WelcomeCard = () => {
                   sx={{ width: 40, height: 40 }}
                 />
                 <Typography variant="h5" whiteSpace="nowrap">
-                  Welcome back Mathew Anderson!
+                  Welcome to your eCommerce Dashboard!
                 </Typography>
               </Box>
 
@@ -55,24 +73,32 @@ const WelcomeCard = () => {
               >
                 <Box>
                   <Typography variant="h2" whiteSpace="nowrap">
-                    $2,340{" "}
+                    {formatCurrency(stats?.totalRevenue || 0)}{" "}
                     <span>
-                      <IconArrowUpRight width={18} color="#39B69A" />
+                      {(stats?.revenueGrowth || 0) >= 0 ? (
+                        <IconArrowUpRight width={18} color="#39B69A" />
+                      ) : (
+                        <IconArrowDownRight width={18} color="#FA896B" />
+                      )}
                     </span>
                   </Typography>
                   <Typography variant="subtitle1" whiteSpace="nowrap">
-                    Today’s Sales
+                    Total Revenue
                   </Typography>
                 </Box>
                 <Box>
                   <Typography variant="h2" whiteSpace="nowrap">
-                    35%
+                    {formatPercentage(stats?.revenueGrowth || 0)}
                     <span>
-                      <IconArrowUpRight width={18} color="#39B69A" />
+                      {(stats?.revenueGrowth || 0) >= 0 ? (
+                        <IconArrowUpRight width={18} color="#39B69A" />
+                      ) : (
+                        <IconArrowDownRight width={18} color="#FA896B" />
+                      )}
                     </span>
                   </Typography>
                   <Typography variant="subtitle1" whiteSpace="nowrap">
-                    Performance
+                    Growth Rate
                   </Typography>
                 </Box>
               </Stack>

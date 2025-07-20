@@ -4,8 +4,17 @@ import { useTheme } from '@mui/material/styles';
 import { Stack, Typography, Avatar, Box, Button } from '@mui/material';
 import DashboardCard from '../../shared/DashboardCard';
 
+interface PaymentGatewayStats {
+  gateway: string;
+  amount: number;
+  percentage: number;
+}
 
-const PaymentGateways = () => {
+interface PaymentGatewaysProps {
+  paymentStats?: PaymentGatewayStats[];
+}
+
+const PaymentGateways = ({ paymentStats = [] }: PaymentGatewaysProps) => {
   // chart color
   const theme = useTheme();
   const primary = theme.palette.primary.main;

@@ -7,6 +7,7 @@ import PageContainer from '@/app/components/container/PageContainer';
 import Breadcrumb from '@/app/(DashboardLayout)/layout/shared/breadcrumb/Breadcrumb';
 import BlankCard from '@/app/components/shared/BlankCard';
 import StockAlertsTable from '@/app/components/apps/ecommerce/stockAlerts/StockAlertsTable';
+import QuickRestockModal from '@/app/components/apps/ecommerce/stockAlerts/QuickRestockModal';
 
 const BCrumb = [
   {
@@ -19,7 +20,8 @@ const BCrumb = [
 ];
 
 interface StockAlert {
-  id: string;
+  id?: string;
+  _id?: string;
   productName: string;
   sku: string;
   alertType: 'low_stock' | 'out_of_stock' | 'overstock' | 'high_demand';
@@ -31,91 +33,156 @@ interface StockAlert {
   lastUpdated: string;
 }
 
-// Mock data for demonstration
-const mockStockAlerts: StockAlert[] = [
-  {
-    id: '1',
-    productName: 'Premium Wireless Headphones',
-    sku: 'WH-001',
-    alertType: 'low_stock',
-    priority: 'critical',
-    currentStock: 2,
-    threshold: 10,
-    status: 'active',
-    createdAt: '2024-01-15T10:30:00Z',
-    lastUpdated: '2024-01-15T10:30:00Z',
-  },
-  {
-    id: '2',
-    productName: 'Bluetooth Speaker',
-    sku: 'SPK-002',
-    alertType: 'out_of_stock',
-    priority: 'critical',
-    currentStock: 0,
-    threshold: 5,
-    status: 'active',
-    createdAt: '2024-01-14T09:15:00Z',
-    lastUpdated: '2024-01-14T09:15:00Z',
-  },
-  {
-    id: '3',
-    productName: 'Smartphone Case',
-    sku: 'SC-003',
-    alertType: 'low_stock',
-    priority: 'high',
-    currentStock: 8,
-    threshold: 15,
-    status: 'acknowledged',
-    createdAt: '2024-01-13T14:20:00Z',
-    lastUpdated: '2024-01-13T16:45:00Z',
-  },
-  {
-    id: '4',
-    productName: 'USB-C Cable',
-    sku: 'UC-004',
-    alertType: 'high_demand',
-    priority: 'medium',
-    currentStock: 25,
-    threshold: 50,
-    status: 'active',
-    createdAt: '2024-01-12T11:00:00Z',
-    lastUpdated: '2024-01-12T11:00:00Z',
-  },
-];
+interface StockAlertStats {
+  total: number;
+  critical: number;
+  high: number;
+  medium: number;
+  low: number;
+  active: number;
+  acknowledged: number;
+  resolved: number;
+}
 
 const StockAlertsPage = () => {
   const [alerts, setAlerts] = useState<StockAlert[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedAlerts, setSelectedAlerts] = useState<string[]>([]);
+  const [statistics, setStatistics] = useState<StockAlertStats>({
+    total: 0, critical: 0, high: 0, medium: 0, low: 0,
+    active: 0, acknowledged: 0, resolved: 0
+  });
+  const [error, setError] = useState<string | null>(null);
+  const [restockModalOpen, setRestockModalOpen] = useState<boolean>(false);
+  const [selectedAlertForRestock, setSelectedAlertForRestock] = useState<StockAlert | null>(null);
+
+  // Helper function to safely get alert ID
+  const getAlertId = (alert: StockAlert): string => {
+    const alertId = alert.id || alert._id;
+    if (!alertId) {
+      console.error('Alert missing ID:', alert);
+      return '';
+    }
+    return alertId;
+  };
+
+  const fetchStockAlerts = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      const response = await fetch('/api/stock-alerts');
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch stock alerts');
+      }
+      
+      const data = await response.json();
+      
+      if (data.success) {
+        setAlerts(data.data || []);
+        setStatistics(data.statistics || {
+          total: 0, critical: 0, high: 0, medium: 0, low: 0,
+          active: 0, acknowledged: 0, resolved: 0
+        });
+      } else {
+        throw new Error(data.error || 'Failed to fetch stock alerts');
+      }
+    } catch (error) {
+      console.error('Error fetching stock alerts:', error);
+      setError(error instanceof Error ? error.message : 'Failed to fetch stock alerts');
+      setAlerts([]);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    // Simulate API call
-    setTimeout(() => {
-      setAlerts(mockStockAlerts);
-      setLoading(false);
-    }, 1000);
+    fetchStockAlerts();
   }, []);
 
   const getAlertStats = () => {
-    const stats = {
-      critical: alerts.filter(a => a.priority === 'critical' && a.status === 'active').length,
-      high: alerts.filter(a => a.priority === 'high' && a.status === 'active').length,
-      medium: alerts.filter(a => a.priority === 'medium' && a.status === 'active').length,
-      low: alerts.filter(a => a.priority === 'low' && a.status === 'active').length,
-      total: alerts.filter(a => a.status === 'active').length,
-    };
-    return stats;
+    return statistics;
   };
 
-  const handleBulkAction = (action: 'acknowledge' | 'resolve' | 'dismiss') => {
-    setAlerts(prevAlerts =>
-      prevAlerts.map(alert =>
-        selectedAlerts.includes(alert.id)
-          ? { ...alert, status: action === 'acknowledge' ? 'acknowledged' : 'resolved' }
-          : alert
-      )
-    );
-    setSelectedAlerts([]);
+  const handleBulkAction = async (action: 'acknowledge' | 'resolve' | 'dismiss') => {
+    if (selectedAlerts.length === 0) return;
+    
+    try {
+      const status = action === 'acknowledge' ? 'acknowledged' : 'resolved';
+      
+      const response = await fetch('/api/stock-alerts', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          alertIds: selectedAlerts,
+          updateData: { status }
+        }),
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to update alerts');
+      }
+      
+      const data = await response.json();
+      
+      if (data.success) {
+        // Refresh alerts after successful update
+        await fetchStockAlerts();
+        setSelectedAlerts([]);
+      } else {
+        throw new Error(data.error || 'Failed to update alerts');
+      }
+    } catch (error) {
+      console.error('Error updating alerts:', error);
+      setError(error instanceof Error ? error.message : 'Failed to update alerts');
+    }
+  };
+
+  const handleRestock = async (alertId: string, quantity: number, reason: string): Promise<boolean> => {
+    try {
+      const response = await fetch(`/api/stock-alerts/${alertId}/restock`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          quantity,
+          reason,
+          resolveAlert: true,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to restock');
+      }
+
+      const data = await response.json();
+
+      if (data.success) {
+        // Refresh alerts after successful restock
+        await fetchStockAlerts();
+        return true;
+      } else {
+        throw new Error(data.error || 'Failed to restock');
+      }
+    } catch (error) {
+      console.error('Error restocking:', error);
+      setError(error instanceof Error ? error.message : 'Failed to restock');
+      return false;
+    }
+  };
+
+  const handleOpenRestockModal = (alert: StockAlert) => {
+    setSelectedAlertForRestock(alert);
+    setRestockModalOpen(true);
+  };
+
+  const handleCloseRestockModal = () => {
+    setRestockModalOpen(false);
+    setSelectedAlertForRestock(null);
   };
 
   const stats = getAlertStats();
@@ -123,6 +190,33 @@ const StockAlertsPage = () => {
   return (
     <PageContainer title="Stock Alerts" description="Monitor and manage inventory stock alerts">
       <Breadcrumb title="Stock Alerts" items={BCrumb} />
+      
+      <>
+        {error && (
+          <Box mb={3}>
+            <Grid container spacing={3}>
+              <Grid item xs={12}>
+                <Card>
+                  <CardContent>
+                    <Box display="flex" alignItems="center" justifyContent="space-between">
+                      <Typography variant="h6" color="error">
+                        Error: {error}
+                      </Typography>
+                      <Button 
+                        variant="outlined" 
+                        color="primary" 
+                        onClick={fetchStockAlerts}
+                      >
+                        Retry
+                      </Button>
+                    </Box>
+                  </CardContent>
+                </Card>
+              </Grid>
+            </Grid>
+          </Box>
+        )}
+      </>
       
       {/* Alert Statistics */}
       <Grid container spacing={3} mb={3}>
@@ -186,7 +280,7 @@ const StockAlertsPage = () => {
               <Box display="flex" alignItems="center" justifyContent="space-between">
                 <Box>
                   <Typography variant="h4" color="success.main">
-                    {stats.total}
+                    {stats.active}
                   </Typography>
                   <Typography variant="subtitle2" color="text.secondary">
                     Total Active
@@ -263,9 +357,20 @@ const StockAlertsPage = () => {
             loading={loading}
             selectedAlerts={selectedAlerts}
             onSelectionChange={setSelectedAlerts}
+            onRefresh={fetchStockAlerts}
+            onRestock={handleRestock}
+            onOpenRestockModal={handleOpenRestockModal}
           />
         </CardContent>
       </BlankCard>
+
+      {/* Quick Restock Modal */}
+      <QuickRestockModal
+        open={restockModalOpen}
+        onClose={handleCloseRestockModal}
+        alert={selectedAlertForRestock}
+        onRestock={handleRestock}
+      />
     </PageContainer>
   );
 };

@@ -19,6 +19,7 @@ import {
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
+import { useToast } from '@/app/components/shared/ToastContext';
 
 interface Income {
   _id: string;
@@ -62,6 +63,8 @@ interface FormErrors {
 }
 
 const IncomeForm: React.FC<IncomeFormProps> = ({ income, onSuccess, onCancel }) => {
+  const { showToast } = useToast();
+  
   const [formData, setFormData] = useState<FormData>({
     amount: income?.amount.toString() || '',
     description: income?.description || '',
@@ -192,6 +195,11 @@ const IncomeForm: React.FC<IncomeFormProps> = ({ income, onSuccess, onCancel }) 
         return;
       }
 
+      showToast({
+        message: income ? 'Income updated successfully!' : 'Income created successfully!',
+        severity: 'success'
+      });
+      
       onSuccess();
     } catch (err) {
       setErrors({

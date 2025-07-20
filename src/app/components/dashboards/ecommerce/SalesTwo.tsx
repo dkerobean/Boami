@@ -11,10 +11,12 @@ import { IconArrowUpRight, IconShoppingCart } from "@tabler/icons-react";
 import SkeletonSalesTwoCard from "../skeleton/SalesTwoCard";
 
 interface SalestwoCardProps {
-  isLoading ?: boolean;
+  isLoading?: boolean;
+  totalProducts?: number;
+  growth?: number;
 }
 
-const SalesTwo = ({ isLoading }: SalestwoCardProps) => {
+const SalesTwo = ({ isLoading, totalProducts = 0, growth = 0 }: SalestwoCardProps) => {
   // chart color
   const theme = useTheme();
   const primary = theme.palette.primary.main;
