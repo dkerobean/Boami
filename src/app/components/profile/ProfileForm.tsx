@@ -153,9 +153,9 @@ const ProfileForm: React.FC<ProfileFormProps> = ({
               <PhoneInputComponent
                 value={formik.values.phone}
                 onChange={(value) => formik.setFieldValue('phone', value)}
-                onBlur={formik.handleBlur}
+                onBlur={() => formik.setFieldTouched('phone', true)}
                 error={formik.touched.phone && Boolean(formik.errors.phone)}
-                helperText={formik.touched.phone && formik.errors.phone}
+                helperText={formik.touched.phone && formik.errors.phone ? String(formik.errors.phone) : undefined}
                 disabled={loading}
                 placeholder="Enter phone number"
               />

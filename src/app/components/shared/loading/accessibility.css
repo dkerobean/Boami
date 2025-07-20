@@ -1,0 +1,76 @@
+/**
+ * Accessibility styles for the loading system
+ * Provides screen reader support and motion preferences
+ */
+
+/* Screen reader only content */
+.sr-only {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  padding: 0 !important;
+  margin: -1px !important;
+  overflow: hidden !important;
+  clip: rect(0, 0, 0, 0) !important;
+  white-space: nowrap !important;
+  border: 0 !important;
+}
+
+/* Focus management for loading overlay */
+.loading-overlay-focus-trap {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 9999;
+}
+
+/* Reduced motion preferences */
+@media (prefers-reduced-motion: reduce) {
+  .loading-animation,
+  .loading-overlay,
+  .loading-content {
+    animation: none !important;
+    transition: none !important;
+  }
+
+  .loading-animation * {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .loading-overlay {
+    background-color: Canvas !important;
+    color: CanvasText !important;
+    border: 2px solid CanvasText !important;
+  }
+
+  .loading-animation {
+    border-color: CanvasText !important;
+  }
+}
+
+/* Focus indicators for keyboard navigation */
+.loading-overlay:focus-visible {
+  outline: 2px solid #005fcc;
+  outline-offset: 2px;
+}
+
+/* Ensure proper color contrast */
+.loading-text {
+  color: inherit;
+  font-weight: 500;
+}
+
+/* Animation pause for accessibility */
+.loading-animation.paused {
+  animation-play-state: paused !important;
+}
+
+.loading-animation.paused * {
+  animation-play-state: paused !important;
+}

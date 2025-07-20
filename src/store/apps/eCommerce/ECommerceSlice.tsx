@@ -19,6 +19,19 @@ interface StateType {
     rating: string;
   };
   error: string;
+  // Inventory and bulk operations
+  stockAlerts: any[];
+  stockAlertsLoading: boolean;
+  bulkUploadJobs: any[];
+  bulkUploadLoading: boolean;
+  bulkExportJobs: any[];
+  bulkExportLoading: boolean;
+  inventoryStats: {
+    totalProducts: number;
+    lowStockCount: number;
+    outOfStockCount: number;
+    activeAlerts: number;
+  };
 }
 
 const initialState = {
@@ -35,6 +48,19 @@ const initialState = {
     rating: '',
   },
   error: '',
+  // Inventory and bulk operations
+  stockAlerts: [],
+  stockAlertsLoading: false,
+  bulkUploadJobs: [],
+  bulkUploadLoading: false,
+  bulkExportJobs: [],
+  bulkExportLoading: false,
+  inventoryStats: {
+    totalProducts: 0,
+    lowStockCount: 0,
+    outOfStockCount: 0,
+    activeAlerts: 0,
+  },
 };
 
 export const EcommerceSlice = createSlice({
@@ -153,6 +179,80 @@ export const EcommerceSlice = createSlice({
         state.products[index] = updatedProduct;
       }
     },
+
+    // STOCK ALERTS
+    setStockAlertsLoading(state: StateType, action) {
+      state.stockAlertsLoading = action.payload;
+    },
+    setStockAlerts(state: StateType, action) {
+      state.stockAlerts = action.payload;
+    },
+    addStockAlert(state: StateType, action) {
+      state.stockAlerts.push(action.payload);
+    },
+    updateStockAlert(state: StateType, action) {
+      const updatedAlert = action.payload;
+      const index = state.stockAlerts.findIndex((alert) => alert.id === updatedAlert.id);
+      if (index !== -1) {
+        state.stockAlerts[index] = updatedAlert;
+      }
+    },
+    removeStockAlert(state: StateType, action) {
+      const alertId = action.payload;
+      state.stockAlerts = state.stockAlerts.filter((alert) => alert.id !== alertId);
+    },
+
+    // BULK UPLOAD
+    setBulkUploadLoading(state: StateType, action) {
+      state.bulkUploadLoading = action.payload;
+    },
+    setBulkUploadJobs(state: StateType, action) {
+      state.bulkUploadJobs = action.payload;
+    },
+    addBulkUploadJob(state: StateType, action) {
+      state.bulkUploadJobs.push(action.payload);
+    },
+    updateBulkUploadJob(state: StateType, action) {
+      const updatedJob = action.payload;
+      const index = state.bulkUploadJobs.findIndex((job) => job.id === updatedJob.id);
+      if (index !== -1) {
+        state.bulkUploadJobs[index] = updatedJob;
+      }
+    },
+    removeBulkUploadJob(state: StateType, action) {
+      const jobId = action.payload;
+      state.bulkUploadJobs = state.bulkUploadJobs.filter((job) => job.id !== jobId);
+    },
+
+    // BULK EXPORT
+    setBulkExportLoading(state: StateType, action) {
+      state.bulkExportLoading = action.payload;
+    },
+    setBulkExportJobs(state: StateType, action) {
+      state.bulkExportJobs = action.payload;
+    },
+    addBulkExportJob(state: StateType, action) {
+      state.bulkExportJobs.push(action.payload);
+    },
+    updateBulkExportJob(state: StateType, action) {
+      const updatedJob = action.payload;
+      const index = state.bulkExportJobs.findIndex((job) => job.id === updatedJob.id);
+      if (index !== -1) {
+        state.bulkExportJobs[index] = updatedJob;
+      }
+    },
+    removeBulkExportJob(state: StateType, action) {
+      const jobId = action.payload;
+      state.bulkExportJobs = state.bulkExportJobs.filter((job) => job.id !== jobId);
+    },
+
+    // INVENTORY STATS
+    setInventoryStats(state: StateType, action) {
+      state.inventoryStats = action.payload;
+    },
+    updateInventoryStats(state: StateType, action) {
+      state.inventoryStats = { ...state.inventoryStats, ...action.payload };
+    },
   },
 });
 export const {
@@ -171,6 +271,27 @@ export const {
   sortByColor,
   deleteProduct,
   updateProduct,
+  // Stock alerts
+  setStockAlertsLoading,
+  setStockAlerts,
+  addStockAlert,
+  updateStockAlert,
+  removeStockAlert,
+  // Bulk upload
+  setBulkUploadLoading,
+  setBulkUploadJobs,
+  addBulkUploadJob,
+  updateBulkUploadJob,
+  removeBulkUploadJob,
+  // Bulk export
+  setBulkExportLoading,
+  setBulkExportJobs,
+  addBulkExportJob,
+  updateBulkExportJob,
+  removeBulkExportJob,
+  // Inventory stats
+  setInventoryStats,
+  updateInventoryStats,
 } = EcommerceSlice.actions;
 
 export const fetchProducts = () => async (dispatch: AppDispatch) => {
@@ -220,6 +341,174 @@ export const fetchProducts = () => async (dispatch: AppDispatch) => {
   } catch (error) {
     console.error('Failed to fetch products:', error);
     dispatch(hasError(error instanceof Error ? error.message : 'Failed to fetch products'));
+  }
+};
+
+// Stock Alerts Actions
+export const fetchStockAlerts = () => async (dispatch: AppDispatch) => {
+  try {
+    dispatch(setStockAlertsLoading(true));
+    const response = await axios.get('/api/stock-alerts');
+    dispatch(setStockAlerts(response.data.data));
+    
+    // Update inventory stats
+    const stats = response.data.statistics;
+    dispatch(updateInventoryStats({
+      activeAlerts: stats.active,
+    }));
+  } catch (error) {
+    console.error('Failed to fetch stock alerts:', error);
+    dispatch(hasError(error instanceof Error ? error.message : 'Failed to fetch stock alerts'));
+  } finally {
+    dispatch(setStockAlertsLoading(false));
+  }
+};
+
+export const createStockAlert = (alertData: any) => async (dispatch: AppDispatch) => {
+  try {
+    const response = await axios.post('/api/stock-alerts', alertData);
+    dispatch(addStockAlert(response.data.data));
+    return response.data;
+  } catch (error) {
+    console.error('Failed to create stock alert:', error);
+    dispatch(hasError(error instanceof Error ? error.message : 'Failed to create stock alert'));
+    throw error;
+  }
+};
+
+export const updateStockAlertAsync = (alertId: string, updateData: any) => async (dispatch: AppDispatch) => {
+  try {
+    const response = await axios.put(`/api/stock-alerts/${alertId}`, updateData);
+    dispatch(updateStockAlert(response.data.data));
+    return response.data;
+  } catch (error) {
+    console.error('Failed to update stock alert:', error);
+    dispatch(hasError(error instanceof Error ? error.message : 'Failed to update stock alert'));
+    throw error;
+  }
+};
+
+export const deleteStockAlert = (alertId: string) => async (dispatch: AppDispatch) => {
+  try {
+    await axios.delete(`/api/stock-alerts/${alertId}`);
+    dispatch(removeStockAlert(alertId));
+  } catch (error) {
+    console.error('Failed to delete stock alert:', error);
+    dispatch(hasError(error instanceof Error ? error.message : 'Failed to delete stock alert'));
+    throw error;
+  }
+};
+
+// Bulk Upload Actions
+export const fetchBulkUploadJobs = () => async (dispatch: AppDispatch) => {
+  try {
+    dispatch(setBulkUploadLoading(true));
+    const response = await axios.get('/api/bulk-upload');
+    dispatch(setBulkUploadJobs(response.data.data));
+  } catch (error) {
+    console.error('Failed to fetch bulk upload jobs:', error);
+    dispatch(hasError(error instanceof Error ? error.message : 'Failed to fetch bulk upload jobs'));
+  } finally {
+    dispatch(setBulkUploadLoading(false));
+  }
+};
+
+export const createBulkUploadJob = (jobData: any) => async (dispatch: AppDispatch) => {
+  try {
+    const response = await axios.post('/api/bulk-upload', jobData);
+    dispatch(addBulkUploadJob(response.data.data));
+    return response.data;
+  } catch (error) {
+    console.error('Failed to create bulk upload job:', error);
+    dispatch(hasError(error instanceof Error ? error.message : 'Failed to create bulk upload job'));
+    throw error;
+  }
+};
+
+export const validateBulkUploadData = (validationData: any) => async (dispatch: AppDispatch) => {
+  try {
+    const response = await axios.post('/api/bulk-upload/validate', validationData);
+    return response.data;
+  } catch (error) {
+    console.error('Failed to validate bulk upload data:', error);
+    dispatch(hasError(error instanceof Error ? error.message : 'Failed to validate bulk upload data'));
+    throw error;
+  }
+};
+
+// Bulk Export Actions
+export const fetchBulkExportJobs = () => async (dispatch: AppDispatch) => {
+  try {
+    dispatch(setBulkExportLoading(true));
+    const response = await axios.get('/api/bulk-export');
+    dispatch(setBulkExportJobs(response.data.data));
+  } catch (error) {
+    console.error('Failed to fetch bulk export jobs:', error);
+    dispatch(hasError(error instanceof Error ? error.message : 'Failed to fetch bulk export jobs'));
+  } finally {
+    dispatch(setBulkExportLoading(false));
+  }
+};
+
+export const createBulkExportJob = (exportData: any) => async (dispatch: AppDispatch) => {
+  try {
+    const response = await axios.post('/api/bulk-export', exportData);
+    dispatch(addBulkExportJob(response.data.data));
+    return response.data;
+  } catch (error) {
+    console.error('Failed to create bulk export job:', error);
+    dispatch(hasError(error instanceof Error ? error.message : 'Failed to create bulk export job'));
+    throw error;
+  }
+};
+
+export const cancelBulkExportJob = (jobId: string) => async (dispatch: AppDispatch) => {
+  try {
+    const response = await axios.put(`/api/bulk-export/${jobId}`, { action: 'cancel' });
+    dispatch(updateBulkExportJob(response.data.data));
+    return response.data;
+  } catch (error) {
+    console.error('Failed to cancel bulk export job:', error);
+    dispatch(hasError(error instanceof Error ? error.message : 'Failed to cancel bulk export job'));
+    throw error;
+  }
+};
+
+export const deleteBulkExportJob = (jobId: string) => async (dispatch: AppDispatch) => {
+  try {
+    await axios.delete(`/api/bulk-export/${jobId}`);
+    dispatch(removeBulkExportJob(jobId));
+  } catch (error) {
+    console.error('Failed to delete bulk export job:', error);
+    dispatch(hasError(error instanceof Error ? error.message : 'Failed to delete bulk export job'));
+    throw error;
+  }
+};
+
+// Inventory Stats Actions
+export const fetchInventoryStats = () => async (dispatch: AppDispatch) => {
+  try {
+    // In a real implementation, you would have a dedicated endpoint for inventory stats
+    // For now, we'll calculate from existing data
+    const [productsResponse, alertsResponse] = await Promise.all([
+      axios.get('/api/products'),
+      axios.get('/api/stock-alerts'),
+    ]);
+    
+    const products = productsResponse.data.data?.products || [];
+    const alerts = alertsResponse.data.statistics || {};
+    
+    const stats = {
+      totalProducts: products.length,
+      lowStockCount: products.filter((p: any) => p.qty <= 10).length,
+      outOfStockCount: products.filter((p: any) => p.qty === 0).length,
+      activeAlerts: alerts.active || 0,
+    };
+    
+    dispatch(setInventoryStats(stats));
+  } catch (error) {
+    console.error('Failed to fetch inventory stats:', error);
+    dispatch(hasError(error instanceof Error ? error.message : 'Failed to fetch inventory stats'));
   }
 };
 

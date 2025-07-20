@@ -6,7 +6,11 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage",
+    "test:ci": "jest --ci --coverage --watchAll=false"
   },
   "dependencies": {
     "@casl/ability": "^6.3.3",
@@ -24,6 +28,7 @@
     "@mui/styled-engine-sc": "^6.0.0-alpha.1",
     "@mui/x-date-pickers": "^5.0.20",
     "@mui/x-tree-view": "^6.17.0",
+    "@react-pdf/renderer": "^4.3.0",
     "@reduxjs/toolkit": "^1.9.7",
     "@tabler/icons-react": "^2.39.0",
     "@tanstack/react-table": "^8.20.1",
@@ -43,8 +48,10 @@
     "framer-motion": "^10.16.4",
     "fslightbox-react": "^1.7.6",
     "gray-matter": "^4.0.3",
+    "html2canvas": "^1.4.1",
     "i18next": "^23.5.1",
     "jsonwebtoken": "^9.0.2",
+    "jspdf": "^3.0.1",
     "lodash": "^4.17.21",
     "moment": "^2.29.4",
     "mongoose": "^8.0.0",
@@ -65,6 +72,7 @@
     "react-slick": "^0.29.0",
     "react-spring": "^9.7.3",
     "react-syntax-highlighter": "^15.5.0",
+    "react-to-print": "^3.1.1",
     "redux-persist": "^6.0.0",
     "remark": "^15.0.1",
     "remark-html": "^16.0.1",
@@ -74,12 +82,18 @@
     "styled-components": "^6.0.8",
     "stylis-plugin-rtl": "^2.1.1",
     "typescript": "5.3.3",
-    "yup": "^0.32.11"
+    "xlsx": "^0.18.5",
+    "yup": "^0.32.11",
+    "zod": "^4.0.5"
   },
   "devDependencies": {
+    "@testing-library/jest-dom": "^6.1.4",
+    "@testing-library/react": "^14.0.0",
+    "@testing-library/user-event": "^14.5.1",
     "@types/bcryptjs": "^2.4.5",
     "@types/chance": "^1.1.4",
     "@types/fslightbox-react": "^1.7.7",
+    "@types/jest": "^29.5.8",
     "@types/jsonwebtoken": "^9.0.5",
     "@types/lodash": "^4.14.199",
     "@types/node": "^20.8.4",
@@ -89,8 +103,13 @@
     "@types/react-helmet": "^6.1.7",
     "@types/react-slick": "^0.23.10",
     "@types/react-syntax-highlighter": "^15.5.13",
+    "@types/supertest": "^2.0.16",
     "@types/uuid": "^10.0.0",
     "eslint": "latest",
-    "eslint-config-next": "latest"
+    "eslint-config-next": "latest",
+    "jest": "^29.7.0",
+    "jest-environment-jsdom": "^29.7.0",
+    "mongodb-memory-server": "^9.1.1",
+    "supertest": "^6.3.3"
   }
 }

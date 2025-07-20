@@ -66,6 +66,21 @@ import {
   IconAppWindow,
   IconNotebook,
   IconFileCheck,
+  IconFileInvoice,
+  IconList,
+  IconBuilding,
+  IconChartBar,
+  IconPlus,
+  IconTruck,
+  IconUpload,
+  IconDownload,
+  IconDatabase,
+  IconCash,
+  IconReceipt,
+  IconTrendingUp,
+  IconTag,
+  IconRepeat,
+  IconChartPie,
 } from "@tabler/icons-react";
 
 const Menuitems: MenuitemsType[] = [
@@ -74,59 +89,63 @@ const Menuitems: MenuitemsType[] = [
     subheader: "Home",
   },
 
-  
+
   {
     id: uniqueId(),
     title: "Dashboard",
     icon: IconShoppingCart,
     href: "/dashboards/ecommerce",
   },
-  
+
   {
     navlabel: true,
     subheader: "Apps",
   },
   {
     id: uniqueId(),
-    title: "Ecommerce",
-    icon: IconBasket,
-    href: "/apps/ecommerce/",
+    title: "Add Product",
+    icon: IconPackage,
+    href: "/apps/ecommerce/add-product",
+  },
+  {
+    id: uniqueId(),
+    title: "List",
+    icon: IconFiles,
+    href: "/apps/ecommerce/list",
+  },
+  {
+    id: uniqueId(),
+    title: "Shop",
+    icon: IconShoppingCart,
+    href: "/apps/ecommerce/shop",
+  },
+  {
+    navlabel: true,
+    subheader: "Inventory",
+  },
+  {
+    id: uniqueId(),
+    title: "Stock Alerts",
+    icon: IconAlertCircle,
+    href: "/apps/ecommerce/stock-alerts",
+  },
+  {
+    id: uniqueId(),
+    title: "Bulk Operations",
+    icon: IconDatabase,
+    href: "/apps/ecommerce/bulk-upload",
     children: [
       {
         id: uniqueId(),
-        title: "Shop",
-        icon: IconPoint,
-        href: "/apps/ecommerce/shop",
+        title: "Bulk Upload",
+        icon: IconUpload,
+        href: "/apps/ecommerce/bulk-upload",
       },
       {
         id: uniqueId(),
-        title: "Detail",
-        icon: IconPoint,
-        href: "/apps/ecommerce/detail/1",
-      },
-      {
-        id: uniqueId(),
-        title: "List",
-        icon: IconPoint,
-        href: "/apps/ecommerce/list",
-      },
-      {
-        id: uniqueId(),
-        title: "Checkout",
-        icon: IconPoint,
-        href: "/apps/ecommerce/checkout",
-      },
-      {
-        id: uniqueId(),
-        title: "Add Product",
-        icon: IconPoint,
-        href: "/apps/ecommerce/add-product",
-      },
-      {
-        id: uniqueId(),
-        title: "Edit Product",
-        icon: IconPoint,
-        href: "/apps/ecommerce/edit-product",
+        title: "Bulk Export",
+        icon: IconDownload,
+        href: "/apps/ecommerce/bulk-export",
       },
     ],
   },
@@ -228,36 +247,85 @@ const Menuitems: MenuitemsType[] = [
   },
 
   {
+    navlabel: true,
+    subheader: "Invoice Management",
+  },
+  {
     id: uniqueId(),
-    title: "Invoice",
-    icon: IconFileCheck,
+    title: "All Invoices",
+    icon: IconList,
     href: "/apps/invoice/list",
-    children: [
-      {
-        id: uniqueId(),
-        title: "List",
-        icon: IconPoint,
-        href: "/apps/invoice/list",
-      },
-      {
-        id: uniqueId(),
-        title: "Details",
-        icon: IconPoint,
-        href: "/apps/invoice/detail/PineappleInc",
-      },
-      {
-        id: uniqueId(),
-        title: "Create",
-        icon: IconPoint,
-        href: "/apps/invoice/create",
-      },
-      {
-        id: uniqueId(),
-        title: "Edit",
-        icon: IconPoint,
-        href: "/apps/invoice/edit/PineappleInc",
-      },
-    ],
+  },
+  {
+    id: uniqueId(),
+    title: "Create Invoice",
+    icon: IconPlus,
+    href: "/apps/invoice/create",
+  },
+  {
+    id: uniqueId(),
+    title: "Pricing & Tax",
+    icon: IconCurrencyDollar,
+    href: "/apps/invoice/pricing",
+  },
+  {
+    id: uniqueId(),
+    title: "Company Settings",
+    icon: IconBuilding,
+    href: "/apps/invoice/company",
+  },
+  {
+    id: uniqueId(),
+    title: "Reports",
+    icon: IconChartBar,
+    href: "/apps/invoice/reports",
+  },
+
+  {
+    navlabel: true,
+    subheader: "Finance",
+  },
+  {
+    id: uniqueId(),
+    title: "Dashboard",
+    icon: IconChartPie,
+    href: "/apps/finance/dashboard",
+  },
+  {
+    id: uniqueId(),
+    title: "Income",
+    icon: IconCash,
+    href: "/apps/finance/income",
+  },
+  {
+    id: uniqueId(),
+    title: "Expenses",
+    icon: IconReceipt,
+    href: "/apps/finance/expenses",
+  },
+  {
+    id: uniqueId(),
+    title: "Sales",
+    icon: IconTrendingUp,
+    href: "/apps/finance/sales",
+  },
+  {
+    id: uniqueId(),
+    title: "Categories",
+    icon: IconTag,
+    href: "/apps/finance/categories",
+  },
+  {
+    id: uniqueId(),
+    title: "Vendors",
+    icon: IconBuilding,
+    href: "/apps/finance/vendors",
+  },
+  {
+    id: uniqueId(),
+    title: "Recurring Payments",
+    icon: IconRepeat,
+    href: "/apps/finance/recurring",
   },
 
   {

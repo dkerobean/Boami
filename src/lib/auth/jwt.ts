@@ -58,23 +58,23 @@ export class JWTManager {
     const accessToken = jwt.sign(
       payload,
       process.env.JWT_SECRET!,
-      { 
+      {
         expiresIn: this.ACCESS_TOKEN_EXPIRES,
         issuer: 'boami-auth',
         audience: 'boami-app'
       }
     );
-    
+
     const refreshToken = jwt.sign(
       { userId: payload.userId },
       process.env.JWT_REFRESH_SECRET!,
-      { 
+      {
         expiresIn: this.REFRESH_TOKEN_EXPIRES,
         issuer: 'boami-auth',
         audience: 'boami-app'
       }
     );
-    
+
     return { accessToken, refreshToken };
   }
 
@@ -122,7 +122,7 @@ export class JWTManager {
   static setAuthCookies(accessToken: string, refreshToken: string): void {
     const cookieStore = cookies();
     const isProduction = process.env.NODE_ENV === 'production';
-    
+
     // Set access token cookie (15 minutes)
     cookieStore.set(this.ACCESS_TOKEN_COOKIE, accessToken, {
       httpOnly: true,
@@ -131,7 +131,7 @@ export class JWTManager {
       maxAge: 15 * 60, // 15 minutes in seconds
       path: '/'
     });
-    
+
     // Set refresh token cookie (7 days)
     cookieStore.set(this.REFRESH_TOKEN_COOKIE, refreshToken, {
       httpOnly: true,
@@ -155,7 +155,7 @@ export class JWTManager {
     refreshToken: string
   ): NextResponse {
     const isProduction = process.env.NODE_ENV === 'production';
-    
+
     // Set access token cookie
     response.cookies.set(this.ACCESS_TOKEN_COOKIE, accessToken, {
       httpOnly: true,
@@ -164,7 +164,7 @@ export class JWTManager {
       maxAge: 15 * 60, // 15 minutes
       path: '/'
     });
-    
+
     // Set refresh token cookie
     response.cookies.set(this.REFRESH_TOKEN_COOKIE, refreshToken, {
       httpOnly: true,
@@ -208,7 +208,7 @@ export class JWTManager {
    */
   static clearAuthCookies(): void {
     const cookieStore = cookies();
-    
+
     cookieStore.set(this.ACCESS_TOKEN_COOKIE, '', {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
@@ -216,7 +216,7 @@ export class JWTManager {
       maxAge: 0,
       path: '/'
     });
-    
+
     cookieStore.set(this.REFRESH_TOKEN_COOKIE, '', {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
@@ -239,7 +239,7 @@ export class JWTManager {
       maxAge: 0,
       path: '/'
     });
-    
+
     response.cookies.set(this.REFRESH_TOKEN_COOKIE, '', {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
@@ -290,3 +290,13 @@ export class JWTManager {
     return user ? user.isEmailVerified : false;
   }
 }
+/**
+
+ * Simple JWT verification function for API routes
+ * @param token - JWT token to verify
+ * @returns IJWTPayload | null - Decoded payload or null if invalid
+ */
+export function verifyJWT(token: string): IJWTPayload | null {
+  return JWTManager.verifyAccessToken(token);
+}
+
