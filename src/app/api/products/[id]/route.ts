@@ -309,7 +309,7 @@ export async function PUT(
       error: error instanceof Error ? error.message : String(error),
       stack: error instanceof Error ? error.stack : undefined,
       type: error?.constructor?.name,
-      productId
+      productId: params.id
     });
     
     if (error instanceof yup.ValidationError) {

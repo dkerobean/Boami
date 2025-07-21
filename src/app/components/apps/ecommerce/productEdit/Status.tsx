@@ -14,6 +14,7 @@ const StatusCard = ({ productData, onStatusChange }: StatusCardProps) => {
     // Convert product status to select value
     const getStatusValue = (productStatus: string) => {
         switch(productStatus?.toLowerCase()) {
+            case 'publish':
             case 'published': return 0;
             case 'draft': return 1;
             case 'scheduled': return 2;
@@ -25,7 +26,7 @@ const StatusCard = ({ productData, onStatusChange }: StatusCardProps) => {
     const [status, setStatus] = useState(getStatusValue(productData?.status));
     const handleChange = (event: any) => {
         setStatus(event.target.value);
-        const statusValues = ['published', 'draft', 'scheduled', 'inactive'];
+        const statusValues = ['publish', 'draft', 'scheduled', 'inactive'];
         const statusString = statusValues[event.target.value] || 'draft';
         onStatusChange?.(statusString);
     };

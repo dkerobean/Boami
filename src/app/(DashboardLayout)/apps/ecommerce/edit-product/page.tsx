@@ -32,6 +32,7 @@ const EcommerceEditProduct = () => {
   const [originalProductData, setOriginalProductData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string>("");
+  const [success, setSuccess] = useState<string>("");
   const [saving, setSaving] = useState(false);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [hasChanges, setHasChanges] = useState(false);
@@ -73,8 +74,23 @@ const EcommerceEditProduct = () => {
     fetchProductData();
   }, [productId]);
 
+  // Debug: Log renders to track hasChanges state
+  console.log('🔄 Component render - hasChanges:', hasChanges, 'imageFile:', !!imageFile);
+
   const handleImageChange = (file: File) => {
+    console.log('📸 handleImageChange called with file:', {
+      name: file.name,
+      size: file.size,
+      type: file.type,
+      lastModified: file.lastModified
+    });
+    console.log('📸 BEFORE setHasChanges - current hasChanges:', hasChanges);
     setImageFile(file);
+    setHasChanges(true);
+    console.log('📸 AFTER setHasChanges(true) - should be true on next render');
+    // Clear any previous success/error messages when making changes
+    setSuccess("");
+    setError("");
   };
 
   // Handle product data changes
@@ -84,6 +100,9 @@ const EcommerceEditProduct = () => {
       [field]: value
     }));
     setHasChanges(true);
+    // Clear any previous success/error messages when making changes
+    setSuccess("");
+    setError("");
   };
 
   // Handle categories change
@@ -134,12 +153,32 @@ const EcommerceEditProduct = () => {
 
     setSaving(true);
     setError("");
+    setSuccess("");
+
+    console.log('🔄 Starting save process...', {
+      hasChanges,
+      hasImageFile: !!imageFile,
+      imageFileName: imageFile?.name,
+      imageFileSize: imageFile?.size,
+      currentPhotoUrl: productData.photo
+    });
+    
+    // Critical validation: Check if we expect an image but don't have one
+    if (hasChanges && !imageFile) {
+      console.warn('⚠️ hasChanges is true but no imageFile found. This might indicate a state management issue.');
+    }
 
     try {
       let imageUrl = productData.photo;
 
       // Upload image if changed
       if (imageFile) {
+        console.log('📤 Uploading image...', {
+          fileName: imageFile.name,
+          fileSize: imageFile.size,
+          fileType: imageFile.type
+        });
+        
         const oldImageUrl = productData.photo; // Store old image URL for cleanup
         
         const formData = new FormData();
@@ -150,16 +189,23 @@ const EcommerceEditProduct = () => {
           body: formData,
         });
 
+        console.log('📤 Upload response status:', uploadResponse.status);
+
         if (!uploadResponse.ok) {
+          const errorText = await uploadResponse.text();
+          console.error('❌ Upload failed:', errorText);
           throw new Error("Failed to upload image");
         }
 
         const uploadResult = await uploadResponse.json();
+        console.log('✅ Upload result:', uploadResult);
         if (uploadResult.success && uploadResult.data?.url) {
           imageUrl = uploadResult.data.url;
+          console.log('🖼️ New image URL set:', imageUrl);
           
           // Clean up old image after successful upload
           if (oldImageUrl && oldImageUrl !== imageUrl && oldImageUrl.startsWith('/uploads/products/')) {
+            console.log('🗑️ Cleaning up old image:', oldImageUrl);
             try {
               await fetch('/api/cleanup/product-image', {
                 method: 'DELETE',
@@ -172,12 +218,14 @@ const EcommerceEditProduct = () => {
             }
           }
         } else {
+          console.error('❌ Image upload failed:', uploadResult);
           throw new Error(uploadResult.error || "Image upload failed");
         }
       }
 
       // Save product data
       const updatedProduct = { ...productData, photo: imageUrl };
+      console.log('💾 Saving product with image URL:', imageUrl);
 
       const response = await fetch(`/api/products/${productId}`, {
         method: "PUT",
@@ -188,19 +236,47 @@ const EcommerceEditProduct = () => {
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
+        let errorData;
+        try {
+          errorData = await response.json();
+        } catch (jsonError) {
+          const textResponse = await response.text();
+          console.error("Failed to parse error response as JSON:", textResponse);
+          throw new Error(`Server error (${response.status}): ${textResponse || 'Unknown error'}`);
+        }
         throw new Error(errorData.error || "Failed to save product");
       }
 
-      const result = await response.json();
+      let result;
+      try {
+        result = await response.json();
+      } catch (jsonError) {
+        const textResponse = await response.text();
+        console.error("Failed to parse success response as JSON:", textResponse);
+        throw new Error(`Invalid response format: ${textResponse || 'Empty response'}`);
+      }
       if (result.success) {
+        console.log('✅ Product saved successfully:', result);
+        console.log('🔄 Updated product photo URL:', result.data?.photo);
+        
+        // Update local state with the saved data
+        const savedProduct = { ...updatedProduct, ...result.data };
+        setProductData(savedProduct);
+        setOriginalProductData(savedProduct);
+        
         // Reset change tracking
         setHasChanges(false);
-        setOriginalProductData(updatedProduct);
+        setImageFile(null);
+        console.log('🔄 State reset: hasChanges=false, imageFile=null');
         
-        // Navigate back to list
-        router.push("/apps/ecommerce/list");
+        // Show success message briefly before redirecting
+        setSuccess("Product updated successfully! Image has been changed.");
+        console.log('🎉 Product update complete! Redirecting in 3 seconds...');
+        setTimeout(() => {
+          router.push("/apps/ecommerce/list");
+        }, 3000);
       } else {
+        console.error('❌ Product save failed:', result);
         throw new Error(result.error || "Failed to save product");
       }
     } catch (error) {
@@ -250,6 +326,18 @@ const EcommerceEditProduct = () => {
               Development Note: Product data loaded for ID {productId}. 
               Form components need to be updated to use productData for pre-population.
             </Typography>
+          </Alert>
+        )}
+        
+        {success && (
+          <Alert severity="success" sx={{ mb: 3 }}>
+            {success}
+          </Alert>
+        )}
+        
+        {error && (
+          <Alert severity="error" sx={{ mb: 3 }}>
+            {error}
           </Alert>
         )}
       
@@ -334,6 +422,20 @@ const EcommerceEditProduct = () => {
           >
             Cancel
           </Button>
+          {process.env.NODE_ENV === 'development' && (
+            <Button 
+              variant="outlined" 
+              color="warning"
+              onClick={() => {
+                console.log('🔧 DEBUG: Manual hasChanges toggle - before:', hasChanges);
+                setHasChanges(!hasChanges);
+                console.log('🔧 DEBUG: Manual hasChanges toggle - should be:', !hasChanges);
+              }}
+              disabled={saving}
+            >
+              DEBUG: Toggle Changes ({hasChanges ? 'true' : 'false'})
+            </Button>
+          )}
           {hasChanges && (
             <Typography variant="body2" color="warning.main" sx={{ alignSelf: 'center' }}>
               You have unsaved changes

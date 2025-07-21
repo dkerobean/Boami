@@ -88,7 +88,7 @@ export function generatePaginationCacheKey(
  * Optimized query builder for productivity models
  */
 export class ProductivityQueryBuilder<T> {
-  prate model: any;
+  private model: any;
   private query: FilterQuery<T> = {};
   private sortOptions: Record<string, SortOrder> = {};
   private selectFields?: string;

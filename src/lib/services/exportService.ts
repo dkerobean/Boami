@@ -1,5 +1,5 @@
 import * as XLSX from 'xlsx';
-import { connectDB } from '@/lib/database/mongoose-connection';
+import { connectToDatabase } from '@/lib/database/mongoose-connection';
 import Product from '@/lib/database/models/Product';
 import ProductVariant from '@/lib/database/models/ProductVariant';
 import Sale from '@/lib/database/models/Sale';
@@ -8,6 +8,35 @@ import Income from '@/lib/database/models/Income';
 import InventoryLog from '@/lib/database/models/InventoryLog';
 import fs from 'fs/promises';
 import path from 'path';
+
+/**
+ * Strip HTML tags from text and decode HTML entities
+ */
+function stripHtmlTags(html: string): string {
+  if (!html || typeof html !== 'string') return '';
+  
+  // Remove HTML tags
+  const stripped = html.replace(/<[^>]*>/g, '');
+  
+  // Decode common HTML entities
+  const entities: Record<string, string> = {
+    '&amp;': '&',
+    '&lt;': '<',
+    '&gt;': '>',
+    '&quot;': '"',
+    '&#39;': "'",
+    '&apos;': "'",
+    '&nbsp;': ' ',
+  };
+  
+  let decoded = stripped;
+  for (const [entity, replacement] of Object.entries(entities)) {
+    decoded = decoded.replace(new RegExp(entity, 'g'), replacement);
+  }
+  
+  // Remove extra whitespace and trim
+  return decoded.replace(/\s+/g, ' ').trim();
+}
 
 export interface ExportFilters {
   dateRange?: {
@@ -68,7 +97,7 @@ export class ExportService {
   }
 
   private async getProductData(filters: ExportFilters = {}) {
-    await connectDB();
+    await connectToDatabase();
     
     const query: any = {};
     
@@ -103,8 +132,8 @@ export class ExportService {
     
     return products.map(product => ({
       id: product._id.toString(),
-      title: product.title,
-      description: product.description,
+      title: stripHtmlTags(product.title || ''),
+      description: stripHtmlTags(product.description || ''),
       sku: product.sku || '',
       price: product.price,
       regularPrice: product.regularPrice || product.price,
@@ -112,7 +141,7 @@ export class ExportService {
       discount: product.discount || 0,
       category: Array.isArray(product.category) ? product.category.join(', ') : product.category,
       subcategory: Array.isArray(product.subcategory) ? product.subcategory.join(', ') : product.subcategory || '',
-      brand: product.brand || '',
+      brand: stripHtmlTags(product.brand || ''),
       type: product.type,
       status: product.status,
       stock: product.stock ? 'Yes' : 'No',
@@ -129,7 +158,7 @@ export class ExportService {
   }
 
   private async getSalesData(filters: ExportFilters = {}) {
-    await connectDB();
+    await connectToDatabase();
     
     const query: any = {};
     
@@ -150,7 +179,7 @@ export class ExportService {
     
     return sales.map(sale => ({
       id: sale._id.toString(),
-      productTitle: sale.productId?.title || 'Unknown Product',
+      productTitle: stripHtmlTags(sale.productId?.title || 'Unknown Product'),
       productSku: sale.productId?.sku || '',
       productCategory: Array.isArray(sale.productId?.category) 
         ? sale.productId.category.join(', ') 
@@ -159,7 +188,7 @@ export class ExportService {
       unitPrice: sale.unitPrice,
       totalAmount: sale.totalAmount,
       date: new Date(sale.date).toISOString(),
-      notes: sale.notes || '',
+      notes: stripHtmlTags(sale.notes || ''),
       salesPerson: sale.userId 
         ? `${sale.userId.firstName} ${sale.userId.lastName}` 
         : 'Unknown',
@@ -169,7 +198,7 @@ export class ExportService {
   }
 
   private async getExpensesData(filters: ExportFilters = {}) {
-    await connectDB();
+    await connectToDatabase();
     
     const query: any = {};
     
@@ -193,11 +222,11 @@ export class ExportService {
     
     return expenses.map(expense => ({
       id: expense._id.toString(),
-      title: expense.title,
+      title: stripHtmlTags(expense.title || ''),
       amount: expense.amount,
-      category: expense.category,
+      category: stripHtmlTags(expense.category || ''),
       date: new Date(expense.date).toISOString(),
-      description: expense.description || '',
+      description: stripHtmlTags(expense.description || ''),
       isRecurring: expense.isRecurring ? 'Yes' : 'No',
       recurringFrequency: expense.recurringFrequency || '',
       nextDueDate: expense.nextDueDate ? new Date(expense.nextDueDate).toISOString() : '',
@@ -210,7 +239,7 @@ export class ExportService {
   }
 
   private async getFinancialSummaryData(filters: ExportFilters = {}) {
-    await connectDB();
+    await connectToDatabase();
     
     const dateQuery: any = {};
     if (filters.dateRange?.start || filters.dateRange?.end) {

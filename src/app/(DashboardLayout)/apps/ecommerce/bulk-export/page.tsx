@@ -62,6 +62,7 @@ const BulkExportPage = () => {
   const [activeTab, setActiveTab] = useState<'export' | 'history'>('export');
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const [downloadingJobs, setDownloadingJobs] = useState<Set<string>>(new Set());
 
   const fetchExportHistory = async () => {
     try {
@@ -162,24 +163,95 @@ const BulkExportPage = () => {
   const handleDownload = async (job: ExportJob) => {
     if (job.status !== 'completed' || !job.downloadUrl) {
       console.error('Job not ready for download');
+      setError('Export is not ready for download yet.');
       return;
     }
+    
+    // Add to downloading set
+    setDownloadingJobs(prev => new Set(prev).add(job.id));
+    setError(null); // Clear any previous errors
     
     try {
       console.log(`Downloading ${job.fileName}...`);
       
-      // Use the actual download endpoint
-      const downloadUrl = `/api/bulk-export/download/${job.id}`;
+      // Try multiple download methods for better browser compatibility
+      const downloadMethods = [
+        // Method 1: Use the direct download URL (static file serving)
+        () => {
+          const link = document.createElement('a');
+          link.href = job.downloadUrl!;
+          link.download = job.fileName;
+          link.style.display = 'none';
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+        },
+        
+        // Method 2: Fetch and blob download
+        async () => {
+          const response = await fetch(job.downloadUrl!);
+          if (!response.ok) throw new Error(`HTTP ${response.status}`);
+          
+          const blob = await response.blob();
+          const url = window.URL.createObjectURL(blob);
+          
+          const link = document.createElement('a');
+          link.href = url;
+          link.download = job.fileName;
+          link.style.display = 'none';
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+          
+          // Clean up
+          setTimeout(() => window.URL.revokeObjectURL(url), 100);
+        },
+        
+        // Method 3: API endpoint fallback
+        async () => {
+          const response = await fetch(`/api/bulk-export/download/${job.id}`);
+          if (!response.ok) throw new Error(`HTTP ${response.status}`);
+          
+          const blob = await response.blob();
+          const url = window.URL.createObjectURL(blob);
+          
+          const link = document.createElement('a');
+          link.href = url;
+          link.download = job.fileName;
+          link.style.display = 'none';
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+          
+          setTimeout(() => window.URL.revokeObjectURL(url), 100);
+        }
+      ];
       
-      const link = document.createElement('a');
-      link.href = downloadUrl;
-      link.download = job.fileName;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
+      // Try methods in order until one succeeds
+      for (let i = 0; i < downloadMethods.length; i++) {
+        try {
+          await downloadMethods[i]();
+          console.log(`Download successful using method ${i + 1}`);
+          setSuccess(`Successfully downloaded ${job.fileName}`);
+          return;
+        } catch (methodError) {
+          console.warn(`Download method ${i + 1} failed:`, methodError);
+          if (i === downloadMethods.length - 1) {
+            throw methodError; // Re-throw the last error
+          }
+        }
+      }
+      
     } catch (error) {
-      console.error('Download failed:', error);
-      setError('Failed to download file. Please try again.');
+      console.error('All download methods failed:', error);
+      setError(`Failed to download ${job.fileName}: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    } finally {
+      // Remove from downloading set
+      setDownloadingJobs(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(job.id);
+        return newSet;
+      });
     }
   };
 
@@ -334,6 +406,7 @@ const BulkExportPage = () => {
               exportHistory={exportHistory}
               loading={loading}
               onDownload={handleDownload}
+              downloadingJobs={downloadingJobs}
             />
           </CardContent>
         </BlankCard>

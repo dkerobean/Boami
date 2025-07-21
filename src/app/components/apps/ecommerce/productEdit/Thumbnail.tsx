@@ -13,6 +13,16 @@ const Thumbnail = ({ product, onImageChange }: ThumbnailProps) => {
   const [imageUrl, setImageUrl] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Debug: Log component props and state
+  console.log('🖼️ Thumbnail component render:', {
+    hasProduct: !!product,
+    productTitle: product?.title,
+    productPhoto: product?.photo,
+    hasOnImageChange: typeof onImageChange === 'function',
+    currentImageUrl: imageUrl,
+    hasImageFile: !!imageFile
+  });
+
   useEffect(() => {
     if (product && product.photo) {
       setImageUrl(product.photo);
@@ -21,30 +31,61 @@ const Thumbnail = ({ product, onImageChange }: ThumbnailProps) => {
 
   // Open file input dialog on image click
   const handleImageClick = () => {
+    console.log('🖼️ Image clicked! Opening file dialog...', {
+      hasRef: !!fileInputRef.current,
+      inputElement: fileInputRef.current
+    });
     fileInputRef.current?.click();
+    console.log('🖼️ File input click() called');
   };
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
+    console.log('🖼️ Thumbnail handleFileChange called!', {
+      eventType: event.type,
+      hasFiles: !!event.target.files,
+      fileCount: event.target.files?.length || 0
+    });
 
-    if (!file) return;
+    const file = event.target.files?.[0];
+    console.log('🖼️ File selected:', {
+      hasFile: !!file,
+      fileName: file?.name,
+      fileSize: file?.size,
+      fileType: file?.type
+    });
+
+    if (!file) {
+      console.log('🖼️ No file selected, returning early');
+      return;
+    }
 
     // Validate file size and type (optional)
     if (file.size > 1024 * 1024 * 5) {
+      console.log('🖼️ File too large, showing alert');
       alert("File size is too large! Max 5MB allowed.");
       return;
     }
 
+    console.log('🖼️ File validation passed, setting up preview');
+
     // Read and display image preview
     const reader = new FileReader();
     reader.onload = (e: any) => {
+      console.log('🖼️ FileReader loaded, setting preview URL');
       setImageUrl(e.target?.result as string);
     };
     reader.readAsDataURL(file);
 
     // Set the image file for upload
+    console.log('🖼️ Setting imageFile state and calling onImageChange callback');
     setImageFile(file);
+    
+    console.log('🖼️ CALLING onImageChange callback with file:', {
+      callbackExists: typeof onImageChange === 'function',
+      fileName: file.name
+    });
     onImageChange(file);
+    console.log('🖼️ onImageChange callback completed');
   };
 
   return (

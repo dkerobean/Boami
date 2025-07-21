@@ -48,7 +48,7 @@ const ManagementActions = ({
       <CardContent sx={{ p: 3 }}>
         <Grid container spacing={3} alignItems="center">
           {/* Left side - Search and Info */}
-          <Grid item xs={12} lg={7}>
+          <Grid item xs={12} lg={5}>
             <Stack spacing={2}>
               <TextField
                 placeholder="Search products by name, SKU, or category..."
@@ -93,7 +93,7 @@ const ManagementActions = ({
           </Grid>
 
           {/* Right side - Action Buttons */}
-          <Grid item xs={12} lg={5}>
+          <Grid item xs={12} lg={7}>
             <Stack 
               direction={{ xs: 'column', sm: 'row' }} 
               spacing={1.5} 

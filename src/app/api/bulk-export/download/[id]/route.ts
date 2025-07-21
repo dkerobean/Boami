@@ -13,17 +13,37 @@ export async function GET(
   try {
     const { id } = params;
     
+    console.log('Download request for job ID:', id);
+    
     if (!id) {
+      console.error('Download request missing job ID');
       return NextResponse.json({
         success: false,
         error: 'Export job ID is required',
       }, { status: 400 });
     }
     
+    // Get the export job first to debug
+    const job = exportService.getExportJob(id);
+    console.log('Export job found:', {
+      exists: !!job,
+      status: job?.status,
+      fileName: job?.fileName,
+      filePath: job?.filePath,
+      downloadUrl: job?.downloadUrl
+    });
+    
     // Get the export file from the service
     const fileData = await exportService.getFileStream(id);
     
+    console.log('File data result:', {
+      exists: !!fileData,
+      fileName: fileData?.fileName,
+      streamLength: fileData?.stream?.length
+    });
+    
     if (!fileData) {
+      console.error('File data not found for job:', id);
       return NextResponse.json({
         success: false,
         error: 'Export file not found or has expired',

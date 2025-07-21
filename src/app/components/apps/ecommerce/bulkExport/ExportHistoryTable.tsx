@@ -66,6 +66,7 @@ interface ExportHistoryTableProps {
   exportHistory: ExportJob[];
   loading: boolean;
   onDownload: (job: ExportJob) => void;
+  downloadingJobs?: Set<string>;
   onRetry?: (job: ExportJob) => void;
   onDelete?: (job: ExportJob) => void;
   onViewDetails?: (job: ExportJob) => void;
@@ -75,6 +76,7 @@ const ExportHistoryTable: React.FC<ExportHistoryTableProps> = ({
   exportHistory,
   loading,
   onDownload,
+  downloadingJobs = new Set(),
   onRetry,
   onDelete,
   onViewDetails,
@@ -357,10 +359,20 @@ const ExportHistoryTable: React.FC<ExportHistoryTableProps> = ({
                   <TableCell>
                     <Box display="flex" gap={1}>
                       {job.status === 'completed' && job.downloadUrl && (
-                        <Tooltip title="Download">
-                          <IconButton size="small" onClick={() => onDownload(job)}>
-                            <IconDownload size={18} />
-                          </IconButton>
+                        <Tooltip title={downloadingJobs.has(job.id) ? "Downloading..." : "Download"}>
+                          <span>
+                            <IconButton 
+                              size="small" 
+                              onClick={() => onDownload(job)}
+                              disabled={downloadingJobs.has(job.id)}
+                            >
+                              {downloadingJobs.has(job.id) ? (
+                                <CircularProgress size={18} />
+                              ) : (
+                                <IconDownload size={18} />
+                              )}
+                            </IconButton>
+                          </span>
                         </Tooltip>
                       )}
                       
