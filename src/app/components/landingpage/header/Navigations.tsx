@@ -1,127 +1,113 @@
-import React, { useState } from 'react';
-import Box from '@mui/material/Box';
+import React from 'react';
 import Button from '@mui/material/Button';
-import Divider from '@mui/material/Divider';
-import Grid from '@mui/material/Grid';
-import Paper from '@mui/material/Paper';
 import { styled } from '@mui/material/styles';
-import { IconChevronDown } from '@tabler/icons-react';
-import AppLinks from '@/app/(DashboardLayout)/layout/vertical/header/AppLinks';
-import QuickLinks from '@/app/(DashboardLayout)/layout/vertical/header/QuickLinks';
-import DemosDD from './DemosDD';
+import { motion } from 'framer-motion';
+import CTAButton from '@/app/components/shared/CTAButton';
+import { navigationConfig, useActiveSection, smoothScrollTo } from '@/utils/navigation';
 
 const Navigations = () => {
+    const sections = navigationConfig.main
+        .filter(item => !item.external)
+        .map(item => item.href);
+    const activeSection = useActiveSection(sections);
 
-    const StyledButton = styled(Button)(({ theme }) => ({
+    const StyledButton = styled(Button)<{ isActive?: boolean }>(({ theme, isActive }) => ({
         fontSize: '16px',
-        color: theme.palette.text.secondary
+        color: isActive ? theme.palette.primary.main : theme.palette.text.secondary,
+        fontWeight: isActive ? 600 : 500,
+        textTransform: 'none',
+        padding: '8px 16px',
+        borderRadius: theme.spacing(1),
+        position: 'relative',
+        transition: 'all 0.3s ease',
+        '&:hover': {
+            backgroundColor: 'rgba(0, 0, 0, 0.04)',
+            color: theme.palette.primary.main,
+        },
+        '&::after': {
+            content: '""',
+            position: 'absolute',
+            bottom: 0,
+            left: '50%',
+            transform: 'translateX(-50%)',
+            width: isActive ? '80%' : '0%',
+            height: '2px',
+            backgroundColor: theme.palette.primary.main,
+            transition: 'width 0.3s ease',
+        },
     }));
 
-    // demos
-    const [open, setOpen] = useState(false);
-
-    const handleOpen = () => {
-        setOpen(true);
+    const handleNavClick = (item: typeof navigationConfig.main[0]) => (e: React.MouseEvent) => {
+        if (!item.external && item.href.startsWith('#')) {
+            e.preventDefault();
+            smoothScrollTo(item.href);
+        }
     };
-
-    const handleClose = () => {
-        setOpen(false);
-    };
-
-    // pages
-
-    const [open2, setOpen2] = useState(false);
-
-    const handleOpen2 = () => {
-        setOpen2(true);
-    };
-
-    const handleClose2 = () => {
-        setOpen2(false);
-    };
-
-
 
     return (
         <>
-            <StyledButton
-                color="inherit"
-                variant="text"
-                aria-expanded={open ? 'true' : undefined}
-                sx={{
-                    color: open ? 'primary.main' : (theme) => theme.palette.text.secondary,
-                }}
-                onMouseEnter={handleOpen} onMouseLeave={handleClose}
-                endIcon={<IconChevronDown size="15" style={{ marginLeft: '-5px', marginTop: '2px' }} />}
-            >
-                Demos
-            </StyledButton>
-            {open && (
-                <Paper
-                    onMouseEnter={handleOpen}
-                    onMouseLeave={handleClose}
-                    sx={{
-                        position: 'absolute',
-                        left: '0',
-                        right: '0',
-                        top: '55px',
-                        maxWidth: '1200px',
-                        width: '100%'
-                    }}
+            {navigationConfig.main.map((item, index) => (
+                <motion.div
+                    key={item.label}
+                    initial={{ opacity: 0, y: -20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: index * 0.1, duration: 0.3 }}
                 >
-                    <DemosDD />
-                </Paper>
-            )}
-            <Box>
-                <StyledButton
-                    color="inherit"
-                    variant="text"
-                    onMouseEnter={handleOpen2} onMouseLeave={handleClose2}
-                    sx={{
-                        color: open2 ? 'primary.main' : (theme) => theme.palette.text.secondary,
-                    }}
-                    endIcon={<IconChevronDown size="15" style={{ marginLeft: '-5px', marginTop: '2px' }} />}
-                >
-                    Pages
-                </StyledButton>
-                {open2 && (
-                    <Paper
-                        onMouseEnter={handleOpen2}
-                        onMouseLeave={handleClose2}
-                        sx={{
-                            position: 'absolute',
-                            left: '0',
-                            right: '0',
-                            top: '55px',
-                            width: '850px',
-                            margin: '0 auto'
-                        }}
+                    <StyledButton
+                        color="inherit"
+                        variant="text"
+                        href={item.href}
+                        onClick={handleNavClick(item)}
+                        isActive={!item.external && activeSection === item.href}
                     >
-                        <Grid container>
-                            <Grid item sm={8} display="flex">
-                                <Box p={4} pr={0} pb={3}>
-                                    <AppLinks />
-                                </Box>
-                                <Divider orientation="vertical" />
-                            </Grid>
-                            <Grid item sm={4}>
-                                <Box p={4}>
-                                    <QuickLinks />
-                                </Box>
-                            </Grid>
-                        </Grid>
-                    </Paper>
-                )}
-            </Box>
-            <StyledButton color="inherit" variant="text" href="https://demos.adminmart.com/premium/nextjs/BOAMI-nextjs/docs/index.html">
-                Documentation
-            </StyledButton>
-            <StyledButton color="inherit" variant="text" href="https://adminmart.com/support">
-                Support
-            </StyledButton>
-            <Button color="primary" variant="contained" href="/auth/auth1/login">
-                Login
-            </Button>
+                        {item.label}
+                    </StyledButton>
+                </motion.div>
+            ))}
+
+            {/* Login Button */}
+            <motion.div
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: 0.3, duration: 0.3 }}
+            >
+                <Button
+                    href={navigationConfig.cta.login.href}
+                    variant="outlined"
+                    color="primary"
+                    size="medium"
+                    sx={{
+                        textTransform: 'none',
+                        fontWeight: 500,
+                        borderRadius: 2,
+                        px: 3,
+                        mr: 1,
+                        '&:hover': {
+                            backgroundColor: 'primary.main',
+                            color: 'white',
+                            borderColor: 'primary.main',
+                        },
+                    }}
+                >
+                    {navigationConfig.cta.login.label}
+                </Button>
+            </motion.div>
+
+            {/* Primary CTA Button */}
+            <motion.div
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: 0.4, duration: 0.3 }}
+            >
+                <CTAButton
+                    href={navigationConfig.cta.primary.href}
+                    variant="contained"
+                    color="primary"
+                    size="medium"
+                >
+                    {navigationConfig.cta.primary.label}
+                </CTAButton>
+            </motion.div>
         </>
     );
 };

@@ -140,6 +140,8 @@ const EcommerceEditProduct = () => {
 
       // Upload image if changed
       if (imageFile) {
+        const oldImageUrl = productData.photo; // Store old image URL for cleanup
+        
         const formData = new FormData();
         formData.append("file", imageFile);
 
@@ -153,8 +155,22 @@ const EcommerceEditProduct = () => {
         }
 
         const uploadResult = await uploadResponse.json();
-        if (uploadResult.success && uploadResult.url) {
-          imageUrl = uploadResult.url;
+        if (uploadResult.success && uploadResult.data?.url) {
+          imageUrl = uploadResult.data.url;
+          
+          // Clean up old image after successful upload
+          if (oldImageUrl && oldImageUrl !== imageUrl && oldImageUrl.startsWith('/uploads/products/')) {
+            try {
+              await fetch('/api/cleanup/product-image', {
+                method: 'DELETE',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ imageUrl: oldImageUrl })
+              });
+            } catch (cleanupError) {
+              console.warn('Failed to cleanup old image:', cleanupError);
+              // Don't fail the entire operation if cleanup fails
+            }
+          }
         } else {
           throw new Error(uploadResult.error || "Image upload failed");
         }

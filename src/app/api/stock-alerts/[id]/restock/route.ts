@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
-import { ObjectId } from 'mongodb';
+import { connectDB } from '@/lib/database/mongoose-connection';
+import mongoose from 'mongoose';
 
 // Validation schema for restock request
 const restockSchema = z.object({
@@ -30,18 +31,142 @@ export async function POST(
       }, { status: 400 });
     }
 
+    // Validate ObjectId format
+    if (!/^[0-9a-fA-F]{24}$/.test(id)) {
+      console.error('Invalid ObjectId format:', id);
+      return NextResponse.json({
+        success: false,
+        error: 'Invalid alert ID format',
+      }, { status: 400 });
+    }
+
     const body = await request.json();
     console.log('Restock request body:', body);
     
     const validatedData = restockSchema.parse(body);
 
-    // Simple stock update simulation
-    // In a real application, this would integrate with your existing MongoDB connection
-    // For now, we'll return success to test the UI flow
-    const currentStock = 10; // Mock current stock
+    // Connect to MongoDB database
+    await connectDB();
+    const db = mongoose.connection.db;
+
+    console.log('Processing restock with real MongoDB operations for alert:', id);
+
+    // Step 1: Find the stock alert
+    const stockAlert = await db.collection('stockalerts').findOne({
+      _id: new mongoose.Types.ObjectId(id)
+    });
+
+    if (!stockAlert) {
+      return NextResponse.json({
+        success: false,
+        error: 'Stock alert not found',
+      }, { status: 404 });
+    }
+
+    console.log('Found stock alert:', stockAlert.productName, 'SKU:', stockAlert.sku);
+
+    // Step 2: Find the associated product
+    const product = await db.collection('products').findOne({
+      _id: new mongoose.Types.ObjectId(stockAlert.productId)
+    });
+
+    if (!product) {
+      return NextResponse.json({
+        success: false,
+        error: 'Product not found',
+      }, { status: 404 });
+    }
+
+    console.log('Found product:', product.title, 'Current stock:', product.qty);
+
+    const currentStock = product.qty || 0;
     const newStock = currentStock + validatedData.quantity;
+    const threshold = stockAlert.threshold || product.lowStockThreshold || 500;
+
+    console.log('Stock calculation:', { 
+      currentStock, 
+      newStock, 
+      quantity: validatedData.quantity,
+      threshold,
+      isAboveThreshold: newStock > threshold
+    });
+
+    // Step 3: Update product stock
+    const updateProductResult = await db.collection('products').updateOne(
+      { _id: new mongoose.Types.ObjectId(stockAlert.productId) },
+      { 
+        $set: { 
+          qty: newStock,
+          stockStatus: newStock > 0 ? 'instock' : 'outofstock',
+          stock: newStock > 0
+        } 
+      }
+    );
+
+    if (updateProductResult.modifiedCount === 0) {
+      return NextResponse.json({
+        success: false,
+        error: 'Failed to update product stock',
+      }, { status: 500 });
+    }
+
+    console.log('Product stock updated successfully');
+
+    // Step 4: Create inventory log entry
+    try {
+      await db.collection('inventorylogs').insertOne({
+        productId: stockAlert.productId,
+        productName: stockAlert.productName,
+        sku: stockAlert.sku,
+        action: 'restock',
+        quantityChange: validatedData.quantity,
+        previousQuantity: currentStock,
+        newQuantity: newStock,
+        reason: validatedData.reason,
+        triggeredBy: 'stock_alert',
+        alertId: id,
+        createdAt: new Date(),
+        metadata: {
+          threshold: threshold,
+          wasAboveThreshold: newStock > threshold
+        }
+      });
+      console.log('Inventory log created successfully');
+    } catch (logError) {
+      console.warn('Failed to create inventory log:', logError);
+      // Continue execution - this is not critical
+    }
+
+    // Step 5: Remove or update alert if stock is now above threshold
+    let alertRemoved = false;
     
-    console.log('Mock stock update:', { currentStock, newStock, quantity: validatedData.quantity });
+    if (newStock > threshold) {
+      console.log('Stock above threshold, removing alert');
+      
+      const deleteAlertResult = await db.collection('stockalerts').deleteOne({
+        _id: new mongoose.Types.ObjectId(id)
+      });
+
+      if (deleteAlertResult.deletedCount > 0) {
+        alertRemoved = true;
+        console.log('Stock alert removed successfully');
+      } else {
+        console.warn('Failed to delete stock alert');
+      }
+    } else {
+      // Update alert with new current stock
+      console.log('Stock still below threshold, updating alert current stock');
+      
+      await db.collection('stockalerts').updateOne(
+        { _id: new mongoose.Types.ObjectId(id) },
+        { 
+          $set: { 
+            currentStock: newStock,
+            lastUpdated: new Date()
+          } 
+        }
+      );
+    }
 
     return NextResponse.json({
       success: true,
@@ -51,7 +176,8 @@ export async function POST(
           previousStock: currentStock,
           quantityAdded: validatedData.quantity,
           newStock: newStock,
-          isAboveThreshold: newStock > alert.threshold
+          isAboveThreshold: newStock > threshold,
+          alertRemoved: alertRemoved
         }
       }
     });

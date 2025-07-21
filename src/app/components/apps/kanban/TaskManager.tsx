@@ -5,11 +5,12 @@ import { KanbanDataContext } from "@/app/context/kanbancontext/index";
 import CategoryTaskList from "./CategoryTaskList";
 import { DragDropContext, Droppable } from "react-beautiful-dnd";
 import SimpleBar from "simplebar-react";
-import { Box } from "@mui/material";
+import { Box, CircularProgress, Alert } from "@mui/material";
 
 function TaskManager() {
-  const { todoCategories, moveTask } = useContext(KanbanDataContext);
-  const onDragEnd = (result: { source: any; destination: any; draggableId: any; }) => {
+  const { todoCategories, moveTask, loading, error } = useContext(KanbanDataContext);
+
+  const onDragEnd = async (result: { source: any; destination: any; draggableId: any; }) => {
     const { source, destination, draggableId } = result;
 
     // If no destination is provided or the drop is in the same place, do nothing
@@ -23,16 +24,31 @@ function TaskManager() {
     const sourceIndex = source.index;
     const destinationIndex = destination.index;
 
-    // Call moveTask function from context
-    moveTask(draggableId, sourceCategoryId, destinationCategoryId, sourceIndex, destinationIndex);
+    // Call moveTask function from context (now async)
+    await moveTask(draggableId, sourceCategoryId, destinationCategoryId, sourceIndex, destinationIndex);
   };
+
+  if (loading) {
+    return (
+      <>
+        <KanbanHeader />
+        <Box display="flex" justifyContent="center" alignItems="center" minHeight="400px">
+          <CircularProgress />
+        </Box>
+      </>
+    );
+  }
 
   return (
     <>
       <KanbanHeader />
+      {error && (
+        <Box mb={2}>
+          <Alert severity="error">{error}</Alert>
+        </Box>
+      )}
       <SimpleBar>
         <DragDropContext onDragEnd={onDragEnd}>
-
           <Box display="flex" gap={2}>
             {todoCategories.map((category) => (
               <Droppable droppableId={category.id.toString()} key={category.id}>

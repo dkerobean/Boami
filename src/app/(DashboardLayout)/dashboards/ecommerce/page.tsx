@@ -115,6 +115,9 @@ const Ecommerce = () => {
             <SalesOverview
               isLoading={false}
               salesData={salesData}
+              totalRevenue={stats?.totalRevenue || 0}
+              totalExpenses={stats?.totalExpenses || 0}
+              netProfit={stats?.netProfit || 0}
             />
           </Grid>
 

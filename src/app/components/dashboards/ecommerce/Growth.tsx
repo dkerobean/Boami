@@ -5,7 +5,7 @@ import { useTheme } from '@mui/material/styles';
 import { Box, Typography, Avatar } from '@mui/material';
 
 import DashboardCard from '../../shared/DashboardCard';
-import { IconArrowUpRight } from '@tabler/icons-react';
+import { IconArrowUpRight, IconArrowDownRight, IconUsers } from '@tabler/icons-react';
 import SkeletonGrowthCard from '../skeleton/GrowthCard';
 
 
@@ -19,6 +19,37 @@ const Growth = ({ isLoading, totalCustomers = 0, growth = 0 }: GrowthCardProps) 
   // chart color
   const theme = useTheme();
   const secondary = theme.palette.secondary.main;
+  const success = theme.palette.success.main;
+  const error = theme.palette.error.main;
+
+  // Helper functions
+  const formatNumber = (num: number) => {
+    if (num >= 1000000) {
+      return `${(num / 1000000).toFixed(1)}M`;
+    }
+    if (num >= 1000) {
+      return `${(num / 1000).toFixed(1)}k`;
+    }
+    return num.toString();
+  };
+
+  const formatGrowth = (growth: number) => {
+    return `${growth >= 0 ? '+' : ''}${growth.toFixed(1)}%`;
+  };
+
+  // Generate chart data based on customer growth
+  const generateChartData = () => {
+    const baseValue = Math.max(10, Math.min(80, totalCustomers / 100));
+    const variance = growth / 10;
+    
+    return Array.from({ length: 18 }, (_, i) => {
+      const trend = (i / 17) * variance; // Gradual trend over time
+      const noise = (Math.random() - 0.5) * 10; // Add some randomness
+      return Math.max(0, Math.floor(baseValue + trend + noise));
+    });
+  };
+
+  const chartData = generateChartData();
 
   // chart
   const optionscolumnchart: any = {
@@ -56,8 +87,8 @@ const Growth = ({ isLoading, totalCustomers = 0, growth = 0 }: GrowthCardProps) 
   };
   const seriescolumnchart = [
     {
-      name: '',
-      data: [0, 10, 10, 10, 35, 45, 30, 30, 30, 50, 52, 30, 25, 45, 50, 80, 60, 65],
+      name: 'Customer Growth Trend',
+      data: chartData,
     },
   ];
 
@@ -77,7 +108,7 @@ const Growth = ({ isLoading, totalCustomers = 0, growth = 0 }: GrowthCardProps) 
                 alignItems="center"
                 justifyContent="center"
               >
-                <Avatar src='/images/svgs/icon-bars.svg' alt="img" sx={{ width: 25, height: 25 }} />
+                <IconUsers color={secondary} width={22} height={22} />
               </Box>
 
               <Box mt={3} mb={2} height="25px">
@@ -85,13 +116,19 @@ const Growth = ({ isLoading, totalCustomers = 0, growth = 0 }: GrowthCardProps) 
               </Box>
 
               <Typography variant="h4">
-                24%
-                <span>
-                  <IconArrowUpRight width={18} color="#39B69A" />
-                </span>
+                {formatGrowth(growth)}
+                {growth !== 0 && (
+                  <span>
+                    {growth >= 0 ? (
+                      <IconArrowUpRight width={18} color="#39B69A" />
+                    ) : (
+                      <IconArrowDownRight width={18} color="#FA896B" />
+                    )}
+                  </span>
+                )}
               </Typography>
               <Typography variant="subtitle2" color="textSecondary">
-                Growth
+                Customer Growth ({formatNumber(totalCustomers)} total)
               </Typography>
             </>
           </DashboardCard>

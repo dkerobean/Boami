@@ -1,6 +1,7 @@
 import React, { useEffect } from "react";
 import Alert from '@mui/material/Alert';
 import Box from '@mui/material/Box';
+import CircularProgress from '@mui/material/CircularProgress';
 import IconButton from '@mui/material/IconButton';
 import Stack from '@mui/material/Stack';
 import TextField from '@mui/material/TextField';
@@ -11,7 +12,7 @@ import Scrollbar from "../../custom-scroll/Scrollbar";
 import {
   fetchNotes,
   SelectNote,
-  DeleteNote,
+  deleteNote,
   SearchNotes,
 } from "@/store/apps/notes/NotesSlice";
 import { IconTrash } from "@tabler/icons-react";
@@ -21,6 +22,8 @@ const NoteList = () => {
   const dispatch = useDispatch();
   const activeNote = useSelector((state) => state.notesReducer.notesContent);
   const searchTerm = useSelector((state) => state.notesReducer.noteSearch);
+  const loading = useSelector((state) => state.notesReducer.loading);
+  const error = useSelector((state) => state.notesReducer.error);
 
   useEffect(() => {
     dispatch(fetchNotes());
@@ -29,21 +32,19 @@ const NoteList = () => {
   const filterNotes = (notes: NotesType[], nSearch: string) => {
     if (nSearch !== "")
       return notes.filter(
-        (t: any) =>
-          !t.deleted &&
-          t.title
-            .toLocaleLowerCase()
-            .concat(" ")
-            .includes(nSearch.toLocaleLowerCase())
+        (note: NotesType) =>
+          !note.isDeleted &&
+          note.title
+            .toLowerCase()
+            .includes(nSearch.toLowerCase())
       );
 
-    return notes.filter((t) => !t.deleted);
+    return notes.filter((note) => !note.isDeleted);
   };
 
   const notes = useSelector((state) =>
     filterNotes(state.notesReducer.notes, state.notesReducer.noteSearch)
   );
-  console.log(notes)
   return (
     <>
       <Box p={3} px={2}>
@@ -69,9 +70,19 @@ const NoteList = () => {
             maxHeight: "700px",
           }}
         >
-          {notes && notes.length ? (
+          {loading ? (
+            <Box display="flex" justifyContent="center" p={3}>
+              <CircularProgress />
+            </Box>
+          ) : error ? (
+            <Box m={2}>
+              <Alert severity="error" variant="filled" sx={{ color: "white" }}>
+                {error}
+              </Alert>
+            </Box>
+          ) : notes && notes.length ? (
             notes.map((note, index) => (
-              <Box key={note.id} px={2}>
+              <Box key={note._id} px={2}>
                 <Box
                   p={2}
                   sx={{
@@ -94,13 +105,16 @@ const NoteList = () => {
                     alignItems="center"
                   >
                     <Typography variant="caption">
-                      {new Date(note.datef).toLocaleDateString()}
+                      {new Date(note.createdAt).toLocaleDateString()}
                     </Typography>
                     <Tooltip title="Delete">
                       <IconButton
                         aria-label="delete"
                         size="small"
-                        onClick={() => dispatch(DeleteNote(note.id))}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          dispatch(deleteNote(note._id));
+                        }}
                       >
                         <IconTrash width={18} />
                       </IconButton>
@@ -111,8 +125,8 @@ const NoteList = () => {
             ))
           ) : (
             <Box m={2}>
-              <Alert severity="error" variant="filled" sx={{ color: "white" }}>
-                No Notes Found!
+              <Alert severity="info" variant="filled" sx={{ color: "white" }}>
+                No Notes Found! Create your first note to get started.
               </Alert>
             </Box>
           )}

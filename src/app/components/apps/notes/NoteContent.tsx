@@ -10,7 +10,7 @@ import Typography from '@mui/material/Typography';
 import { useTheme } from '@mui/material/styles';
 import { IconCheck, IconMenu2 } from '@tabler/icons-react';
 
-import { UpdateNote } from '@/store/apps/notes/NotesSlice';
+import { updateNote } from '@/store/apps/notes/NotesSlice';
 import AddNotes from './AddNotes';
 import { NotesType } from '../../../(DashboardLayout)/types/apps/notes';
 
@@ -29,9 +29,13 @@ const NoteContent = ({ toggleNoteSidebar }: Props) => {
     (state) => state.notesReducer.notes.length-1,
   );
   const noteDetails: NotesType = useSelector(
-    (state) => state.notesReducer.notes[state.notesReducer.notesContent>notelength ?  0 : state.notesReducer.notesContent],
+    (state) => {
+      const notes = state.notesReducer.notes.filter((note: NotesType) => !note.isDeleted);
+      const index = state.notesReducer.notesContent;
+      return notes[index >= notes.length ? 0 : index];
+    }
   );
-  
+
   const theme = useTheme();
 
   const dispatch = useDispatch();
@@ -94,8 +98,8 @@ const NoteContent = ({ toggleNoteSidebar }: Props) => {
             fullWidth
             rows={5}
             variant="outlined"
-            value={noteDetails.title}
-            onChange={(e) => dispatch(UpdateNote(noteDetails.id, 'title', e.target.value))}
+            value={noteDetails.title || ''}
+            onChange={(e) => dispatch(updateNote(noteDetails._id, 'title', e.target.value))}
           />
           <br />
           <Typography variant="h6" mt={3} mb={2} fontWeight={600}>
@@ -113,7 +117,7 @@ const NoteContent = ({ toggleNoteSidebar }: Props) => {
               size="small"
               key={color1.id}
               color={color1?.disp}
-              onClick={() => dispatch(UpdateNote(noteDetails.id, 'color', color1.disp))}
+              onClick={() => dispatch(updateNote(noteDetails._id, 'color', color1.disp))}
             >
               {noteDetails.color === color1.disp ? <IconCheck width="16" /> : ''}
             </Fab>

@@ -33,7 +33,7 @@ const TaskData: React.FC<TaskDataProps> = ({
   onDeleteTask,
   index,
 }: any) => {
-  const { setError } = useContext(KanbanDataContext);
+  const { setError, updateTask } = useContext(KanbanDataContext);
   const [showEditModal, setShowEditModal] = useState(false);
   const [editedTask, setEditedTask] = useState(task);
   const [anchorEl, setAnchorEl] = useState(null);
@@ -56,17 +56,11 @@ const TaskData: React.FC<TaskDataProps> = ({
 
   const handleSaveEditedTask = async (editedTaskData: { id: any }) => {
     try {
-      const response = await axios.put("/api/TodoData/editTask", {
-        taskId: editedTaskData.id,
-        newData: editedTaskData,
-      });
-      if (response.status === 200) {
-        setEditedTask(editedTaskData);
-      } else {
-        throw new Error("Failed to edit task");
-      }
+      await updateTask(editedTaskData.id, editedTaskData);
+      setEditedTask(editedTaskData);
+      console.log("Task updated successfully");
     } catch (error: any) {
-      setError(error.message);
+      setError(error.message || "Failed to update task");
     }
   };
 

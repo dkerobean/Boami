@@ -1,5 +1,4 @@
-import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import React, { useState } from 'react';
 import Link from 'next/link';
 import {
   Box,
@@ -9,12 +8,13 @@ import {
   Divider,
   Button,
   IconButton,
+  CircularProgress,
 } from '@mui/material';
-
-
 import { IconMail } from '@tabler/icons-react';
 import { Stack } from '@mui/system';
 import Image from 'next/image';
+import { useAuthContext } from '@/app/context/AuthContext';
+import { AuthLoading } from '@/app/components/shared/AuthLoading';
 
 const profile: any[] = [
   {
@@ -40,31 +40,38 @@ const profile: any[] = [
 
 const Profile = () => {
   const [anchorEl2, setAnchorEl2] = useState(null);
-  const [user, setUser] = useState<any>(null);
+  const { user, isLoading, logout, isAuthenticated } = useAuthContext();
 
-  useEffect(() => {
-    const fetchUser = async () => {
-      try {
-        const response = await axios.get('/api/user');
-        if (response.data.success) {
-          setUser(response.data.data);
-        } else {
-          console.error('Failed to fetch user:', response.data.message);
-        }
-      } catch (error) {
-        console.error('Failed to fetch user', error);
-        // Keep user as null to show fallback data
-      }
-    };
-
-    fetchUser();
-  }, []);
   const handleClick2 = (event: any) => {
     setAnchorEl2(event.currentTarget);
   };
+
   const handleClose2 = () => {
     setAnchorEl2(null);
   };
+
+  const handleLogout = async () => {
+    try {
+      await logout();
+      handleClose2();
+    } catch (error) {
+      console.error('Logout failed:', error);
+    }
+  };
+
+  // Show loading state
+  if (isLoading) {
+    return (
+      <IconButton color="inherit" disabled>
+        <CircularProgress size={24} />
+      </IconButton>
+    );
+  }
+
+  // Don't render if not authenticated
+  if (!isAuthenticated || !user) {
+    return null;
+  }
 
   return (
     <Box>
@@ -109,10 +116,10 @@ const Profile = () => {
       >
         <Typography variant="h5">User Profile</Typography>
         <Stack direction="row" py={3} spacing={2} alignItems="center">
-        <Avatar 
-          src={user?.profileImage || user?.avatar || "/images/profile/user-1.jpg"} 
-          alt={"ProfileImg"} 
-          sx={{ width: 95, height: 95 }} 
+        <Avatar
+          src={user?.profileImage || user?.avatar || "/images/profile/user-1.jpg"}
+          alt={"ProfileImg"}
+          sx={{ width: 95, height: 95 }}
         />
           <Box>
             <Typography variant="subtitle2" color="textPrimary" fontWeight={600}>
@@ -201,7 +208,12 @@ const Profile = () => {
               <Image src={"/images/backgrounds/unlimited-bg.png"} width={150} height={183} style={{ height: 'auto', width: 'auto' }} alt="unlimited" className="signup-bg" />
             </Box>
           </Box>
-          <Button href="/auth/auth1/login" variant="outlined" color="primary" component={Link} fullWidth>
+          <Button
+            variant="outlined"
+            color="primary"
+            fullWidth
+            onClick={handleLogout}
+          >
             Logout
           </Button>
         </Box>

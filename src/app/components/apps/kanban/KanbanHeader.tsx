@@ -28,14 +28,12 @@ function KanbanHeader() {
   //Handles Add a new category.
   const handleSave = async () => {
     try {
-      const response = await axios.post("/api/TodoData/addCategory", {
-        categoryName: listName,
-      });
-      addCategory(response.data.name);
+      await addCategory(listName);
       setListName("");
       setShow(false);
+      console.log("Category added successfully");
     } catch (error: any) {
-      setError(error.message);
+      setError(error.message || "Failed to add category");
     }
   };
 
@@ -65,7 +63,7 @@ function KanbanHeader() {
           <Grid container spacing={3}>
             <Grid item xs={12} lg={12}>
               <CustomFormLabel
-                
+
                 htmlFor="default-value"
               >
                 List Name

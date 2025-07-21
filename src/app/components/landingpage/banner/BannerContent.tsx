@@ -6,8 +6,7 @@ import { Theme } from '@mui/material/styles';
 import Typography from '@mui/material/Typography';
 import useMediaQuery from '@mui/material/useMediaQuery';
 import { styled } from '@mui/material/styles';
-import { IconRocket } from '@tabler/icons-react';
-
+import { IconShoppingCart } from '@tabler/icons-react';
 
 // third party
 import { motion } from 'framer-motion';
@@ -18,9 +17,8 @@ const StyledButton = styled(Button)(() => ({
 }));
 
 const BannerContent = () => {
-
   const lgDown = useMediaQuery((theme: Theme) => theme.breakpoints.down('lg'));
-  
+
   return (
     <Box mt={lgDown ? 8 : 0}>
       <motion.div
@@ -34,9 +32,9 @@ const BannerContent = () => {
       >
         <Typography variant="h6" display={'flex'} gap={1} mb={2}>
           <Typography color={'secondary'}>
-            <IconRocket size={'21'} />
+            <IconShoppingCart size={'21'} />
           </Typography>{' '}
-          Kick start your project with
+          Transform your e-commerce business with
         </Typography>
 
         <Typography
@@ -51,11 +49,10 @@ const BannerContent = () => {
             },
           }}
         >
-          Most powerful &{' '}
+          Complete E-commerce{' '}
           <Typography component={'span'} variant="inherit" color={'primary'}>
-            Developer friendly
-          </Typography>{' '}
-          NextJs dashboard
+            Management Platform
+          </Typography>
         </Typography>
       </motion.div>
       <Box pt={4} pb={3}>
@@ -70,8 +67,8 @@ const BannerContent = () => {
           }}
         >
           <Typography variant="h5" fontWeight={300}>
-                          BOAMI comes with light & dark color skins, well designed dashboards, applications
-            and pages.
+            Streamline your entire business with BOAMI's all-in-one platform. Manage inventory,
+            process orders, nurture customers, and gain AI-powered insights to grow your e-commerce business.
           </Typography>
         </motion.div>
       </Box>
@@ -86,12 +83,12 @@ const BannerContent = () => {
         }}
       >
         <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} mt={3}>
-          <StyledButton variant="contained" color="primary" href="/auth/auth1/login">
-            Login
+          <StyledButton variant="contained" color="primary" href="/auth/auth1/register">
+            Start Free Trial
           </StyledButton>
 
-          <StyledButton variant="outlined" href="#demos">
-            Live Preview
+          <StyledButton variant="outlined" href="#features">
+            View Features
           </StyledButton>
         </Stack>
       </motion.div>

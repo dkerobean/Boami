@@ -11,6 +11,10 @@ import HorizontalHeader from "./layout/horizontal/header/Header";
 import { useSelector } from "@/store/hooks";
 import { AppState } from "@/store/store";
 import { useDashboardLoading } from "@/hooks/useDashboardLoading";
+import { useAuthContext } from "@/app/context/AuthContext";
+import { ProtectedRoute } from "@/app/components/shared/ProtectedRoute";
+import { AuthLoading } from "@/app/components/shared/AuthLoading";
+import { ErrorBoundary } from "@/app/components/shared/ErrorBoundary";
 
 const MainWrapper = styled("div")(() => ({
   display: "flex",
@@ -41,58 +45,97 @@ export default function RootLayout({
   const [isMobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const customizer = useSelector((state: AppState) => state.customizer);
   const theme = useTheme();
+  const { isLoading, error } = useAuthContext();
 
   // Initialize dashboard loading for sub-menu navigation
   useDashboardLoading();
 
+  // Authentication loading fallback
+  const authLoadingFallback = (
+    <Box
+      display="flex"
+      justifyContent="center"
+      alignItems="center"
+      minHeight="100vh"
+      flexDirection="column"
+    >
+      <AuthLoading
+        type="security"
+        message="Verifying access permissions..."
+        size="large"
+      />
+    </Box>
+  );
+
   return (
-    <MainWrapper className={customizer.activeMode === 'dark' ? 'darkbg mainwrapper' : 'mainwrapper'}>
-      <title>BOAMI</title>
-      {/* ------------------------------------------- */}
-      {/* Sidebar */}
-      {/* ------------------------------------------- */}
-      {customizer.isHorizontal ? "" : <Sidebar />}
-      {/* ------------------------------------------- */}
-      {/* Main Wrapper */}
-      {/* ------------------------------------------- */}
-      <PageWrapper
-        className="page-wrapper"
-        sx={{
-          ...(customizer.isCollapse && {
-            [theme.breakpoints.up("lg")]: {
-              ml: `${customizer.MiniSidebarWidth}px`,
-            },
-          }),
-        }}
+    <ErrorBoundary>
+      <ProtectedRoute
+        fallback={authLoadingFallback}
+        showFallback={true}
       >
-        {/* ------------------------------------------- */}
-        {/* Header */}
-        {/* ------------------------------------------- */}
-        {customizer.isHorizontal ? <HorizontalHeader /> : <Header />}
-        {/* PageContent */}
-        {customizer.isHorizontal ? <Navigation /> : ""}
-        <Container
-          sx={{
-            pt: '30px',
-            maxWidth: customizer.isLayout === "boxed" ? "lg" : "100%!important",
-          }}
-        >
+        <MainWrapper className={customizer.activeMode === 'dark' ? 'darkbg mainwrapper' : 'mainwrapper'}>
+          <title>BOAMI</title>
           {/* ------------------------------------------- */}
-          {/* PageContent */}
+          {/* Sidebar */}
           {/* ------------------------------------------- */}
+          {customizer.isHorizontal ? "" : <Sidebar />}
+          {/* ------------------------------------------- */}
+          {/* Main Wrapper */}
+          {/* ------------------------------------------- */}
+          <PageWrapper
+            className="page-wrapper"
+            sx={{
+              ...(customizer.isCollapse && {
+                [theme.breakpoints.up("lg")]: {
+                  ml: `${customizer.MiniSidebarWidth}px`,
+                },
+              }),
+            }}
+          >
+            {/* ------------------------------------------- */}
+            {/* Header */}
+            {/* ------------------------------------------- */}
+            {customizer.isHorizontal ? <HorizontalHeader /> : <Header />}
+            {/* PageContent */}
+            {customizer.isHorizontal ? <Navigation /> : ""}
+            <Container
+              sx={{
+                pt: '30px',
+                maxWidth: customizer.isLayout === "boxed" ? "lg" : "100%!important",
+              }}
+            >
+              {/* ------------------------------------------- */}
+              {/* PageContent */}
+              {/* ------------------------------------------- */}
 
-          <Box sx={{ minHeight: "calc(100vh - 170px)" }}>
-            {/* <Outlet /> */}
-            {children}
-            {/* <Index /> */}
-          </Box>
+              <Box sx={{ minHeight: "calc(100vh - 170px)" }}>
+                {/* Show loading state during authentication checks */}
+                {isLoading ? (
+                  <Box
+                    display="flex"
+                    justifyContent="center"
+                    alignItems="center"
+                    minHeight="200px"
+                  >
+                    <AuthLoading
+                      type="refresh"
+                      message="Loading dashboard..."
+                      size="medium"
+                    />
+                  </Box>
+                ) : (
+                  children
+                )}
+              </Box>
 
-          {/* ------------------------------------------- */}
-          {/* End Page */}
-          {/* ------------------------------------------- */}
-        </Container>
-        <Customizer />
-      </PageWrapper>
-    </MainWrapper>
+              {/* ------------------------------------------- */}
+              {/* End Page */}
+              {/* ------------------------------------------- */}
+            </Container>
+            <Customizer />
+          </PageWrapper>
+        </MainWrapper>
+      </ProtectedRoute>
+    </ErrorBoundary>
   );
 }

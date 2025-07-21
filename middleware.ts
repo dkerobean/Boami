@@ -3,6 +3,7 @@ import { JWTManager } from '@/lib/auth/jwt';
 
 /**
  * Protected routes that require authentication
+ * All dashboard and application routes are protected
  */
 const protectedRoutes = [
   '/dashboards',
@@ -13,7 +14,12 @@ const protectedRoutes = [
   '/react-tables',
   '/ui-components',
   '/widgets',
+  '/finance',
   '/layout',
+  '/sample-page',
+  '/theme-pages',
+  '/icons',
+  '/test-loading',
 ];
 
 /**
@@ -25,6 +31,7 @@ const authRoutes = [
   '/auth/auth1/verify-email',
   '/auth/auth1/forgot-password',
   '/auth/auth1/reset-password',
+  '/auth/auth2',
 ];
 
 /**
@@ -33,9 +40,40 @@ const authRoutes = [
 const publicRoutes = [
   '/',
   '/landingpage',
-  '/frontend-pages',
+  '/frontend-pages/about',
+  '/frontend-pages/contact',
+  '/frontend-pages/blog',
+  '/frontend-pages/portfolio',
+  '/frontend-pages/pricing',
+  '/frontend-pages/homepage',
   '/api/auth',
 ];
+
+/**
+ * Security headers for protected routes
+ */
+const securityHeaders = {
+  'X-Frame-Options': 'DENY',
+  'X-Content-Type-Options': 'nosniff',
+  'Referrer-Policy': 'strict-origin-when-cross-origin',
+  'X-XSS-Protection': '1; mode=block',
+  'Permissions-Policy': 'camera=(), microphone=(), geolocation=()',
+};
+
+/**
+ * Configuration for redirect validation
+ */
+const redirectConfig = {
+  maxRedirectLength: 200,
+  allowedPatterns: protectedRoutes,
+  blockedPatterns: [
+    'javascript:',
+    'data:',
+    'vbscript:',
+    'file:',
+    'ftp:',
+  ],
+};
 
 /**
  * Check if a path matches any of the given route patterns
@@ -45,18 +83,47 @@ function matchesRoute(pathname: string, routes: string[]): boolean {
 }
 
 /**
+ * Validate redirect URL to prevent malicious redirects
+ */
+function isValidRedirect(redirectUrl: string): boolean {
+  try {
+    // Check length
+    if (redirectUrl.length > redirectConfig.maxRedirectLength) {
+      return false;
+    }
+
+    // Check for blocked patterns
+    const lowerUrl = redirectUrl.toLowerCase();
+    if (redirectConfig.blockedPatterns.some(pattern => lowerUrl.startsWith(pattern))) {
+      return false;
+    }
+
+    // Must be a relative URL or same origin
+    if (redirectUrl.startsWith('http://') || redirectUrl.startsWith('https://')) {
+      return false;
+    }
+
+    // Must match allowed patterns (protected routes)
+    return redirectConfig.allowedPatterns.some(pattern => redirectUrl.startsWith(pattern));
+  } catch (error) {
+    console.error('Redirect validation error:', error);
+    return false;
+  }
+}
+
+/**
  * Check if user is authenticated by verifying JWT token
  */
 function isAuthenticated(request: NextRequest): boolean {
   try {
     const accessToken = request.cookies.get('accessToken')?.value;
-    
+
     if (!accessToken) {
       return false;
     }
 
     const payload = JWTManager.verifyAccessToken(accessToken);
-    
+
     return !!payload;
   } catch (error) {
     console.error('Authentication check failed:', error);
@@ -90,12 +157,12 @@ export function middleware(request: NextRequest) {
       loginUrl.searchParams.set('redirect', pathname);
       return NextResponse.redirect(loginUrl);
     }
-    
+
     // Add security headers for protected routes
     const response = NextResponse.next();
-    response.headers.set('X-Frame-Options', 'DENY');
-    response.headers.set('X-Content-Type-Options', 'nosniff');
-    response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
+    Object.entries(securityHeaders).forEach(([key, value]) => {
+      response.headers.set(key, value);
+    });
     return response;
   }
 
@@ -103,13 +170,13 @@ export function middleware(request: NextRequest) {
   if (matchesRoute(pathname, authRoutes)) {
     if (authenticated) {
       console.log(`🔄 Redirecting authenticated user from ${pathname} to dashboard`);
-      
-      // Check for redirect parameter
+
+      // Check for redirect parameter with validation
       const redirectTo = request.nextUrl.searchParams.get('redirect');
-      if (redirectTo && matchesRoute(redirectTo, protectedRoutes)) {
+      if (redirectTo && isValidRedirect(redirectTo)) {
         return NextResponse.redirect(new URL(redirectTo, request.url));
       }
-      
+
       return NextResponse.redirect(new URL('/dashboards/modern', request.url));
     }
   }

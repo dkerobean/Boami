@@ -66,6 +66,7 @@ const BulkUploadPage = () => {
   const [fieldMapping, setFieldMapping] = useState<{ [key: string]: string }>({});
   const [importJob, setImportJob] = useState<ImportJob | null>(null);
   const [validationErrors, setValidationErrors] = useState<any[]>([]);
+  const [isImporting, setIsImporting] = useState(false);
 
   const handleFileUpload = (file: File, data: ParsedData) => {
     setUploadedFile(file);
@@ -75,6 +76,9 @@ const BulkUploadPage = () => {
 
   const handleFieldMapping = (mapping: { [key: string]: string }) => {
     setFieldMapping(mapping);
+  };
+
+  const handleProceedToValidation = () => {
     setActiveStep(2);
   };
 
@@ -85,10 +89,12 @@ const BulkUploadPage = () => {
     }
   };
 
-  const handleImport = () => {
+  const handleImport = async () => {
     if (!uploadedFile || !parsedData) return;
+    
+    setIsImporting(true);
 
-    const mockJob: ImportJob = {
+    const initialJob: ImportJob = {
       id: `import_${Date.now()}`,
       fileName: uploadedFile.name,
       fileSize: uploadedFile.size,
@@ -109,43 +115,86 @@ const BulkUploadPage = () => {
       errors: [],
     };
 
-    setImportJob(mockJob);
+    setImportJob(initialJob);
+    setActiveStep(3); // Move to progress tracking step
     
-    // Simulate import progress
-    const interval = setInterval(() => {
-      setImportJob(prev => {
-        if (!prev) return null;
-        
-        const newProcessed = Math.min(prev.progress.processedRows + 10, prev.progress.totalRows);
-        const newSuccessful = Math.floor(newProcessed * 0.9);
-        const newFailed = newProcessed - newSuccessful;
-        const percentage = Math.round((newProcessed / prev.progress.totalRows) * 100);
-        
-        const isComplete = newProcessed >= prev.progress.totalRows;
-        
-        if (isComplete) {
-          clearInterval(interval);
-        }
-        
-        return {
+    try {
+      // Call the real import API
+      const response = await fetch('/api/bulk-upload/import', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          data: parsedData.data,
+          fieldMapping,
+          options: {
+            updateExisting: false,
+            createCategories: true,
+            skipInvalidRows: true,
+          },
+        }),
+      });
+      
+      console.log('Response status:', response.status, response.statusText);
+      
+      if (!response.ok) {
+        const errorResult = await response.json().catch(() => ({}));
+        console.log('Error response:', errorResult);
+        throw new Error(errorResult.error || errorResult.message || `HTTP ${response.status}: ${response.statusText}`);
+      }
+      
+      const result = await response.json();
+      console.log('API Response received:', result);
+      
+      if (result.success) {
+        // Update job with real results
+        setImportJob(prev => prev ? {
           ...prev,
-          status: isComplete ? 'completed' : 'processing',
+          status: 'completed',
           progress: {
-            ...prev.progress,
-            processedRows: newProcessed,
-            successfulRows: newSuccessful,
-            failedRows: newFailed,
-            percentage,
+            totalRows: result.results.totalRows,
+            processedRows: result.results.processed,
+            successfulRows: result.results.created + result.results.updated,
+            failedRows: result.results.failed,
+            percentage: 100,
           },
           results: {
-            created: Math.floor(newSuccessful * 0.7),
-            updated: Math.floor(newSuccessful * 0.3),
-            skipped: Math.floor(newFailed * 0.5),
-            failed: Math.floor(newFailed * 0.5),
+            created: result.results.created,
+            updated: result.results.updated,
+            skipped: result.results.skipped,
+            failed: result.results.failed,
           },
-        };
-      });
-    }, 500);
+          errors: result.results.errors?.map((err: any) => ({
+            row: err.row,
+            message: Array.isArray(err.errors) ? err.errors.join(', ') : err.errors || err.message || 'Unknown error',
+          })) || [],
+        } : null);
+      } else {
+        // Handle API error
+        console.log('API returned error:', result);
+        setImportJob(prev => prev ? {
+          ...prev,
+          status: 'failed',
+          errors: [{
+            row: 0,
+            message: result.error || result.message || 'Import failed',
+          }],
+        } : null);
+      }
+    } catch (error) {
+      console.error('Import error:', error);
+      setImportJob(prev => prev ? {
+        ...prev,
+        status: 'failed',
+        errors: [{
+          row: 0,
+          message: 'Network error occurred during import',
+        }],
+      } : null);
+    } finally {
+      setIsImporting(false);
+    }
   };
 
   const handleReset = () => {
@@ -155,12 +204,15 @@ const BulkUploadPage = () => {
     setFieldMapping({});
     setImportJob(null);
     setValidationErrors([]);
+    setIsImporting(false);
   };
 
   const downloadTemplate = () => {
-    const template = `Name,SKU,Price,Category,Description,Stock Quantity,Weight,Dimensions,Brand,Tags
-"Premium Headphones","WH-001",299.99,"Electronics","High-quality wireless headphones",50,0.5,"20x15x8cm","AudioTech","wireless,bluetooth,premium"
-"Bluetooth Speaker","SPK-002",99.99,"Electronics","Portable wireless speaker",25,0.8,"15x10x6cm","SoundMax","portable,bluetooth,speaker"`;
+    // Simplified template with essential fields only
+    const template = `title,description,price,sku,category,qty,photo
+"Premium Wireless Headphones","High-quality wireless headphones with noise cancellation and 30-hour battery life",299.99,"WH-001","Electronics",50,"https://images.unsplash.com/photo-1505740420928-5e560c06d30e"
+"Bluetooth Portable Speaker","Compact wireless speaker with powerful bass and waterproof design",99.99,"SPK-002","Electronics",25,"https://images.unsplash.com/photo-1608043152269-423dbba4e7e1"
+"Gaming Mouse","High-precision gaming mouse with RGB lighting and programmable buttons",79.99,"GM-003","Accessories",75,"https://images.unsplash.com/photo-1527864550417-7fd91fc51a46"`;
     
     const blob = new Blob([template], { type: 'text/csv' });
     const url = window.URL.createObjectURL(blob);
@@ -234,6 +286,7 @@ const BulkUploadPage = () => {
                 headers={parsedData.headers}
                 previewData={parsedData.previewData}
                 onMappingChange={handleFieldMapping}
+                onProceed={handleProceedToValidation}
               />
             </CardContent>
           </BlankCard>
@@ -271,8 +324,9 @@ const BulkUploadPage = () => {
                     onClick={handleImport}
                     startIcon={<IconUpload />}
                     size="large"
+                    disabled={isImporting}
                   >
-                    Start Import
+                    {isImporting ? 'Starting Import...' : 'Start Import'}
                   </Button>
                 </Box>
               )}

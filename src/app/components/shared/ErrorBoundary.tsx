@@ -250,4 +250,5 @@ export function AsyncErrorBoundary({ children }: { children: ReactNode }) {
   return <>{children}</>;
 }
 
+export { ErrorBoundary };
 export default ErrorBoundary;

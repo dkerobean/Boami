@@ -8,6 +8,8 @@ import CustomizerReducer from "./customizer/CustomizerSlice";
 import EcommerceReducer from "./apps/eCommerce/ECommerceSlice";
 import ChatsReducer from "./apps/chat/ChatSlice";
 import NotesReducer from "./apps/notes/NotesSlice";
+import CalendarReducer from "./apps/calendar/CalendarSlice";
+import KanbanReducer from "./apps/kanban/KanbanSlice";
 import EmailReducer from "./apps/email/EmailSlice";
 import TicketReducer from "./apps/tickets/TicketSlice";
 import ContactsReducer from "./apps/contacts/ContactSlice";
@@ -27,6 +29,7 @@ export const store = configureStore({
     chatReducer: ChatsReducer,
     emailReducer: EmailReducer,
     notesReducer: NotesReducer,
+    calendarReducer: CalendarReducer,
     contactsReducer: ContactsReducer,
     ticketReducer: TicketReducer,
     userpostsReducer: UserProfileReducer,
@@ -44,6 +47,7 @@ const rootReducer = combineReducers({
   chatReducer: ChatsReducer,
   emailReducer: EmailReducer,
   notesReducer: NotesReducer,
+  calendarReducer: CalendarReducer,
   contactsReducer: ContactsReducer,
   ticketReducer: TicketReducer,
   userpostsReducer: UserProfileReducer,

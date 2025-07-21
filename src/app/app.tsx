@@ -8,6 +8,7 @@ import { useSelector } from 'react-redux';
 import { AppRouterCacheProvider } from '@mui/material-nextjs/v14-appRouter';
 import { AppState } from "@/store/store";
 import { LoadingProvider } from "@/app/components/shared/loading";
+import { AuthProvider } from "@/app/context/AuthContext";
 import "@/utils/i18n";
 import "@/app/api/index";
 
@@ -34,9 +35,11 @@ const MyApp = ({ children }: { children: React.ReactNode }) => {
                 <ThemeProvider theme={theme}>
                     <RTL direction={customizer.activeDir}>
                         <CssBaseline />
-                        <LoadingProvider config={loadingConfig}>
-                            {children}
-                        </LoadingProvider>
+                        <AuthProvider>
+                            <LoadingProvider config={loadingConfig}>
+                                {children}
+                            </LoadingProvider>
+                        </AuthProvider>
                     </RTL>
                 </ThemeProvider>
             </AppRouterCacheProvider>

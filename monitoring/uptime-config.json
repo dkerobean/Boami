@@ -1,0 +1,135 @@
+{
+  "name": "BOAMI Landing Page Monitoring",
+  "description": "Uptime and performance monitoring configuration for BOAMI landing page",
+  "monitors": [
+    {
+      "name": "Landing Page Availability",
+      "url": "https://boami.com/landingpage",
+      "method": "GET",
+      "interval": 300,
+      "timeout": 30,
+      "expectedStatus": 200,
+      "alerts": {
+        "email": ["admin@boami.com"],
+        "slack": "#alerts"
+      }
+    },
+    {
+      "name": "Landing Page Performance",
+      "url": "https://boami.com/landingpage",
+      "method": "GET",
+      "interval": 900,
+      "timeout": 10,
+      "performanceThresholds": {
+        "responseTime": 2000,
+        "availability": 99.9
+      },
+      "alerts": {
+        "email": ["dev-team@boami.com"],
+        "slack": "#performance"
+      }
+    },
+    {
+      "name": "API Health Check",
+      "url": "https://boami.com/api/health",
+      "method": "GET",
+      "interval": 600,
+      "timeout": 15,
+      "expectedStatus": 200,
+      "alerts": {
+        "email": ["admin@boami.com"],
+        "slack": "#alerts"
+      }
+    }
+  ],
+  "dashboards": [
+    {
+      "name": "Landing Page Metrics",
+      "widgets": [
+        {
+          "type": "uptime",
+          "title": "Uptime Percentage",
+          "timeRange": "24h"
+        },
+        {
+          "type": "response_time",
+          "title": "Average Response Time",
+          "timeRange": "24h"
+        },
+        {
+          "type": "error_rate",
+          "title": "Error Rate",
+          "timeRange": "24h"
+        },
+        {
+          "type": "traffic",
+          "title": "Page Views",
+          "timeRange": "24h"
+        }
+      ]
+    }
+  ],
+  "notifications": {
+    "channels": [
+      {
+        "type": "email",
+        "name": "Admin Email",
+        "config": {
+          "recipients": ["admin@boami.com"],
+          "subject": "BOAMI Landing Page Alert"
+        }
+      },
+      {
+        "type": "slack",
+        "name": "Dev Team Slack",
+        "config": {
+          "webhook": "https://hooks.slack.com/services/YOUR/SLACK/WEBHOOK",
+          "channel": "#alerts"
+        }
+      }
+    ],
+    "escalation": {
+      "levels": [
+        {
+          "after": "5m",
+          "channels": ["email"]
+        },
+        {
+          "after": "15m",
+          "channels": ["email", "slack"]
+        },
+        {
+          "after": "30m",
+          "channels": ["email", "slack"],
+          "oncall": true
+        }
+      ]
+    }
+  },
+  "maintenance": {
+    "schedule": {
+      "backup": "0 2 * * *",
+      "security_scan": "0 3 * * 0",
+      "performance_audit": "0 4 * * 1",
+      "dependency_update": "0 5 * * 2"
+    },
+    "procedures": {
+      "backup": {
+        "description": "Daily backup of application data and configurations",
+        "script": "./scripts/backup.sh"
+      },
+      "security_scan": {
+        "description": "Weekly security vulnerability scan",
+        "script": "./scripts/security-scan.sh"
+      },
+      "performance_audit": {
+        "description": "Weekly performance audit using Lighthouse",
+        "script": "./scripts/performance-audit.sh"
+      },
+      "dependency_update": {
+        "description": "Weekly dependency security updates",
+        "script": "./scripts/update-dependencies.sh"
+      }
+    }
+  }
+}

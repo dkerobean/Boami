@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useEffect } from "react";
 import Button from "@mui/material/Button";
 import CardContent from "@mui/material/CardContent";
 import Dialog from "@mui/material/Dialog";
@@ -9,12 +9,14 @@ import DialogContent from "@mui/material/DialogContent";
 import Fab from "@mui/material/Fab";
 import TextField from "@mui/material/TextField";
 import Typography from "@mui/material/Typography";
+import Alert from "@mui/material/Alert";
+import CircularProgress from "@mui/material/CircularProgress";
+import Box from "@mui/material/Box";
 import { Calendar, momentLocalizer } from "react-big-calendar";
 import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import moment from "moment";
-import Events from "@/app/(DashboardLayout)/EventData";
 import "react-big-calendar/lib/css/react-big-calendar.css";
 import "./Calendar.css";
 
@@ -22,27 +24,35 @@ import PageContainer from "@/app/components/container/PageContainer";
 import Breadcrumb from "@/app/(DashboardLayout)/layout/shared/breadcrumb/Breadcrumb";
 import { IconCheck } from "@tabler/icons-react";
 import BlankCard from "@/app/components/shared/BlankCard";
+import { useSelector, useDispatch } from "@/store/hooks";
+import {
+  fetchEvents,
+  addEvent,
+  updateEvent,
+  deleteEvent,
+  transformEventsForDisplay,
+  CalendarEventDisplay
+} from "@/store/apps/calendar/CalendarSlice";
 
 moment.locale("en-GB");
 const localizer = momentLocalizer(moment);
 
-type EvType = {
-  title: string;
-  allDay?: boolean;
-  start?: Date;
-  end?: Date;
-  color?: string;
-};
-
 const BigCalendar = () => {
-  const [calevents, setCalEvents] = React.useState<any>(Events);
+  const dispatch = useDispatch();
+  const { events, loading, error } = useSelector((state) => state.calendarReducer);
+
+  // Transform events for display
+  const displayEvents = transformEventsForDisplay(events);
+
   const [open, setOpen] = React.useState<boolean>(false);
   const [title, setTitle] = React.useState<string>("");
-  const [slot, setSlot] = React.useState<EvType>();
-  const [start, setStart] = React.useState<any | null>();
-  const [end, setEnd] = React.useState<any | null>();
+  const [description, setDescription] = React.useState<string>("");
+  const [location, setLocation] = React.useState<string>("");
+  const [start, setStart] = React.useState<Date | null>(new Date());
+  const [end, setEnd] = React.useState<Date | null>(new Date());
+  const [isAllDay, setIsAllDay] = React.useState<boolean>(false);
   const [color, setColor] = React.useState<string>("default");
-  const [update, setUpdate] = React.useState<EvType | undefined | any>();
+  const [updateEventData, setUpdateEventData] = React.useState<CalendarEventDisplay | null>(null);
 
   const ColorVariation = [
     {
@@ -71,153 +81,198 @@ const BigCalendar = () => {
       value: "warning",
     },
   ];
-  const addNewEventAlert = (slotInfo: EvType) => {
+
+  useEffect(() => {
+    dispatch(fetchEvents());
+  }, [dispatch]);
+
+  const addNewEventAlert = (slotInfo: any) => {
     setOpen(true);
-    setSlot(slotInfo);
+    setTitle("");
+    setDescription("");
+    setLocation("");
     setStart(slotInfo.start);
     setEnd(slotInfo.end);
+    setIsAllDay(slotInfo.start.getHours() === 0 && slotInfo.end.getHours() === 0);
+    setColor("default");
+    setUpdateEventData(null);
   };
 
-  const editEvent = (event: any) => {
+  const editEvent = (event: CalendarEventDisplay) => {
     setOpen(true);
-    const newEditEvent = calevents.find(
-      (elem: EvType) => elem.title === event.title
-    );
+    setTitle(event.title);
+    setDescription(event.description || "");
+    setLocation(event.location || "");
+    setStart(event.start);
+    setEnd(event.end);
+    setIsAllDay(event.allDay);
     setColor(event.color);
-    setTitle(newEditEvent.title);
-    setColor(newEditEvent.color);
-    setStart(newEditEvent.start);
-    setEnd(newEditEvent.end);
-    setUpdate(event);
+    setUpdateEventData(event);
   };
 
-  const updateEvent = (e: any) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setCalEvents(
-      calevents.map((elem: EvType) => {
-        if (elem.title === update.title) {
-          return { ...elem, title, start, end, color };
-        }
 
-        return elem;
-      })
-    );
-    setOpen(false);
-    setTitle("");
-    setColor("");
-    setStart("");
-    setEnd("");
-    setUpdate(null);
-  };
-  const inputChangeHandler = (e: React.ChangeEvent<HTMLInputElement>) =>
-    setTitle(e.target.value);
-  const selectinputChangeHandler = (id: string) => setColor(id);
+    if (!title || !start || !end) {
+      return;
+    }
 
-  const submitHandler = (e: React.ChangeEvent<any>) => {
-    e.preventDefault();
-    const newEvents = calevents;
-    newEvents.push({
-      title,
-      start,
-      end,
-      color,
-    });
-    setOpen(false);
-    e.target.reset();
-    setCalEvents(newEvents);
-    setTitle("");
-    setStart(new Date());
-    setEnd(new Date());
+    const eventData = {
+      title: title.trim(),
+      description: description.trim() || undefined,
+      location: location.trim() || undefined,
+      startDate: start,
+      endDate: end,
+      isAllDay,
+      color
+    };
+
+    if (updateEventData) {
+      await dispatch(updateEvent(updateEventData.id, eventData));
+    } else {
+      await dispatch(addEvent(eventData));
+    }
+
+    handleClose();
   };
-  const deleteHandler = (event: EvType) => {
-    const updatecalEvents = calevents.filter(
-      (ind: EvType) => ind.title !== event.title
-    );
-    setCalEvents(updatecalEvents);
+
+  const handleDelete = async () => {
+    if (updateEventData) {
+      await dispatch(deleteEvent(updateEventData.id));
+      handleClose();
+    }
   };
 
   const handleClose = () => {
-    // eslint-disable-line newline-before-return
     setOpen(false);
     setTitle("");
+    setDescription("");
+    setLocation("");
     setStart(new Date());
     setEnd(new Date());
-    setUpdate(null);
+    setIsAllDay(false);
+    setColor("default");
+    setUpdateEventData(null);
   };
 
-  const eventColors = (event: EvType) => {
-    if (event.color) {
-      return { className: `event-${event.color}` };
-    }
-
-    return { className: `event-default` };
+  const eventColors = (event: CalendarEventDisplay) => {
+    const colorClass = event.color.startsWith('#') ? 'default' : event.color;
+    return { className: `event-${colorClass}` };
   };
 
-  const handleStartChange = (newValue: any) => {
+  const handleStartChange = (newValue: Date | null) => {
     setStart(newValue);
+    // Auto-adjust end date if it's before start date
+    if (newValue && end && newValue > end) {
+      const newEnd = new Date(newValue);
+      newEnd.setHours(newEnd.getHours() + 1);
+      setEnd(newEnd);
+    }
   };
-  const handleEndChange = (newValue: any) => {
+
+  const handleEndChange = (newValue: Date | null) => {
     setEnd(newValue);
   };
+
+  if (error) {
+    return (
+      <PageContainer title="Calendar" description="this is Calendar">
+        <Breadcrumb title="Calendar" subtitle="App" />
+        <BlankCard>
+          <CardContent>
+            <Alert severity="error" sx={{ mb: 2 }}>
+              {error}
+            </Alert>
+            <Button
+              variant="contained"
+              onClick={() => dispatch(fetchEvents())}
+              disabled={loading}
+            >
+              Retry
+            </Button>
+          </CardContent>
+        </BlankCard>
+      </PageContainer>
+    );
+  }
 
   return (
     <PageContainer title="Calendar" description="this is Calendar">
       <Breadcrumb title="Calendar" subtitle="App" />
       <BlankCard>
-        {/* ------------------------------------------- */}
-        {/* Calendar */}
-        {/* ------------------------------------------- */}
         <CardContent>
-          <Calendar
-            selectable
-            events={calevents}
-            defaultView="month"
-            scrollToTime={new Date(1970, 1, 1, 6)}
-            defaultDate={new Date()}
-            localizer={localizer}
-            style={{ height: "calc(100vh - 350px" }}
-            onSelectEvent={(event) => editEvent(event)}
-            onSelectSlot={(slotInfo: any) => addNewEventAlert(slotInfo)}
-            eventPropGetter={(event: any) => eventColors(event)}
-          />
+          {loading && displayEvents.length === 0 ? (
+            <Box display="flex" justifyContent="center" p={3}>
+              <CircularProgress />
+            </Box>
+          ) : (
+            <Calendar
+              selectable
+              events={displayEvents}
+              defaultView="month"
+              scrollToTime={new Date(1970, 1, 1, 6)}
+              defaultDate={new Date()}
+              localizer={localizer}
+              style={{ height: "calc(100vh - 350px)" }}
+              onSelectEvent={(event) => editEvent(event as CalendarEventDisplay)}
+              onSelectSlot={(slotInfo: any) => addNewEventAlert(slotInfo)}
+              eventPropGetter={(event: any) => eventColors(event)}
+            />
+          )}
         </CardContent>
       </BlankCard>
-      {/* ------------------------------------------- */}
-      {/* Add Calendar Event Dialog */}
-      {/* ------------------------------------------- */}
-      <Dialog open={open} onClose={handleClose} fullWidth maxWidth="xs">
-        <form onSubmit={update ? updateEvent : submitHandler}>
+
+      <Dialog open={open} onClose={handleClose} fullWidth maxWidth="sm">
+        <form onSubmit={handleSubmit}>
           <DialogContent>
-            {/* ------------------------------------------- */}
-            {/* Add Edit title */}
-            {/* ------------------------------------------- */}
             <Typography variant="h4" sx={{ mb: 2 }}>
-              {update ? "Update Event" : "Add Event"}
+              {updateEventData ? "Update Event" : "Add Event"}
             </Typography>
             <Typography mb={3} variant="subtitle2">
-              {!update
-                ? "To add Event kindly fillup the title and choose the event color and press the add button"
-                : "To Edit/Update Event kindly change the title and choose the event color and press the update button"}
-              {slot?.title}
+              {!updateEventData
+                ? "To add an event, fill in the details below and choose the event color."
+                : "To edit/update the event, modify the details below and press the update button."}
             </Typography>
 
             <TextField
-              id="Event Title"
+              id="event-title"
               placeholder="Enter Event Title"
               variant="outlined"
               fullWidth
               label="Event Title"
               value={title}
               sx={{ mb: 3 }}
-              onChange={inputChangeHandler}
+              onChange={(e) => setTitle(e.target.value)}
+              required
             />
-            {/* ------------------------------------------- */}
-            {/* Selection of Start and end date */}
-            {/* ------------------------------------------- */}
+
+            <TextField
+              id="event-description"
+              placeholder="Enter Event Description"
+              variant="outlined"
+              fullWidth
+              label="Description (Optional)"
+              value={description}
+              sx={{ mb: 3 }}
+              multiline
+              rows={2}
+              onChange={(e) => setDescription(e.target.value)}
+            />
+
+            <TextField
+              id="event-location"
+              placeholder="Enter Event Location"
+              variant="outlined"
+              fullWidth
+              label="Location (Optional)"
+              value={location}
+              sx={{ mb: 3 }}
+              onChange={(e) => setLocation(e.target.value)}
+            />
+
             <LocalizationProvider dateAdapter={AdapterDateFns}>
               <DatePicker
                 label="Start Date"
-                inputFormat="MM/dd/yyyy"
                 value={start}
                 onChange={handleStartChange}
                 renderInput={(params: any) => (
@@ -226,7 +281,6 @@ const BigCalendar = () => {
               />
               <DatePicker
                 label="End Date"
-                inputFormat="MM/dd/yyyy"
                 value={end}
                 onChange={handleEndChange}
                 renderInput={(params: any) => (
@@ -234,9 +288,9 @@ const BigCalendar = () => {
                     {...params}
                     fullWidth
                     sx={{ mb: 3 }}
-                    error={start > end}
+                    error={start && end ? start > end : false}
                     helperText={
-                      start > end
+                      start && end && start > end
                         ? "End date must be later than start date"
                         : ""
                     }
@@ -245,15 +299,21 @@ const BigCalendar = () => {
               />
             </LocalizationProvider>
 
-            {/* ------------------------------------------- */}
-            {/* Calendar Event Color*/}
-            {/* ------------------------------------------- */}
+            <Box sx={{ mb: 3 }}>
+              <label>
+                <input
+                  type="checkbox"
+                  checked={isAllDay}
+                  onChange={(e) => setIsAllDay(e.target.checked)}
+                  style={{ marginRight: 8 }}
+                />
+                All Day Event
+              </label>
+            </Box>
+
             <Typography variant="h6" fontWeight={600} my={2}>
               Select Event Color
             </Typography>
-            {/* ------------------------------------------- */}
-            {/* colors for event */}
-            {/* ------------------------------------------- */}
             {ColorVariation.map((mcolor) => {
               return (
                 <Fab
@@ -266,38 +326,40 @@ const BigCalendar = () => {
                   }}
                   size="small"
                   key={mcolor.id}
-                  onClick={() => selectinputChangeHandler(mcolor.value)}
+                  onClick={() => setColor(mcolor.value)}
                 >
                   {mcolor.value === color ? <IconCheck width={16} /> : ""}
                 </Fab>
               );
             })}
           </DialogContent>
-          {/* ------------------------------------------- */}
-          {/* Action for dialog */}
-          {/* ------------------------------------------- */}
           <DialogActions sx={{ p: 3 }}>
-            <Button onClick={handleClose}>Cancel</Button>
+            <Button onClick={handleClose} disabled={loading}>
+              Cancel
+            </Button>
 
-            {update ? (
+            {updateEventData && (
               <Button
-                type="submit"
                 color="error"
                 variant="contained"
-                onClick={() => deleteHandler(update)}
+                onClick={handleDelete}
+                disabled={loading}
               >
-                Delete
+                {loading ? "Deleting..." : "Delete"}
               </Button>
-            ) : (
-              ""
             )}
-            <Button type="submit" disabled={!title} variant="contained">
-              {update ? "Update Event" : "Add Event"}
+
+            <Button
+              type="submit"
+              disabled={!title || loading || (start && end ? start > end : false)}
+              variant="contained"
+            >
+              {loading
+                ? (updateEventData ? "Updating..." : "Adding...")
+                : (updateEventData ? "Update Event" : "Add Event")
+              }
             </Button>
           </DialogActions>
-          {/* ------------------------------------------- */}
-          {/* End Calendar */}
-          {/* ------------------------------------------- */}
         </form>
       </Dialog>
     </PageContainer>

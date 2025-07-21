@@ -3,7 +3,7 @@ import React from "react";
 import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
-import { TaskProperties } from "@/app/api/kanban/KanbanData";
+import { TaskProperties } from "../constants";
 import {
   Button,
   MenuItem,
@@ -12,10 +12,13 @@ import {
   DialogContent,
   DialogActions,
   Grid,
+  Box,
 } from "@mui/material";
 import CustomFormLabel from "@/app/components/forms/theme-elements/CustomFormLabel";
 import CustomTextField from "@/app/components/forms/theme-elements/CustomTextField";
 import CustomSelect from "@/app/components/forms/theme-elements/CustomSelect";
+import { useKanbanTaskValidation } from "@/hooks/useProductivityValidation";
+import { ValidationFeedback, ValidationStatusChip } from "@/app/components/shared/ValidationFeedback";
 
 function AddNewList({
   show,
@@ -26,6 +29,15 @@ function AddNewList({
   updateTasks,
 }: any) {
   const { task, taskText, taskProperty, date, taskImage } = newTaskData;
+
+  // Real-time validation
+  const { validationResult, isValidating } = useKanbanTaskValidation({
+    title: task,
+    description: taskText,
+    taskImage: taskImage,
+    date: date,
+    taskProperty: taskProperty
+  });
 
   // Set default date to today if no date is provided
   const defaultDate = date || new Date();
@@ -44,7 +56,7 @@ function AddNewList({
   };
 
   const isFormValid = () => {
-    return task && taskText && taskProperty && date && taskImage;
+    return validationResult.isValid && task && taskText && taskProperty && date;
   };
   return (
     <Dialog
@@ -173,6 +185,20 @@ function AddNewList({
             </LocalizationProvider>
           </Grid>
         </Grid>
+
+        {/* Validation Feedback */}
+        <Box sx={{ mt: 2 }}>
+          <ValidationFeedback
+            validationResult={validationResult}
+            showSuccess={false}
+            compact={true}
+          />
+          {isValidating && (
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 1 }}>
+              <ValidationStatusChip validationResult={validationResult} />
+            </Box>
+          )}
+        </Box>
       </DialogContent>
       <DialogActions>
         <Button variant="outlined" color="error" onClick={onHide}>

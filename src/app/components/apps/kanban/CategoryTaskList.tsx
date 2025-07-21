@@ -11,7 +11,7 @@ import axios from "@/utils/axios";
 import { Box, IconButton, Stack, Tooltip, Typography } from "@mui/material";
 
 function CategoryTaskList({ id }: any) {
-  const { todoCategories, deleteCategory, clearAllTasks, deleteTodo } =
+  const { todoCategories, deleteCategory, clearAllTasks, deleteTodo, addTask, updateTask } =
     useContext(KanbanDataContext);
 
   const category = todoCategories.find((cat) => cat.id === id) as any;
@@ -67,15 +67,10 @@ function CategoryTaskList({ id }: any) {
     updatedName: SetStateAction<string | any>
   ) => {
     try {
-      const response = await axios.post("/api/TodoData/updateCategory", {
-        categoryId: id,
-        categoryName: updatedName,
-      });
-      if (response.status === 200) {
-        setNewCategoryName(updatedName);
-      } else {
-        throw new Error("Failed to update category");
-      }
+      // This functionality will need to be implemented in the context
+      // For now, just update the local state
+      setNewCategoryName(updatedName);
+      console.log("Category name updated locally:", updatedName);
     } catch (error) {
       console.error("Error updating category:", error);
     }
@@ -83,47 +78,56 @@ function CategoryTaskList({ id }: any) {
   //Adds a new task to the category.
   const handleAddTask = async () => {
     try {
-      const response = await axios.post("/api/TodoData/addTask", {
-        categoryId: id,
-        newTaskData: {
-          ...newTaskData,
-          id: Math.random(),
-          taskImage: newTaskData.imageURL,
-        },
+      await addTask(id, {
+        task: newTaskData.task,
+        taskText: newTaskData.taskText,
+        taskProperty: newTaskData.taskProperty,
+        date: newTaskData.date,
+        taskImage: newTaskData.imageURL,
       });
-      if (response.status === 200) {
-        setNewTaskData({
-          taskText: "",
-          taskProperty: "",
-          date: newTaskData.date,
-          imageURL: "",
-        });
-        handleCloseModal();
-        setNewTaskData("Task added successfully");
-        console.log("Task added successfully:", response.data);
-      } else {
-        throw new Error("Failed to add task");
-      }
+
+      // Reset form data
+      setNewTaskData({
+        task: "",
+        taskText: "",
+        taskProperty: "",
+        date: new Date().toISOString().split("T")[0],
+        imageURL: null,
+      });
+      handleCloseModal();
+      console.log("Task added successfully");
     } catch (error) {
       console.error("Error adding task:", error);
     }
   };
   // Clears all tasks from the current category.
-  const handleClearAll = () => {
-    clearAllTasks(id);
-    setAllTasks([]);
+  const handleClearAll = async () => {
+    try {
+      await clearAllTasks(id);
+      console.log("All tasks cleared successfully");
+    } catch (error) {
+      console.error("Error clearing tasks:", error);
+    }
   };
   // Deletes a specific task.
-  const handleDeleteTask = (taskId: number | any) => {
-    deleteTodo(taskId);
-    setAllTasks((prevTasks: any[]) =>
-      prevTasks.filter((task: { id: number }) => task.id !== taskId)
-    );
+  const handleDeleteTask = async (taskId: string) => {
+    try {
+      await deleteTodo(taskId);
+      console.log("Task deleted successfully");
+    } catch (error) {
+      console.error("Error deleting task:", error);
+    }
   };
   //Handles the deletion of the current category.
-  const handleDeleteClick = () => {
-    setShowContainer(false);
-    deleteCategory(id);
+  const handleDeleteClick = async () => {
+    try {
+      setShowContainer(false);
+      await deleteCategory(id);
+      console.log("Category deleted successfully");
+    } catch (error) {
+      console.error("Error deleting category:", error);
+      setShowContainer(true); // Restore container if deletion fails
+    }
   };
 
   const backgroundColor = category

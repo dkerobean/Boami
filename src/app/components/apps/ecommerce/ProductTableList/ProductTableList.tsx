@@ -33,7 +33,7 @@ import { useSelector, useDispatch } from '@/store/hooks';
 import { fetchProducts, deleteProduct } from '@/store/apps/eCommerce/ECommerceSlice';
 import CustomCheckbox from '../../../forms/theme-elements/CustomCheckbox';
 import CustomSwitch from '../../../forms/theme-elements/CustomSwitch';
-import { IconDotsVertical, IconFilter, IconSearch, IconTrash, IconEdit, IconEye } from '@tabler/icons-react';
+import { IconDotsVertical, IconSearch, IconTrash, IconEdit, IconEye } from '@tabler/icons-react';
 import { ProductType } from '../../../../(DashboardLayout)/types/apps/eCommerce';
 import ProductImage from '../../../shared/ProductImage';
 import { getImageSource, createImageAltText, shouldPrioritizeImage, IMAGE_SIZES } from '@/lib/utils/image-utils';
@@ -170,66 +170,8 @@ function EnhancedTableHead(props: EnhancedTableProps) {
   );
 }
 
-interface EnhancedTableToolbarProps {
-  numSelected: number;
-  handleSearch: React.ChangeEvent<HTMLInputElement> | any;
-  search: string;
-}
 
-const EnhancedTableToolbar = (props: EnhancedTableToolbarProps) => {
-  const { numSelected, handleSearch, search } = props;
-
-  return (
-    <Toolbar
-      sx={{
-        pl: { sm: 2 },
-        pr: { xs: 1, sm: 1 },
-        ...(numSelected > 0 && {
-          bgcolor: (theme) =>
-            alpha(theme.palette.primary.main, theme.palette.action.activatedOpacity),
-        }),
-      }}
-    >
-      {numSelected > 0 ? (
-        <Typography sx={{ flex: '1 1 100%' }} color="inherit" variant="subtitle2" component="div">
-          {numSelected} selected
-        </Typography>
-      ) : (
-        <Box sx={{ flex: '1 1 100%' }}>
-          <TextField
-            InputProps={{
-              startAdornment: (
-                <InputAdornment position="start">
-                  <IconSearch size="1.1rem" />
-                </InputAdornment>
-              ),
-            }}
-            placeholder="Search Product"
-            size="small"
-            onChange={handleSearch}
-            value={search}
-          />
-        </Box>
-      )}
-
-      {numSelected > 0 ? (
-        <Tooltip title="Delete">
-          <IconButton>
-            <IconTrash width="18" />
-          </IconButton>
-        </Tooltip>
-      ) : (
-        <Tooltip title="Filter list">
-          <IconButton>
-            <IconFilter size="1.2rem" />
-          </IconButton>
-        </Tooltip>
-      )}
-    </Toolbar>
-  );
-};
-
-const ProductTableListContent = () => {
+const ProductTableListContent: React.FC<{ searchValue: string }> = ({ searchValue }) => {
   const [order, setOrder] = React.useState<Order>('asc');
   const [orderBy, setOrderBy] = React.useState<any>('calories');
   const [selected, setSelected] = React.useState<readonly string[]>([]);
@@ -254,16 +196,32 @@ const ProductTableListContent = () => {
   const getProducts: ProductType[] = useSelector((state) => state.ecommerceReducer.products);
   const error = useSelector((state) => state.ecommerceReducer.error);
 
-  const [rows, setRows] = React.useState<any>(getProducts);
-  const [search, setSearch] = React.useState('');
+  const [rows, setRows] = React.useState<any>([]);
   const [loading, setLoading] = React.useState(true);
 
   React.useEffect(() => {
     // Validate products data before setting
     const validProducts = Array.isArray(getProducts) ? getProducts : [];
-    setRows(validProducts);
+    
+    // Filter based on external searchValue prop
+    if (searchValue.trim()) {
+      const filteredProducts = validProducts.filter((row) => {
+        const title = row.title || '';
+        const description = row.description || '';
+        const category = Array.isArray(row.category) ? row.category.join(' ') : (row.category || '');
+        const sku = row.sku || '';
+        return title.toLowerCase().includes(searchValue.toLowerCase()) || 
+               description.toLowerCase().includes(searchValue.toLowerCase()) ||
+               category.toLowerCase().includes(searchValue.toLowerCase()) ||
+               sku.toLowerCase().includes(searchValue.toLowerCase());
+      });
+      setRows(filteredProducts);
+    } else {
+      setRows(validProducts);
+    }
+    
     setLoading(false);
-  }, [getProducts]);
+  }, [getProducts, searchValue]);
 
   // Handle loading state
   if (loading) {
@@ -353,8 +311,8 @@ const ProductTableListContent = () => {
           No products found
         </Typography>
         <Typography variant="body2" color="textSecondary" textAlign="center" maxWidth={400}>
-          {search ? 
-            `No products match "${search}". Try adjusting your search terms.` : 
+          {searchValue ? 
+            `No products match "${searchValue}". Try adjusting your search terms.` : 
             "Create your first product to get started!"
           }
         </Typography>
@@ -362,19 +320,6 @@ const ProductTableListContent = () => {
     );
   }
 
-  const handleSearch = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const searchValue = event.target.value.toLowerCase();
-    const filteredRows: ProductType[] = getProducts.filter((row) => {
-      const title = row.title || '';
-      const description = row.description || '';
-      const category = Array.isArray(row.category) ? row.category.join(' ') : (row.category || '');
-      return title.toLowerCase().includes(searchValue) || 
-             description.toLowerCase().includes(searchValue) ||
-             category.toLowerCase().includes(searchValue);
-    });
-    setSearch(event.target.value);
-    setRows(filteredRows);
-  };
 
   // This is for the sorting
   const handleRequestSort = (event: React.MouseEvent<unknown>, property: any) => {
@@ -498,11 +443,6 @@ const ProductTableListContent = () => {
   return (
     <Box>
       <Box>
-        <EnhancedTableToolbar
-          numSelected={selected.length}
-          search={search}
-          handleSearch={(event: any) => handleSearch(event)}
-        />
         <Paper variant="outlined" sx={{ mx: 2, mt: 1, border: `1px solid ${borderColor}` }}>
           <TableContainer>
             <Table
@@ -734,10 +674,14 @@ const ProductTableListContent = () => {
 };
 
 // Main wrapper component with ToastProvider
-const ProductTableList = () => {
+interface ProductTableListProps {
+  searchValue?: string;
+}
+
+const ProductTableList: React.FC<ProductTableListProps> = ({ searchValue = '' }) => {
   return (
     <ToastProvider>
-      <ProductTableListContent />
+      <ProductTableListContent searchValue={searchValue} />
     </ToastProvider>
   );
 };

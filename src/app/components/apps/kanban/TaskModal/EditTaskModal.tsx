@@ -7,7 +7,7 @@ import { Button, TextField, MenuItem, Dialog, DialogTitle, DialogContent, Dialog
 import CustomFormLabel from "@/app/components/forms/theme-elements/CustomFormLabel";
 import CustomTextField from "@/app/components/forms/theme-elements/CustomTextField";
 import CustomSelect from "@/app/components/forms/theme-elements/CustomSelect";
-import { TaskProperties } from "@/app/api/kanban/KanbanData";
+import { TaskProperties } from "../constants";
 
 function EditTaskModal({ show, onHide, editedTask, onSave }: any) {
   const [tempEditedTask, setTempEditedTask] = useState(editedTask);

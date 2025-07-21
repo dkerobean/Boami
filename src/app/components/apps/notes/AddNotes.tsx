@@ -19,8 +19,8 @@ const AddNotes = ({ colors }: Props) => {
   const dispatch = useDispatch();
   const [open, setOpen] = React.useState(false);
   const [scolor, setScolor] = React.useState<string>('primary');
-  const id = useSelector((state) => state.notesReducer.notes.length + 1);
   const [title, setTitle] = React.useState('');
+  const loading = useSelector((state) => state.notesReducer.loading);
 
   const setColor = (e: string) => {
     setScolor(e);
@@ -83,16 +83,17 @@ const AddNotes = ({ colors }: Props) => {
         <DialogActions>
           <Button onClick={handleClose}>Cancel</Button>
           <Button
-            disabled={title === ''}
+            disabled={title === '' || loading}
             onClick={(e) => {
               e.preventDefault();
-              dispatch(addNote(id, title, scolor));
+              dispatch(addNote(title, scolor));
               setOpen(false);
               setTitle('');
+              setScolor('primary');
             }}
             variant="contained"
           >
-            Submit
+            {loading ? 'Creating...' : 'Submit'}
           </Button>
         </DialogActions>
       </Dialog>

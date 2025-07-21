@@ -7,7 +7,7 @@ import { Box, Typography } from "@mui/material";
 
 import DashboardCard from "../../shared/DashboardCard";
 
-import { IconArrowUpRight, IconShoppingCart } from "@tabler/icons-react";
+import { IconArrowUpRight, IconShoppingCart, IconArrowDownRight, IconPackage } from "@tabler/icons-react";
 import SkeletonSalesTwoCard from "../skeleton/SalesTwoCard";
 
 interface SalestwoCardProps {
@@ -20,6 +20,34 @@ const SalesTwo = ({ isLoading, totalProducts = 0, growth = 0 }: SalestwoCardProp
   // chart color
   const theme = useTheme();
   const primary = theme.palette.primary.main;
+
+  // Helper functions
+  const formatNumber = (num: number) => {
+    if (num >= 1000000) {
+      return `${(num / 1000000).toFixed(1)}M`;
+    }
+    if (num >= 1000) {
+      return `${(num / 1000).toFixed(1)}k`;
+    }
+    return num.toString();
+  };
+
+  const formatGrowth = (growth: number) => {
+    return `${growth >= 0 ? '+' : ''}${growth.toFixed(1)}%`;
+  };
+
+  // Generate chart data based on product growth
+  const generateChartData = () => {
+    const baseValue = Math.max(30, Math.min(100, totalProducts / 10));
+    const variance = growth / 5;
+    
+    return Array.from({ length: 6 }, (_, i) => {
+      const trend = i * variance;
+      return Math.max(20, Math.floor(baseValue + trend + (Math.random() * 20)));
+    });
+  };
+
+  const chartData = generateChartData();
 
   // chart
   const optionscolumnchart: any = {
@@ -100,8 +128,8 @@ const SalesTwo = ({ isLoading, totalProducts = 0, growth = 0 }: SalestwoCardProp
   };
   const seriescolumnchart = [
     {
-      name: "",
-      data: [100, 60, 35, 90, 35, 100],
+      name: "Product Growth",
+      data: chartData,
     },
   ];
 
@@ -127,7 +155,7 @@ const SalesTwo = ({ isLoading, totalProducts = 0, growth = 0 }: SalestwoCardProp
                   alignItems="center"
                   justifyContent="center"
                 >
-                  <IconShoppingCart width={22} />
+                  <IconPackage width={22} />
                 </Typography>
               </Box>
 
@@ -141,13 +169,19 @@ const SalesTwo = ({ isLoading, totalProducts = 0, growth = 0 }: SalestwoCardProp
               </Box>
 
               <Typography variant="h4">
-                $16.5k
-                <span>
-                  <IconArrowUpRight width={18} color="#39B69A" />
-                </span>
+                {formatNumber(totalProducts)}
+                {growth !== 0 && (
+                  <span>
+                    {growth >= 0 ? (
+                      <IconArrowUpRight width={18} color="#39B69A" />
+                    ) : (
+                      <IconArrowDownRight width={18} color="#FA896B" />
+                    )}
+                  </span>
+                )}
               </Typography>
               <Typography variant="subtitle2" color="textSecondary">
-                Sales
+                Total Products {growth !== 0 ? `(${formatGrowth(growth)})` : ''}
               </Typography>
             </>
           </DashboardCard>

@@ -26,47 +26,33 @@ interface FieldMappingTableProps {
   headers: string[];
   previewData: any[];
   onMappingChange: (mapping: { [key: string]: string }) => void;
+  onProceed?: () => void;
 }
 
-// Available product fields that can be mapped
+// Available product fields that can be mapped (simplified)
 const PRODUCT_FIELDS = [
   { value: '', label: 'Skip this column', required: false },
-  { value: 'name', label: 'Product Name', required: true },
-  { value: 'sku', label: 'SKU', required: true },
+  { value: 'title', label: 'Product Title', required: true },
+  { value: 'description', label: 'Description', required: true },
   { value: 'price', label: 'Price', required: true },
-  { value: 'category', label: 'Category', required: false },
-  { value: 'description', label: 'Description', required: false },
-  { value: 'stock_quantity', label: 'Stock Quantity', required: false },
-  { value: 'weight', label: 'Weight', required: false },
-  { value: 'dimensions', label: 'Dimensions', required: false },
-  { value: 'brand', label: 'Brand', required: false },
-  { value: 'tags', label: 'Tags', required: false },
-  { value: 'image_url', label: 'Image URL', required: false },
-  { value: 'status', label: 'Status', required: false },
-  { value: 'featured', label: 'Featured', required: false },
-  { value: 'sale_price', label: 'Sale Price', required: false },
-  { value: 'compare_at_price', label: 'Compare at Price', required: false },
-  { value: 'cost_price', label: 'Cost Price', required: false },
-  { value: 'barcode', label: 'Barcode', required: false },
-  { value: 'vendor', label: 'Vendor', required: false },
-  { value: 'product_type', label: 'Product Type', required: false },
-  { value: 'visibility', label: 'Visibility', required: false },
-  { value: 'tax_class', label: 'Tax Class', required: false },
-  { value: 'shipping_class', label: 'Shipping Class', required: false },
-  { value: 'meta_title', label: 'Meta Title', required: false },
-  { value: 'meta_description', label: 'Meta Description', required: false },
+  { value: 'sku', label: 'SKU', required: false },
+  { value: 'category', label: 'Category', required: true },
+  { value: 'qty', label: 'Stock Quantity', required: false },
+  { value: 'photo', label: 'Photo URL', required: true },
 ];
 
 const FieldMappingTable: React.FC<FieldMappingTableProps> = ({
   headers,
   previewData,
   onMappingChange,
+  onProceed,
 }) => {
   const [mapping, setMapping] = useState<{ [key: string]: string }>({});
   const [autoMappingApplied, setAutoMappingApplied] = useState(false);
 
   // Auto-mapping function
   const applyAutoMapping = () => {
+    console.log('Applying auto-mapping for headers:', headers);
     const newMapping: { [key: string]: string } = {};
     
     headers.forEach(header => {
@@ -89,19 +75,15 @@ const FieldMappingTable: React.FC<FieldMappingTableProps> = ({
           return true;
         }
         
-        // Common variations
+        // Common variations (simplified)
         const variations: { [key: string]: string[] } = {
-          'name': ['product_name', 'title', 'product_title', 'item_name'],
+          'title': ['name', 'product_name', 'product_title', 'item_name'],
           'sku': ['product_sku', 'item_sku', 'code', 'product_code'],
           'price': ['cost', 'amount', 'regular_price', 'list_price'],
           'category': ['cat', 'product_category', 'category_name'],
           'description': ['desc', 'product_description', 'details'],
-          'stock_quantity': ['stock', 'inventory', 'qty', 'quantity', 'in_stock'],
-          'weight': ['product_weight', 'wt'],
-          'brand': ['manufacturer', 'make', 'brand_name'],
-          'tags': ['tag', 'keywords', 'labels'],
-          'image_url': ['image', 'img', 'photo', 'picture'],
-          'status': ['state', 'active', 'enabled'],
+          'qty': ['stock', 'inventory', 'quantity', 'stock_quantity', 'in_stock'],
+          'photo': ['image', 'img', 'image_url', 'picture', 'thumbnail'],
         };
         
         const fieldVariations = variations[fieldName] || [];
@@ -111,10 +93,14 @@ const FieldMappingTable: React.FC<FieldMappingTableProps> = ({
       });
       
       if (match) {
+        console.log(`Auto-mapped "${header}" to "${match.value}"`);
         newMapping[header] = match.value;
+      } else {
+        console.log(`No match found for header: "${header}"`);
       }
     });
     
+    console.log('Final auto-mapping result:', newMapping);
     setMapping(newMapping);
     setAutoMappingApplied(true);
   };
@@ -128,6 +114,7 @@ const FieldMappingTable: React.FC<FieldMappingTableProps> = ({
 
   // Notify parent component when mapping changes
   useEffect(() => {
+    console.log('Field mapping changed, notifying parent:', mapping);
     onMappingChange(mapping);
   }, [mapping, onMappingChange]);
 
@@ -369,7 +356,7 @@ const FieldMappingTable: React.FC<FieldMappingTableProps> = ({
         <Button
           variant="contained"
           disabled={!canProceed()}
-          onClick={() => onMappingChange(mapping)}
+          onClick={onProceed}
           size="large"
         >
           Proceed to Validation

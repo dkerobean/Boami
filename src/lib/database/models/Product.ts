@@ -150,7 +150,8 @@ const productSchema = new Schema<IProductDocument, IProductModel>({
     unique: true,
     sparse: true, // Allow null/undefined values
     trim: true,
-    uppercase: true
+    uppercase: true,
+    index: true
   },
   category: [{
     type: String,
@@ -298,7 +299,8 @@ const productSchema = new Schema<IProductDocument, IProductModel>({
     unique: true,
     sparse: true,
     trim: true,
-    lowercase: true
+    lowercase: true,
+    index: true
   },
   metaTitle: {
     type: String,
@@ -316,7 +318,8 @@ const productSchema = new Schema<IProductDocument, IProductModel>({
     id: {
       type: Number,
       unique: true,
-      sparse: true
+      sparse: true,
+      index: true
     },
     sourceUrl: String,
     slug: String,
@@ -348,17 +351,14 @@ const productSchema = new Schema<IProductDocument, IProductModel>({
   }
 });
 
-// Indexes for better query performance
+// Indexes for better query performance - removed duplicates that are already in schema definitions
 productSchema.index({ title: 'text', description: 'text', tags: 'text' });
 productSchema.index({ category: 1, status: 1 });
 productSchema.index({ status: 1, featured: -1, createdAt: -1 });
-productSchema.index({ sku: 1 });
-productSchema.index({ 'wordpress.id': 1 });
 productSchema.index({ 'wordpress.syncStatus': 1 });
 productSchema.index({ stockStatus: 1, qty: 1 });
 productSchema.index({ price: 1 });
 productSchema.index({ rating: -1 });
-productSchema.index({ slug: 1 });
 
 /**
  * Pre-save middleware to generate slug from title if not provided

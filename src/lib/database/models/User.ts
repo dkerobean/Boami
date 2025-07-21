@@ -1,4 +1,4 @@
-import mongoose, { Document, Schema, Model } from 'mongoose';
+import mongoose, { Document, Schema, Model, Types } from 'mongoose';
 import bcrypt from 'bcryptjs';
 
 /**
@@ -36,6 +36,9 @@ export interface IUserDocument extends IUser, Document {
   getFullName(): string;
   toJSON(): Partial<IUser>;
   markEmailAsVerified(): Promise<void>;
+  getSubscription(): Promise<any>;
+  hasActiveSubscription(): Promise<boolean>;
+  hasFeatureAccess(feature: string): Promise<boolean>;
 }
 
 /**
@@ -149,7 +152,7 @@ const userSchema = new Schema<IUserDocument, IUserModel>({
   }
 }, {
   timestamps: true, // Automatically adds createdAt and updatedAt
-  toJSON: { 
+  toJSON: {
     virtuals: true,
     transform: function(doc, ret) {
       delete (ret as any).password;
@@ -179,7 +182,7 @@ userSchema.index({ email: 1, isEmailVerified: 1 });
 userSchema.pre('save', async function(next) {
   // Only hash password if it's modified or new
   if (!this.isModified('password')) return next();
-  
+
   try {
     // Hash password with cost of 12
     const saltRounds = 12;
@@ -254,6 +257,40 @@ userSchema.statics.findVerifiedUsers = function() {
  */
 userSchema.statics.findUnverifiedUsers = function() {
   return this.find({ isEmailVerified: false, isActive: true }).sort({ createdAt: -1 });
+};
+
+/**
+ * Instance method to get user's subscription
+ * @returns Promise<any> - User's subscription or null
+ */
+userSchema.methods.getSubscription = async function(): Promise<any> {
+  const Subscription = mongoose.model('Subscription');
+  return await Subscription.findByUserId(this._id);
+};
+
+/**
+ * Instance method to check if user has active subscription
+ * @returns Promise<boolean> - Whether user has active subscription
+ */
+userSchema.methods.hasActiveSubscription = async function(): Promise<boolean> {
+  const subscription = await this.getSubscription();
+  return subscription?.isActive() || false;
+};
+
+/**
+ * Instance method to check if user has access to a specific feature
+ * @param feature - Feature name to check
+ * @returns Promise<boolean> - Whether user has access to the feature
+ */
+userSchema.methods.hasFeatureAccess = async function(feature: string): Promise<boolean> {
+  const subscription = await this.getSubscription();
+  if (!subscription || !subscription.isActive()) {
+    return false;
+  }
+
+  const Plan = mongoose.model('Plan');
+  const plan = await Plan.findById(subscription.planId);
+  return plan?.hasFeature(feature) || false;
 };
 
 // Prevent model re-compilation during development

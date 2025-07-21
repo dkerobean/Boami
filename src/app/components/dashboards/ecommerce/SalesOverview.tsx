@@ -17,9 +17,18 @@ interface SalesData {
 interface SalesOverviewCardProps {
   isLoading?: boolean;
   salesData?: SalesData[];
+  totalRevenue?: number;
+  totalExpenses?: number;
+  netProfit?: number;
 }
 
-const SalesOverview = ({ isLoading, salesData = [] }: SalesOverviewCardProps) => {
+const SalesOverview = ({ 
+  isLoading, 
+  salesData = [], 
+  totalRevenue = 0,
+  totalExpenses = 0,
+  netProfit = 0
+}: SalesOverviewCardProps) => {
   // chart color
   const theme = useTheme();
   const primary = theme.palette.primary.main;
@@ -27,26 +36,44 @@ const SalesOverview = ({ isLoading, salesData = [] }: SalesOverviewCardProps) =>
   const primarylight = theme.palette.primary.light;
   const textColor = theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.8)' : '#2A3547';
 
+  // Helper functions
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    }).format(amount);
+  };
+
+  // Calculate financial metrics
+  const revenue = totalRevenue || 0;
+  const expenses = totalExpenses || 0;
+  const profit = netProfit || (revenue - expenses);
+  const totalAmount = revenue + expenses + Math.abs(profit);
+
+  // Ensure we have valid data for the chart
+  const revenuePercent = totalAmount > 0 ? (revenue / totalAmount) * 100 : 33.33;
+  const expensePercent = totalAmount > 0 ? (expenses / totalAmount) * 100 : 33.33;
+  const profitPercent = totalAmount > 0 ? (Math.abs(profit) / totalAmount) * 100 : 33.33;
+
   // chart
   const optionscolumnchart: any = {
     chart: {
       type: 'donut',
       fontFamily: "'Plus Jakarta Sans', sans-serif;",
-
       toolbar: {
         show: false,
       },
       height: 275,
     },
-    labels: ["Profit", "Revenue", "Expance"],
-    colors: [primary, primarylight, secondary],
+    labels: ["Revenue", "Expenses", "Net Profit"],
+    colors: [primary, secondary, profit >= 0 ? '#13DEB9' : '#FA896B'],
     plotOptions: {
       pie: {
-
         donut: {
           size: '89%',
           background: 'transparent',
-
           labels: {
             show: true,
             name: {
@@ -54,14 +81,16 @@ const SalesOverview = ({ isLoading, salesData = [] }: SalesOverviewCardProps) =>
               offsetY: 7,
             },
             value: {
-              show: false,
+              show: true,
+              formatter: (val: string) => `${Math.round(parseFloat(val))}%`,
             },
             total: {
               show: true,
               color: textColor,
               fontSize: '20px',
               fontWeight: '600',
-              label: '$500,458',
+              label: formatCurrency(revenue),
+              formatter: () => `Total Revenue`,
             },
           },
         },
@@ -79,9 +108,29 @@ const SalesOverview = ({ isLoading, salesData = [] }: SalesOverviewCardProps) =>
     tooltip: {
       theme: theme.palette.mode === 'dark' ? 'dark' : 'light',
       fillSeriesColor: false,
+      y: {
+        formatter: (val: number, opts: any) => {
+          // Safely access the label with optional chaining and fallbacks
+          const label = opts?.w?.globals?.labels?.[opts?.seriesIndex];
+          
+          if (label === 'Revenue') return formatCurrency(revenue);
+          if (label === 'Expenses') return formatCurrency(expenses);
+          if (label === 'Net Profit') return formatCurrency(Math.abs(profit));
+          
+          // Fallback based on series index if label is not available
+          const seriesIndex = opts?.seriesIndex ?? 0;
+          if (seriesIndex === 0) return formatCurrency(revenue);
+          if (seriesIndex === 1) return formatCurrency(expenses);
+          if (seriesIndex === 2) return formatCurrency(Math.abs(profit));
+          
+          // Final fallback - format the raw value as currency
+          return formatCurrency(val || 0);
+        },
+      },
     },
   };
-  const seriescolumnchart = [55, 55, 55];
+  
+  const seriescolumnchart = [revenuePercent, expensePercent, profitPercent];
 
   return (
     <>
@@ -89,7 +138,7 @@ const SalesOverview = ({ isLoading, salesData = [] }: SalesOverviewCardProps) =>
         isLoading ? (
           <SkeletonSalesOverviewCard />
         ) : (
-          <DashboardCard title="Sales Overview" subtitle="Every month">
+          <DashboardCard title="Financial Overview" subtitle="Revenue vs Expenses">
             <>
               <Box mt={3} height="255px">
                 <Chart
@@ -122,10 +171,10 @@ const SalesOverview = ({ isLoading, salesData = [] }: SalesOverviewCardProps) =>
                   </Box>
                   <Box>
                     <Typography variant="h6" fontWeight="600">
-                      $23,450
+                      {formatCurrency(revenue)}
                     </Typography>
                     <Typography variant="subtitle2" color="textSecondary">
-                      Profit
+                      Total Revenue
                     </Typography>
                   </Box>
                 </Stack>
@@ -133,13 +182,13 @@ const SalesOverview = ({ isLoading, salesData = [] }: SalesOverviewCardProps) =>
                   <Box
                     width={38}
                     height={38}
-                    bgcolor="secondary.light"
+                    bgcolor={profit >= 0 ? "success.light" : "error.light"}
                     display="flex"
                     alignItems="center"
                     justifyContent="center"
                   >
                     <Typography
-                      color="secondary.main"
+                      color={profit >= 0 ? "success.main" : "error.main"}
                       display="flex"
                       alignItems="center"
                       justifyContent="center"
@@ -149,10 +198,10 @@ const SalesOverview = ({ isLoading, salesData = [] }: SalesOverviewCardProps) =>
                   </Box>
                   <Box>
                     <Typography variant="h6" fontWeight="600">
-                      $23,450
+                      {formatCurrency(Math.abs(profit))}
                     </Typography>
                     <Typography variant="subtitle2" color="textSecondary">
-                      Expance
+                      {profit >= 0 ? 'Net Profit' : 'Net Loss'}
                     </Typography>
                   </Box>
                 </Stack>

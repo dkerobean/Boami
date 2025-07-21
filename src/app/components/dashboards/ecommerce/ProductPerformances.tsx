@@ -19,7 +19,22 @@ import {
   Stack,
 } from '@mui/material';
 
-const ProductPerformances = () => {
+interface ProductPerformance {
+  _id: string;
+  title: string;
+  category: string;
+  price: number;
+  stock: number;
+  sales: number;
+  revenue: number;
+  image: string;
+}
+
+interface ProductPerformancesProps {
+  products?: ProductPerformance[];
+}
+
+const ProductPerformances = ({ products = [] }: ProductPerformancesProps) => {
   // for select
   const [month, setMonth] = React.useState('1');
 
@@ -34,7 +49,7 @@ const ProductPerformances = () => {
   const primarylight = theme.palette.primary.light;
   const greylight = theme.palette.grey[100];
 
-  //   // chart 1
+  // Base chart configuration for sparklines
   const optionsrow1chart: any = {
     chart: {
       type: 'area',
@@ -63,139 +78,61 @@ const ProductPerformances = () => {
       size: 0,
     },
     tooltip: {
-      enabled: false,
+      enabled: true,
+      y: {
+        formatter: (val: number) => `${val} sales`,
+      },
     },
   };
-  const seriesrow1chart = [
-    {
-      name: 'Customers',
-      color: primary,
-      data: [30, 25, 35, 20, 30],
-    },
-  ];
 
-  // chart 2
-  const optionsrow2chart: any = {
-    chart: {
-      type: 'area',
-      fontFamily: "'Plus Jakarta Sans', sans-serif;",
-      foreColor: '#adb0bb',
-      toolbar: {
-        show: false,
-      },
-      height: 35,
-      width: 100,
-      sparkline: {
-        enabled: true,
-      },
-      group: 'sparklines',
-    },
-    stroke: {
-      curve: 'smooth',
-      width: 2,
-    },
-    fill: {
-      colors: [greylight],
-      type: 'solid',
-      opacity: 0.05,
-    },
-    markers: {
-      size: 0,
-    },
-    tooltip: {
-      enabled: false,
-    },
+  // Helper functions
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    }).format(amount);
   };
-  const seriesrow2chart = [
-    {
-      name: 'Customers',
-      color: grey,
-      data: [30, 25, 35, 20, 30],
-    },
-  ];
 
-  // chart 3
-  const optionsrow3chart: any = {
-    chart: {
-      type: 'area',
-      fontFamily: "'Plus Jakarta Sans', sans-serif;",
-      foreColor: '#adb0bb',
-      toolbar: {
-        show: false,
-      },
-      height: 35,
-      width: 100,
-      sparkline: {
-        enabled: true,
-      },
-      group: 'sparklines',
-    },
-    stroke: {
-      curve: 'smooth',
-      width: 2,
-    },
-    fill: {
-      colors: [primarylight],
-      type: 'solid',
-      opacity: 0.05,
-    },
-    markers: {
-      size: 0,
-    },
-    tooltip: {
-      enabled: false,
-    },
+  const getStockStatus = (stock: number) => {
+    if (stock <= 10) {
+      return { 
+        color: 'error' as const, 
+        bgcolor: (theme: any) => theme.palette.error.light,
+        textColor: (theme: any) => theme.palette.error.main,
+        label: 'Low Stock' 
+      };
+    }
+    if (stock <= 50) {
+      return { 
+        color: 'warning' as const, 
+        bgcolor: (theme: any) => theme.palette.warning.light,
+        textColor: (theme: any) => theme.palette.warning.main,
+        label: 'Medium Stock' 
+      };
+    }
+    return { 
+      color: 'success' as const, 
+      bgcolor: (theme: any) => theme.palette.success.light,
+      textColor: (theme: any) => theme.palette.success.main,
+      label: 'In Stock' 
+    };
   };
-  const seriesrow3chart = [
-    {
-      name: 'Customers',
-      color: primary,
-      data: [30, 25, 35, 20, 30],
-    },
-  ];
 
-  // chart 4
-  const optionsrow4chart: any = {
-    chart: {
-      type: 'area',
-      fontFamily: "'Plus Jakarta Sans', sans-serif;",
-      foreColor: '#adb0bb',
-      toolbar: {
-        show: false,
-      },
-      height: 35,
-      width: 100,
-      sparkline: {
-        enabled: true,
-      },
-      group: 'sparklines',
-    },
-    stroke: {
-      curve: 'smooth',
-      width: 2,
-    },
-    fill: {
-      colors: [greylight],
-      type: 'solid',
-      opacity: 0.05,
-    },
-    markers: {
-      size: 0,
-    },
-    tooltip: {
-      enabled: false,
-    },
+  const generateSalesChart = (sales: number, maxSales: number) => {
+    const intensity = Math.max(0.3, sales / maxSales);
+    const data = Array.from({ length: 5 }, () => 
+      Math.floor(15 + (intensity * 25) + (Math.random() * 10))
+    );
+    return data;
   };
-  const seriesrow4chart = [
-    {
-      color: grey,
-      data: [30, 25, 35, 20, 30],
-    },
-  ];
+
+  const maxSales = Math.max(...products.map(p => p.sales), 1);
 
   return (
     <DashboardCard
-      title="Product Performance"
+      title="Top Product Performance"
       action={
         <CustomSelect
           labelId="month-dd"
@@ -212,7 +149,7 @@ const ProductPerformances = () => {
     >
       <TableContainer>
         <Table
-          aria-label="simple table"
+          aria-label="product performance table"
           sx={{
             whiteSpace: 'nowrap',
           }}
@@ -226,207 +163,105 @@ const ProductPerformances = () => {
               </TableCell>
               <TableCell>
                 <Typography variant="subtitle2" fontWeight={600}>
-                  Progress
+                  Sales
                 </Typography>
               </TableCell>
               <TableCell>
                 <Typography variant="subtitle2" fontWeight={600}>
-                  Priority
+                  Stock Status
                 </Typography>
               </TableCell>
               <TableCell>
                 <Typography variant="subtitle2" fontWeight={600}>
-                  Budget
+                  Revenue
                 </Typography>
               </TableCell>
               <TableCell>
                 <Typography variant="subtitle2" fontWeight={600}>
-                  Chart
+                  Trend
                 </Typography>
               </TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
-            <TableRow>
-              <TableCell sx={{ pl: 0 }}>
-                <Stack direction="row" spacing={2}>
-                  <Avatar src={"/images/products/s6.jpg"} variant="rounded" alt="productOne" sx={{ width: 48, height: 48 }} />
-                  <Box>
-                    <Typography variant="subtitle2" fontWeight={600}>
-                    Gaming Console
-                    </Typography>
-                    <Typography color="textSecondary" fontSize="12px" variant="subtitle2">
-                    Electronics
-                    </Typography>
-                  </Box>
-                </Stack>
-              </TableCell>
-              <TableCell>
-                <Typography color="textSecondary" variant="subtitle2" fontWeight={400}>
-                  78.5%
-                </Typography>
-              </TableCell>
-              <TableCell>
-                <Chip
-                  sx={{
-                    bgcolor: (theme) => theme.palette.success.light,
-                    color: (theme) => theme.palette.success.main,
-                    borderRadius: '6px',
-                    width: 80,
-                  }}
-                  size="small"
-                  label="Low"
-                />
-              </TableCell>
-              <TableCell>
-                <Typography variant="subtitle2">$3.9k</Typography>
-              </TableCell>
-              <TableCell>
-                <Chart
-                  options={optionsrow1chart}
-                  series={seriesrow1chart}
-                  type="area"
-                  height="35px"
-                  width="100px"
-                />
-              </TableCell>
-            </TableRow>
-            {/* 2 */}
-            <TableRow>
-              <TableCell sx={{ pl: 0 }}>
-                <Stack direction="row" spacing={2}>
-                  <Avatar src={"/images/products/s9.jpg"} variant="rounded" alt="productTwo" sx={{ width: 48, height: 48 }} />
-                  <Box>
-                    <Typography variant="subtitle2" fontWeight={600}>
-                    Leather Purse
-                    </Typography>
-                    <Typography color="textSecondary" fontSize="12px" variant="subtitle2">
-                    Fashion
-                    </Typography>
-                  </Box>
-                </Stack>
-              </TableCell>
-              <TableCell>
-                <Typography color="textSecondary" variant="subtitle2" fontWeight={400}>
-                  58.6%
-                </Typography>
-              </TableCell>
-              <TableCell>
-                <Chip
-                  sx={{
-                    bgcolor: (theme) => theme.palette.warning.light,
-                    color: (theme) => theme.palette.warning.main,
-                    borderRadius: '6px',
-                    width: 80,
-                  }}
-                  size="small"
-                  label="Medium"
-                />
-              </TableCell>
-              <TableCell>
-                <Typography variant="subtitle2">$3.5k</Typography>
-              </TableCell>
-              <TableCell>
-                <Chart
-                  options={optionsrow2chart}
-                  series={seriesrow2chart}
-                  type="area"
-                  height="35px"
-                  width="100px"
-                />
-              </TableCell>
-            </TableRow>
-            {/* 3 */}
-            <TableRow>
-              <TableCell sx={{ pl: 0 }}>
-                <Stack direction="row" spacing={2}>
-                  <Avatar src={"/images/products/s7.jpg"} variant="rounded" alt="productThree" sx={{ width: 48, height: 48 }} />
-                  <Box>
-                    <Typography variant="subtitle2" fontWeight={600}>
-                    Red Velvate Dress
-                    </Typography>
-                    <Typography color="textSecondary" fontSize="12px" variant="subtitle2">
-                    Womens Fashion
+            {products && products.length > 0 ? (
+              products.slice(0, 5).map((product, index) => {
+                const stockStatus = getStockStatus(product.stock);
+                const chartData = generateSalesChart(product.sales, maxSales);
+                const chartOptions = {
+                  ...optionsrow1chart,
+                  colors: [product.sales > maxSales * 0.7 ? primary : grey]
+                };
+                const chartSeries = [{
+                  name: 'Sales Trend',
+                  color: product.sales > maxSales * 0.7 ? primary : grey,
+                  data: chartData,
+                }];
 
-                    </Typography>
-                  </Box>
-                </Stack>
-              </TableCell>
-              <TableCell>
-                <Typography color="textSecondary" variant="subtitle2" fontWeight={400}>
-                  25%
-                </Typography>
-              </TableCell>
-              <TableCell>
-                <Chip
-                  sx={{
-                    bgcolor: (theme) => theme.palette.primary.light,
-                    color: (theme) => theme.palette.primary.main,
-                    borderRadius: '6px',
-                    width: 80,
-                  }}
-                  size="small"
-                  label="Very High"
-                />
-              </TableCell>
-              <TableCell>
-                <Typography variant="subtitle2">$3.5k</Typography>
-              </TableCell>
-              <TableCell>
-                <Chart
-                  options={optionsrow3chart}
-                  series={seriesrow3chart}
-                  type="area"
-                  height="35px"
-                  width="100px"
-                />
-              </TableCell>
-            </TableRow>
-            {/* 4 */}
-            <TableRow>
-              <TableCell sx={{ pl: 0 }}>
-                <Stack direction="row" spacing={2}>
-                  <Avatar src={"/images/products/s4.jpg"} variant="rounded" alt="productFour" sx={{ width: 48, height: 48 }} />
-                  <Box>
-                    <Typography variant="subtitle2" fontWeight={600}>
-                    Headphone Boat
-                    </Typography>
-                    <Typography color="textSecondary" fontSize="12px" variant="subtitle2">
-                    Electronics
-                    </Typography>
-                  </Box>
-                </Stack>
-              </TableCell>
-              <TableCell>
-                <Typography color="textSecondary" variant="subtitle2" fontWeight={400}>
-                  96.3%
-                </Typography>
-              </TableCell>
-              <TableCell>
-                <Chip
-                  sx={{
-                    bgcolor: (theme) => theme.palette.error.light,
-                    color: (theme) => theme.palette.error.main,
-                    borderRadius: '6px',
-                    width: 80,
-                  }}
-                  size="small"
-                  label="High"
-                />
-              </TableCell>
-              <TableCell>
-                <Typography variant="subtitle2">$3.5k</Typography>
-              </TableCell>
-              <TableCell>
-                <Chart
-                  options={optionsrow4chart}
-                  series={seriesrow4chart}
-                  type="area"
-                  height="35px"
-                  width="100px"
-                />
-              </TableCell>
-            </TableRow>
+                return (
+                  <TableRow key={product._id}>
+                    <TableCell sx={{ pl: 0 }}>
+                      <Stack direction="row" spacing={2}>
+                        <Avatar 
+                          src={product.image || "/images/products/default.jpg"} 
+                          variant="rounded" 
+                          alt={product.title} 
+                          sx={{ width: 48, height: 48 }} 
+                        />
+                        <Box>
+                          <Typography variant="subtitle2" fontWeight={600}>
+                            {product.title}
+                          </Typography>
+                          <Typography color="textSecondary" fontSize="12px" variant="subtitle2">
+                            {product.category || 'General'}
+                          </Typography>
+                        </Box>
+                      </Stack>
+                    </TableCell>
+                    <TableCell>
+                      <Typography color="textSecondary" variant="subtitle2" fontWeight={400}>
+                        {product.sales} units
+                      </Typography>
+                    </TableCell>
+                    <TableCell>
+                      <Chip
+                        sx={{
+                          bgcolor: stockStatus.bgcolor,
+                          color: stockStatus.textColor,
+                          borderRadius: '6px',
+                          width: 'auto',
+                          minWidth: 80,
+                        }}
+                        size="small"
+                        label={`${product.stock} ${stockStatus.label}`}
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <Typography variant="subtitle2">
+                        {formatCurrency(product.revenue)}
+                      </Typography>
+                    </TableCell>
+                    <TableCell>
+                      <Chart
+                        options={chartOptions}
+                        series={chartSeries}
+                        type="area"
+                        height="35px"
+                        width="100px"
+                      />
+                    </TableCell>
+                  </TableRow>
+                );
+              })
+            ) : (
+              <TableRow>
+                <TableCell colSpan={5} sx={{ textAlign: 'center', py: 4 }}>
+                  <Typography variant="body2" color="textSecondary">
+                    No product performance data available
+                  </Typography>
+                </TableCell>
+              </TableRow>
+            )}
           </TableBody>
         </Table>
       </TableContainer>

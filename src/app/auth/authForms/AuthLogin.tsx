@@ -60,6 +60,7 @@ const AuthLogin = ({ title, subtitle, subtext }: loginType) => {
         headers: {
           'Content-Type': 'application/json',
         },
+        credentials: 'include',
         body: JSON.stringify(values),
       });
 
@@ -68,8 +69,9 @@ const AuthLogin = ({ title, subtitle, subtext }: loginType) => {
       if (data.success) {
         toast.success('Login successful! Welcome back!');
 
+        // Force a page reload to ensure auth context is updated
         setTimeout(() => {
-          router.push('/dashboards/ecommerce');
+          window.location.href = '/dashboards/ecommerce';
         }, 1500);
       } else if (data.requiresVerification) {
         setVerificationRequired(data.email);

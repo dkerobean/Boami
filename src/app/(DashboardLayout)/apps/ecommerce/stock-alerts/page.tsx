@@ -143,6 +143,9 @@ const StockAlertsPage = () => {
 
   const handleRestock = async (alertId: string, quantity: number, reason: string): Promise<boolean> => {
     try {
+      console.log('Starting restock process for alert:', alertId, 'quantity:', quantity);
+      
+      // Call the restock API endpoint which will handle MongoDB operations
       const response = await fetch(`/api/stock-alerts/${alertId}/restock`, {
         method: 'POST',
         headers: {
@@ -156,18 +159,20 @@ const StockAlertsPage = () => {
       });
 
       if (!response.ok) {
-        throw new Error('Failed to restock');
+        throw new Error(`HTTP ${response.status}: Failed to restock`);
       }
 
       const data = await response.json();
 
       if (data.success) {
-        // Refresh alerts after successful restock
+        console.log('Restock successful:', data);
+        // Refresh alerts from server to get current state
         await fetchStockAlerts();
         return true;
       } else {
         throw new Error(data.error || 'Failed to restock');
       }
+
     } catch (error) {
       console.error('Error restocking:', error);
       setError(error instanceof Error ? error.message : 'Failed to restock');

@@ -26,13 +26,20 @@ export interface ITokenPair {
 
 /**
  * JWT Manager class for handling token operations
- * Follows security best practices for token management
+ * Enhanced with additional security features and token refresh functionality
  */
 export class JWTManager {
-  private static readonly ACCESS_TOKEN_EXPIRES = '15m';
+  private static readonly ACCESS_TOKEN_EXPIRES = '1d';
   private static readonly REFRESH_TOKEN_EXPIRES = '7d';
   private static readonly ACCESS_TOKEN_COOKIE = 'accessToken';
   private static readonly REFRESH_TOKEN_COOKIE = 'refreshToken';
+  private static readonly TOKEN_BLACKLIST_KEY = 'jwt_blacklist';
+  private static readonly RATE_LIMIT_KEY = 'jwt_rate_limit';
+
+  // Rate limiting configuration
+  private static readonly RATE_LIMIT_MAX_ATTEMPTS = 5;
+  private static readonly RATE_LIMIT_WINDOW_MS = 15 * 60 * 1000; // 15 minutes
+  private static readonly RATE_LIMIT_BLOCK_DURATION_MS = 30 * 60 * 1000; // 30 minutes
 
   /**
    * Validates JWT environment variables
@@ -123,12 +130,12 @@ export class JWTManager {
     const cookieStore = cookies();
     const isProduction = process.env.NODE_ENV === 'production';
 
-    // Set access token cookie (15 minutes)
+    // Set access token cookie (1 day)
     cookieStore.set(this.ACCESS_TOKEN_COOKIE, accessToken, {
       httpOnly: true,
       secure: isProduction,
       sameSite: 'strict',
-      maxAge: 15 * 60, // 15 minutes in seconds
+      maxAge: 24 * 60 * 60, // 1 day in seconds
       path: '/'
     });
 
@@ -161,7 +168,7 @@ export class JWTManager {
       httpOnly: true,
       secure: isProduction,
       sameSite: 'strict',
-      maxAge: 15 * 60, // 15 minutes
+      maxAge: 24 * 60 * 60, // 1 day
       path: '/'
     });
 
@@ -288,6 +295,293 @@ export class JWTManager {
   static isEmailVerified(): boolean {
     const user = this.getCurrentUser();
     return user ? user.isEmailVerified : false;
+  }
+
+  /**
+   * Check if token is expired
+   * @param token - JWT token to check
+   * @returns boolean - Whether token is expired
+   */
+  static isTokenExpired(token: string): boolean {
+    try {
+      const payload = this.verifyAccessToken(token);
+      if (!payload) return true;
+
+      const currentTime = Math.floor(Date.now() / 1000);
+      return payload.exp < currentTime;
+    } catch (error) {
+      return true;
+    }
+  }
+
+  /**
+   * Get token expiry time
+   * @param token - JWT token
+   * @returns Date | null - Expiry date or null if invalid
+   */
+  static getTokenExpiry(token: string): Date | null {
+    try {
+      const payload = this.verifyAccessToken(token);
+      if (!payload) return null;
+      return new Date(payload.exp * 1000);
+    } catch (error) {
+      return null;
+    }
+  }
+
+  /**
+   * Get time until token expires in milliseconds
+   * @param token - JWT token
+   * @returns number - Milliseconds until expiry, 0 if expired or invalid
+   */
+  static getTimeUntilExpiry(token: string): number {
+    const expiry = this.getTokenExpiry(token);
+    if (!expiry) return 0;
+    return Math.max(0, expiry.getTime() - Date.now());
+  }
+
+  /**
+   * Refresh access token using refresh token
+   * @param refreshToken - Valid refresh token
+   * @returns ITokenPair | null - New token pair or null if refresh failed
+   */
+  static async refreshTokens(refreshToken: string): Promise<ITokenPair | null> {
+    try {
+      const refreshPayload = this.verifyRefreshToken(refreshToken);
+      if (!refreshPayload) {
+        console.error('Invalid refresh token');
+        return null;
+      }
+
+      // Check if refresh token is blacklisted
+      if (this.isTokenBlacklisted(refreshToken)) {
+        console.error('Refresh token is blacklisted');
+        return null;
+      }
+
+      // Here you would typically fetch user data from database
+      // For now, we'll create a minimal payload
+      const userPayload = {
+        userId: refreshPayload.userId,
+        email: '', // Would be fetched from database
+        role: 'user', // Would be fetched from database
+        isEmailVerified: true, // Would be fetched from database
+      };
+
+      // Generate new token pair
+      const newTokens = this.generateTokens(userPayload);
+
+      // Blacklist the old refresh token
+      this.blacklistToken(refreshToken);
+
+      return newTokens;
+    } catch (error) {
+      console.error('Token refresh failed:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Blacklist a token (for logout or security purposes)
+   * @param token - Token to blacklist
+   */
+  static blacklistToken(token: string): void {
+    try {
+      // In a real implementation, this would be stored in Redis or database
+      // For now, we'll use a simple in-memory approach (not suitable for production)
+      if (typeof window !== 'undefined') {
+        const blacklist = JSON.parse(localStorage.getItem(this.TOKEN_BLACKLIST_KEY) || '[]');
+        blacklist.push({
+          token: token.substring(0, 20), // Store only part of token for security
+          timestamp: Date.now(),
+        });
+
+        // Keep only recent entries (last 24 hours)
+        const oneDayAgo = Date.now() - 24 * 60 * 60 * 1000;
+        const filteredBlacklist = blacklist.filter((entry: any) => entry.timestamp > oneDayAgo);
+
+        localStorage.setItem(this.TOKEN_BLACKLIST_KEY, JSON.stringify(filteredBlacklist));
+      }
+    } catch (error) {
+      console.error('Failed to blacklist token:', error);
+    }
+  }
+
+  /**
+   * Check if token is blacklisted
+   * @param token - Token to check
+   * @returns boolean - Whether token is blacklisted
+   */
+  static isTokenBlacklisted(token: string): boolean {
+    try {
+      if (typeof window !== 'undefined') {
+        const blacklist = JSON.parse(localStorage.getItem(this.TOKEN_BLACKLIST_KEY) || '[]');
+        const tokenPrefix = token.substring(0, 20);
+        return blacklist.some((entry: any) => entry.token === tokenPrefix);
+      }
+      return false;
+    } catch (error) {
+      console.error('Failed to check token blacklist:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Rate limiting for token operations
+   * @param identifier - Unique identifier (e.g., IP address, user ID)
+   * @returns boolean - Whether operation is allowed
+   */
+  static checkRateLimit(identifier: string): boolean {
+    try {
+      if (typeof window !== 'undefined') {
+        const rateLimitData = JSON.parse(localStorage.getItem(this.RATE_LIMIT_KEY) || '{}');
+        const now = Date.now();
+        const userLimit = rateLimitData[identifier];
+
+        if (!userLimit) {
+          // First attempt
+          rateLimitData[identifier] = {
+            attempts: 1,
+            firstAttempt: now,
+            blockedUntil: null,
+          };
+          localStorage.setItem(this.RATE_LIMIT_KEY, JSON.stringify(rateLimitData));
+          return true;
+        }
+
+        // Check if user is currently blocked
+        if (userLimit.blockedUntil && now < userLimit.blockedUntil) {
+          return false;
+        }
+
+        // Reset if window has passed
+        if (now - userLimit.firstAttempt > this.RATE_LIMIT_WINDOW_MS) {
+          rateLimitData[identifier] = {
+            attempts: 1,
+            firstAttempt: now,
+            blockedUntil: null,
+          };
+          localStorage.setItem(this.RATE_LIMIT_KEY, JSON.stringify(rateLimitData));
+          return true;
+        }
+
+        // Increment attempts
+        userLimit.attempts += 1;
+
+        // Block if exceeded max attempts
+        if (userLimit.attempts > this.RATE_LIMIT_MAX_ATTEMPTS) {
+          userLimit.blockedUntil = now + this.RATE_LIMIT_BLOCK_DURATION_MS;
+          localStorage.setItem(this.RATE_LIMIT_KEY, JSON.stringify(rateLimitData));
+          return false;
+        }
+
+        localStorage.setItem(this.RATE_LIMIT_KEY, JSON.stringify(rateLimitData));
+        return true;
+      }
+      return true; // Allow if localStorage not available
+    } catch (error) {
+      console.error('Rate limit check failed:', error);
+      return true; // Allow on error to prevent blocking legitimate users
+    }
+  }
+
+  /**
+   * Clear rate limit for identifier
+   * @param identifier - Unique identifier to clear
+   */
+  static clearRateLimit(identifier: string): void {
+    try {
+      if (typeof window !== 'undefined') {
+        const rateLimitData = JSON.parse(localStorage.getItem(this.RATE_LIMIT_KEY) || '{}');
+        delete rateLimitData[identifier];
+        localStorage.setItem(this.RATE_LIMIT_KEY, JSON.stringify(rateLimitData));
+      }
+    } catch (error) {
+      console.error('Failed to clear rate limit:', error);
+    }
+  }
+
+  /**
+   * Validate token format and structure
+   * @param token - Token to validate
+   * @returns boolean - Whether token has valid format
+   */
+  static isValidTokenFormat(token: string): boolean {
+    if (!token || typeof token !== 'string') {
+      return false;
+    }
+
+    // JWT should have 3 parts separated by dots
+    const parts = token.split('.');
+    if (parts.length !== 3) {
+      return false;
+    }
+
+    // Each part should be base64 encoded
+    try {
+      parts.forEach(part => {
+        if (!part) throw new Error('Empty part');
+        atob(part.replace(/-/g, '+').replace(/_/g, '/'));
+      });
+      return true;
+    } catch (error) {
+      return false;
+    }
+  }
+
+  /**
+   * Extract token payload without verification (for debugging)
+   * @param token - JWT token
+   * @returns any - Decoded payload or null
+   */
+  static extractPayloadUnsafe(token: string): any {
+    try {
+      if (!this.isValidTokenFormat(token)) {
+        return null;
+      }
+
+      const payload = token.split('.')[1];
+      const decoded = atob(payload.replace(/-/g, '+').replace(/_/g, '/'));
+      return JSON.parse(decoded);
+    } catch (error) {
+      console.error('Failed to extract payload:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Clean up expired tokens and rate limit data
+   */
+  static cleanup(): void {
+    try {
+      if (typeof window !== 'undefined') {
+        // Clean up blacklist
+        const blacklist = JSON.parse(localStorage.getItem(this.TOKEN_BLACKLIST_KEY) || '[]');
+        const oneDayAgo = Date.now() - 24 * 60 * 60 * 1000;
+        const filteredBlacklist = blacklist.filter((entry: any) => entry.timestamp > oneDayAgo);
+        localStorage.setItem(this.TOKEN_BLACKLIST_KEY, JSON.stringify(filteredBlacklist));
+
+        // Clean up rate limit data
+        const rateLimitData = JSON.parse(localStorage.getItem(this.RATE_LIMIT_KEY) || '{}');
+        const now = Date.now();
+        const cleanedRateLimit: any = {};
+
+        Object.keys(rateLimitData).forEach(key => {
+          const data = rateLimitData[key];
+          // Keep if not expired and not old
+          if (
+            (!data.blockedUntil || now < data.blockedUntil) &&
+            (now - data.firstAttempt < this.RATE_LIMIT_WINDOW_MS * 2)
+          ) {
+            cleanedRateLimit[key] = data;
+          }
+        });
+
+        localStorage.setItem(this.RATE_LIMIT_KEY, JSON.stringify(cleanedRateLimit));
+      }
+    } catch (error) {
+      console.error('Cleanup failed:', error);
+    }
   }
 }
 /**

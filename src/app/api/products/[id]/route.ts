@@ -187,20 +187,45 @@ export async function PUT(
     const productId = params.id;
     const body = await request.json();
     
+    console.log('PUT /api/products/[id] - Request details:', {
+      productId,
+      bodyKeys: Object.keys(body),
+      bodySize: JSON.stringify(body).length,
+      timestamp: new Date().toISOString()
+    });
+    
     if (!productId) {
+      console.error('PUT /api/products/[id] - Missing product ID');
       return NextResponse.json({
         success: false,
         error: 'Product ID is required'
       }, { status: 400 });
     }
 
+    // Log raw body for debugging
+    console.log('PUT /api/products/[id] - Raw request body:', JSON.stringify(body, null, 2));
+
     // Validate request body
-    const validatedData = await productUpdateSchema.validate(body);
+    let validatedData;
+    try {
+      validatedData = await productUpdateSchema.validate(body);
+      console.log('PUT /api/products/[id] - Validation successful:', Object.keys(validatedData));
+    } catch (validationError) {
+      console.error('PUT /api/products/[id] - Validation error:', validationError);
+      throw validationError;
+    }
 
     // Find existing product using flexible lookup
     const existingProduct = await findProductById(productId.trim());
     
+    console.log('PUT /api/products/[id] - Product lookup result:', {
+      found: !!existingProduct,
+      productId: existingProduct?._id,
+      title: existingProduct?.title
+    });
+    
     if (!existingProduct) {
+      console.error('PUT /api/products/[id] - Product not found for ID:', productId);
       return NextResponse.json({
         success: false,
         error: 'Product not found'
@@ -244,15 +269,34 @@ export async function PUT(
       (validatedData as any).salesPrice = validatedData.price;
     }
 
+    // Log final update data
+    console.log('PUT /api/products/[id] - Final update data:', {
+      productId: existingProduct._id,
+      updateFields: Object.keys(validatedData),
+      hasPhoto: !!validatedData.photo,
+      photoUrl: validatedData.photo
+    });
+
     // Update product using the MongoDB ObjectId from the found product
-    const updatedProduct = await Product.findByIdAndUpdate(
-      existingProduct._id,
-      {
-        ...validatedData,
-        updatedAt: new Date()
-      },
-      { new: true, runValidators: true }
-    );
+    let updatedProduct;
+    try {
+      updatedProduct = await Product.findByIdAndUpdate(
+        existingProduct._id,
+        {
+          ...validatedData,
+          updatedAt: new Date()
+        },
+        { new: true, runValidators: true }
+      );
+      
+      console.log('PUT /api/products/[id] - Product updated successfully:', {
+        id: updatedProduct?._id,
+        title: updatedProduct?.title
+      });
+    } catch (updateError) {
+      console.error('PUT /api/products/[id] - Product update failed:', updateError);
+      throw updateError;
+    }
 
     return NextResponse.json({
       success: true,
@@ -261,9 +305,19 @@ export async function PUT(
     });
 
   } catch (error) {
-    console.error('Product update error:', error);
+    console.error('PUT /api/products/[id] - Error occurred:', {
+      error: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined,
+      type: error?.constructor?.name,
+      productId
+    });
     
     if (error instanceof yup.ValidationError) {
+      console.error('PUT /api/products/[id] - Validation error details:', {
+        errors: error.errors,
+        path: error.path,
+        value: error.value
+      });
       return NextResponse.json({
         success: false,
         error: 'Validation error',
@@ -273,7 +327,8 @@ export async function PUT(
 
     return NextResponse.json({
       success: false,
-      error: 'Failed to update product'
+      error: 'Failed to update product',
+      details: error instanceof Error ? error.message : String(error)
     }, { status: 500 });
   }
 }

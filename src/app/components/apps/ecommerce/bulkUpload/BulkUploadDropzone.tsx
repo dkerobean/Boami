@@ -5,6 +5,7 @@ import { useDropzone } from 'react-dropzone';
 import { Box, Typography, Button, LinearProgress, Alert, List, ListItem, ListItemText, ListItemIcon, IconButton } from '@mui/material';
 import { IconUpload, IconFile, IconX, IconCheck, IconAlertCircle } from '@tabler/icons-react';
 import Papa from 'papaparse';
+import * as XLSX from 'xlsx';
 
 interface ParsedData {
   headers: string[];
@@ -129,11 +130,72 @@ const BulkUploadDropzone: React.FC<BulkUploadDropzoneProps> = ({ onFileUpload })
       
       reader.onload = async (e) => {
         try {
-          // For Excel files, we'll convert to CSV first
-          // In a real implementation, you'd use a library like xlsx
-          reject(new Error('Excel file processing not implemented yet. Please use CSV files.'));
+          const data = new Uint8Array(e.target?.result as ArrayBuffer);
+          const workbook = XLSX.read(data, { type: 'array' });
+          
+          // Get the first worksheet
+          const sheetName = workbook.SheetNames[0];
+          if (!sheetName) {
+            throw new Error('No worksheets found in Excel file');
+          }
+          
+          const worksheet = workbook.Sheets[sheetName];
+          
+          // Convert to JSON with headers
+          const jsonData = XLSX.utils.sheet_to_json(worksheet, { 
+            header: 1,
+            defval: '',
+            blankrows: false 
+          }) as any[][];
+          
+          if (jsonData.length === 0) {
+            throw new Error('No data found in Excel file');
+          }
+          
+          // Extract headers from first row
+          const headers = jsonData[0].map((header: any) => String(header).trim()).filter(Boolean);
+          
+          if (headers.length === 0) {
+            throw new Error('No headers found in Excel file');
+          }
+          
+          // Convert remaining rows to objects
+          const dataRows = jsonData.slice(1).map(row => {
+            const obj: any = {};
+            headers.forEach((header, index) => {
+              obj[header] = row[index] ? String(row[index]).trim() : '';
+            });
+            return obj;
+          }).filter(row => Object.values(row).some(val => val !== ''));
+          
+          if (dataRows.length === 0) {
+            throw new Error('No data rows found in Excel file');
+          }
+          
+          // Validate required columns (warn but don't fail)
+          const requiredColumns = ['name', 'sku', 'price'];
+          const lowercaseHeaders = headers.map(h => h.toLowerCase());
+          const missingColumns = requiredColumns.filter(col => 
+            !lowercaseHeaders.some(header => header.includes(col))
+          );
+          
+          if (missingColumns.length > 0) {
+            console.warn(`Recommended columns not found: ${missingColumns.join(', ')}`);
+          }
+          
+          // Create preview data (first 5 rows)
+          const previewData = dataRows.slice(0, 5);
+          
+          const parsedData: ParsedData = {
+            headers,
+            data: dataRows,
+            totalRows: dataRows.length,
+            previewData,
+          };
+          
+          resolve(parsedData);
         } catch (error) {
-          reject(error);
+          reject(new Error(`Failed to parse Excel file: ${error instanceof Error ? error.message : 'Unknown error'}`));
         }
       };
       

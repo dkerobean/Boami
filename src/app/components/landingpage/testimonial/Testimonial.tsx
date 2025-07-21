@@ -6,69 +6,19 @@ import Container from '@mui/material/Container';
 import Rating from '@mui/material/Rating';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
+import Chip from '@mui/material/Chip';
 import TestimonialTitle from './TestimonialTitle';
 import BlankCard from '../../shared/BlankCard';
 import AnimationFadeIn from '../animation/Animation';
+import { landingPageContent } from '@/data/landing-page-content';
 
 //Carousel slider for product
 import Slider from 'react-slick';
 import 'slick-carousel/slick/slick.css';
 import './testimonial.css';
 
-interface SliderType {
-  title: string;
-  subtitle: string;
-  avatar: string;
-  subtext: string;
-}
-
-const SliderData: SliderType[] = [
-  {
-    title: 'Jenny Wilson',
-    subtitle: 'Features avaibility',
-    avatar: '/images/profile/user-7.jpg',
-    subtext:
-      'The dashboard template from adminmart has helped me provide a clean and sleek look to my dashboard and made it look exactly the way I wanted it to, mainly without having.',
-  },
-  {
-    title: 'Minshan Cui',
-    subtitle: 'Features avaibility',
-    avatar: '/images/profile/user-2.jpg',
-    subtext:
-      'The quality of design is excellent, customizability and flexibility much better than the other products available in the market.I strongly recommend the AdminMart to other.',
-  },
-  {
-    title: 'Eminson Mendoza',
-    subtitle: 'Features avaibility',
-    avatar: '/images/profile/user-3.jpg',
-    subtext:
-      'This template is great, UI-rich and up-to-date. Although it is pretty much complete, I suggest to improve a bit of documentation. Thanks & Highly recomended!',
-  },
-  {
-    title: 'Jenny Wilson',
-    subtitle: 'Features avaibility',
-    avatar: '/images/profile/user-4.jpg',
-    subtext:
-      'The dashboard template from adminmart has helped me provide a clean and sleek look to my dashboard and made it look exactly the way I wanted it to, mainly without having.',
-  },
-  {
-    title: 'Minshan Cui',
-    subtitle: 'Features avaibility',
-    avatar: '/images/profile/user-5.jpg',
-    subtext:
-      'The quality of design is excellent, customizability and flexibility much better than the other products available in the market.I strongly recommend the AdminMart to other.',
-  },
-  {
-    title: 'Eminson Mendoza',
-    subtitle: 'Features avaibility',
-    avatar: '/images/profile/user-6.jpg',
-    subtext:
-      'This template is great, UI-rich and up-to-date. Although it is pretty much complete, I suggest to improve a bit of documentation. Thanks & Highly recomended!',
-  },
-];
-
 const Testimonial = () => {
-  const [value, setValue] = React.useState<number | null>(5);
+  const { testimonials } = landingPageContent;
 
   const settings = {
     className: 'testimonial-slider',
@@ -78,6 +28,9 @@ const Testimonial = () => {
     speed: 500,
     slidesToShow: 3,
     slidesToScroll: 1,
+    autoplay: true,
+    autoplaySpeed: 5000,
+    pauseOnHover: true,
     responsive: [
       {
         breakpoint: 1024,
@@ -94,7 +47,7 @@ const Testimonial = () => {
       {
         breakpoint: 600,
         settings: {
-          slidesToShow: 2,
+          slidesToShow: 1,
         },
       },
       {
@@ -107,44 +60,100 @@ const Testimonial = () => {
   };
 
   return (
-    <Box pt={14} pb={11}>
+    <Box pt={14} pb={11} sx={{ backgroundColor: (theme) => theme.palette.grey[50] }}>
       <Container maxWidth="lg">
         <TestimonialTitle />
         <Box mt={5}>
           <AnimationFadeIn>
             <Slider {...settings}>
-              {SliderData.map((slider, index) => (
-                <Box p="15px" key={index}>
-                  <BlankCard>
-                    <CardContent>
-                      <Stack direction="row">
-                        <Avatar src={slider.avatar} alt="user" sx={{ width: 40, height: 40 }} />
-                        <Box ml={2}>
-                          <Typography variant="h6">{slider.title}</Typography>
-                          <Typography color="textSecondary" variant="subtitle1">
-                            {slider.subtitle}
+              {testimonials.map((testimonial) => (
+                <Box p="15px" key={testimonial.id}>
+                  <BlankCard sx={{ height: '100%' }}>
+                    <CardContent sx={{ p: 3 }}>
+                      <Typography
+                        fontSize="16px"
+                        color="textPrimary"
+                        mb={3}
+                        sx={{ fontStyle: 'italic', lineHeight: 1.6 }}
+                      >
+                        "{testimonial.quote}"
+                      </Typography>
+
+                      <Stack direction="row" alignItems="center" spacing={2} mb={2}>
+                        <Avatar
+                          src={testimonial.author.avatar}
+                          alt={testimonial.author.name}
+                          sx={{ width: 48, height: 48 }}
+                        />
+                        <Box>
+                          <Typography variant="h6" fontWeight={600}>
+                            {testimonial.author.name}
+                          </Typography>
+                          <Typography color="textSecondary" variant="body2">
+                            {testimonial.author.title}, {testimonial.author.company}
                           </Typography>
                         </Box>
                         <Box ml="auto">
                           <Rating
                             size="small"
-                            name="simple-controlled"
-                            value={value}
-                            onChange={(event, newValue) => {
-                              setValue(newValue);
-                            }}
+                            name="testimonial-rating"
+                            value={5}
+                            readOnly
                           />
                         </Box>
                       </Stack>
-                      <Typography fontSize="15px" color="textSecondary" mt={3}>
-                        {slider.subtext}
-                      </Typography>
+
+                      {testimonial.metrics && (
+                        <Chip
+                          label={testimonial.metrics.improvement}
+                          color="primary"
+                          variant="outlined"
+                          size="small"
+                          sx={{ mt: 1 }}
+                        />
+                      )}
                     </CardContent>
                   </BlankCard>
                 </Box>
               ))}
             </Slider>
           </AnimationFadeIn>
+        </Box>
+
+        {/* Company Logos Section */}
+        <Box mt={8} textAlign="center">
+          <Typography variant="h6" color="textSecondary" mb={4}>
+            Trusted by leading e-commerce businesses
+          </Typography>
+          <Stack
+            direction="row"
+            spacing={4}
+            justifyContent="center"
+            alignItems="center"
+            flexWrap="wrap"
+            sx={{ opacity: 0.7 }}
+          >
+            {/* Placeholder for company logos - replace with actual logos */}
+            {['TechStyle Boutique', 'Urban Gear Co', 'Wellness Essentials', 'Fashion Forward', 'Digital Trends'].map((company) => (
+              <Typography
+                key={company}
+                variant="h6"
+                color="textSecondary"
+                sx={{
+                  fontWeight: 600,
+                  px: 2,
+                  py: 1,
+                  border: '1px solid',
+                  borderColor: 'divider',
+                  borderRadius: 1,
+                  minWidth: 120,
+                  textAlign: 'center'
+                }}
+              >
+                {company}
+              </Typography>
+            ))}
+          </Stack>
         </Box>
       </Container>
     </Box>

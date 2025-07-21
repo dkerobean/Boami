@@ -1,31 +1,41 @@
-import { Box, Avatar, Typography, IconButton, Tooltip, useMediaQuery } from '@mui/material';
+import { Box, Avatar, Typography, IconButton, Tooltip, useMediaQuery, CircularProgress } from '@mui/material';
 import { useSelector } from '@/store/hooks';
 import { IconPower } from '@tabler/icons-react';
 import { AppState } from '@/store/store';
-import Link from 'next/link';
-import { useState, useEffect } from 'react';
-import axios from 'axios';
+import { useAuthContext } from '@/app/context/AuthContext';
 
 export const Profile = () => {
   const customizer = useSelector((state: AppState) => state.customizer);
   const lgUp = useMediaQuery((theme: any) => theme.breakpoints.up('lg'));
   const hideMenu = lgUp ? customizer.isCollapse && !customizer.isSidebarHover : '';
-  const [user, setUser] = useState<any>(null);
+  const { user, isLoading, logout, isAuthenticated } = useAuthContext();
 
-  useEffect(() => {
-    const fetchUser = async () => {
-      try {
-        const response = await axios.get('/api/user');
-        if (response.data.success) {
-          setUser(response.data.data);
-        }
-      } catch (error) {
-        console.error('Failed to fetch user in sidebar:', error);
-      }
-    };
+  const handleLogout = async () => {
+    try {
+      await logout();
+    } catch (error) {
+      console.error('Logout failed:', error);
+    }
+  };
 
-    fetchUser();
-  }, []);
+  // Don't render if not authenticated
+  if (!isAuthenticated) {
+    return null;
+  }
+
+  // Show loading state
+  if (isLoading) {
+    return (
+      <Box
+        display={'flex'}
+        alignItems="center"
+        justifyContent="center"
+        sx={{ m: 3, p: 2, bgcolor: `${'secondary.light'}` }}
+      >
+        <CircularProgress size={24} />
+      </Box>
+    );
+  }
 
   return (
     <Box
@@ -36,10 +46,10 @@ export const Profile = () => {
     >
       {!hideMenu ? (
         <>
-          <Avatar 
-            alt="User Profile" 
-            src={user?.profileImage || user?.avatar || "/images/profile/user-1.jpg"} 
-            sx={{height: 40, width: 40}} 
+          <Avatar
+            alt="User Profile"
+            src={user?.profileImage || user?.avatar || "/images/profile/user-1.jpg"}
+            sx={{height: 40, width: 40}}
           />
 
           <Box>
@@ -54,8 +64,7 @@ export const Profile = () => {
             <Tooltip title="Logout" placement="top">
               <IconButton
                 color="primary"
-                component={Link}
-                href="/auth/auth1/login"
+                onClick={handleLogout}
                 aria-label="logout"
                 size="small"
               >
