@@ -1,258 +1,486 @@
-# BOAMI Landing Page Deployment Guide
+# Subscription Payment System - Deployment Guide
 
-## Pre-Deployment Checklist
+This guide covers the complete deployment process for the Subscription Payment System, including production environment setup, SSL configuration, and monitoring.
 
-### 1. Environment Setup
-- [ ] Set up production environment variables
-- [ ] Configure Google Analytics 4 tracking ID
-- [ ] Set up Hotjar tracking ID
-- [ ] Configure CDN for static assets
-- [ ] Set up SSL certificates
+## Table of Contents
 
-### 2. Performance Optimization
-- [ ] Run bundle analysis (`ANALYZE=true npm run build`)
-- [ ] Optimize images and convert to WebP/AVIF
-- [ ] Enable compression and caching
-- [ ] Configure CDN for static assets
-- [ ] Test Core Web Vitals scores
+1. [Prerequisites](#prerequisites)
+2. [Environment Setup](#environment-setup)
+3. [Database Migration](#database-migration)
+4. [SSL Certificate Setup](#ssl-certificate-setup)
+5. [Production Deployment](#production-deployment)
+6. [Docker Deployment](#docker-deployment)
+7. [Monitoring and Health Checks](#monitoring-and-health-checks)
+8. [Backup and Recovery](#backup-and-recovery)
+9. [Troubleshooting](#troubleshooting)
 
-### 3. Security Configuration
-- [ ] Configure security headers
-- [ ] Set up Content Security Policy
-- [ ] Enable HTTPS redirect
-- [ ] Configure rate limiting
-- [ ] Set up monitoring and alerting
+## Prerequisites
 
-### 4. SEO and Analytics
-- [ ] Verify meta tags and structured data
-- [ ] Submit sitemap to search engines
-- [ ] Set up Google Search Console
-- [ ] Configure conversion tracking
-- [ ] Test social media sharing
+### System Requirements
 
-### 5. Testing
-- [ ] Run automated tests (`npm run test:ci`)
-- [ ] Perform cross-browser testing
-- [ ] Test mobile responsiveness
-- [ ] Validate accessibility compliance
-- [ ] Load testing and performance testing
+- **Operating System**: Ubuntu 20.04+ or CentOS 8+
+- **Node.js**: Version 18.x or higher
+- **MongoDB**: Version 5.0+ (Atlas or self-hosted)
+- **Redis**: Version 6.0+ (optional, for caching)
+- **Nginx**: Latest stable version
+- **SSL Certificate**: Let's Encrypt or commercial certificate
 
-## Deployment Steps
+### Required Tools
 
-### 1. Build and Test
 ```bash
-# Install dependencies
-npm ci
+# Install Node.js
+curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
+sudo apt-get install -y nodejs
 
-# Run tests
-npm run test:ci
+# Install MongoDB tools
+wget -qO - https://www.mongodb.org/static/pgp/server-5.0.asc | sudo apt-key add -
+echo "deb [ arch=amd64,arm64 ] https://repo.mongodb.org/apt/ubuntu focal/mongodb-org/5.0 multiverse" | sudo tee /etc/apt/sources.list.d/mongodb-org-5.0.list
+sudo apt-get update
+sudo apt-get install -y mongodb-database-tools
 
-# Build for production
-NODE_ENV=production npm run build
+# Install PM2 for process management
+sudo npm install -g pm2
 
-# Start production server (for testing)
-npm start
+# Install other dependencies
+sudo apt-get install -y nginx certbot python3-certbot-nginx curl git
 ```
 
-### 2. Performance Audit
-```bash
-# Run Lighthouse audit
-lighthouse http://localhost:3000/landingpage --output=json --output-path=./lighthouse-report.json
+## Environment Setup
 
-# Analyze bundle size
-ANALYZE=true npm run build
+### 1. Clone Repository
+
+```bash
+git clone https://github.com/your-username/subscription-payment-system.git
+cd subscription-payment-system
 ```
 
-### 3. Deploy to Production
+### 2. Install Dependencies
 
-#### Option A: Vercel Deployment
 ```bash
-# Install Vercel CLI
-npm i -g vercel
-
-# Deploy to production
-vercel --prod
+npm ci --only=production
 ```
 
-#### Option B: Netlify Deployment
+### 3. Environment Configuration
+
+Copy the production environment template:
+
 ```bash
-# Install Netlify CLI
-npm i -g netlify-cli
-
-# Build for static export
-EXPORT=true npm run build
-
-# Deploy to production
-netlify deploy --prod --dir=out
+cp .env.production.example .env.production
 ```
 
-#### Option C: Custom Server Deployment
+Edit `.env.production` with your production values:
+
 ```bash
-# Build application
-npm run build
-
-# Copy files to server
-rsync -avz --delete .next/ user@server:/path/to/app/
-
-# Restart application
-ssh user@server "pm2 restart boami-landing"
-```
-
-### 4. Post-Deployment Verification
-
-#### Health Checks
-```bash
-# Check application status
-curl -I https://boami.com/landingpage
-
-# Test API endpoints
-curl https://boami.com/api/health
-
-# Verify SSL certificate
-openssl s_client -connect boami.com:443 -servername boami.com
-```
-
-#### Performance Verification
-```bash
-# Test page load time
-curl -o /dev/null -s -w "%{time_total}" https://boami.com/landingpage
-
-# Run Core Web Vitals test
-lighthouse https://boami.com/landingpage --only-categories=performance
-```
-
-## Environment Variables
-
-### Required Production Variables
-```env
+# Required Configuration
 NODE_ENV=production
-NEXT_PUBLIC_GA_ID=G-XXXXXXXXXX
-NEXT_PUBLIC_HOTJAR_ID=1234567
-NEXT_PUBLIC_SITE_URL=https://boami.com
+NEXT_PUBLIC_APP_URL=https://your-domain.com
+MONGODB_URI=mongodb+srv://username:password@cluster.mongodb.net/production_db
+FLUTTERWAVE_PUBLIC_KEY=FLWPUBK-your-production-public-key
+FLUTTERWAVE_SECRET_KEY=FLWSECK-your-production-secret-key
+FLUTTERWAVE_WEBHOOK_SECRET=your-webhook-secret-hash
+NEXTAUTH_SECRET=your-super-secure-nextauth-secret
+JWT_SECRET=your-jwt-secret-key
+ENCRYPTION_KEY=your-32-character-encryption-key
 ```
 
-### Optional Variables
-```env
-ANALYZE=false
-EXPORT=false
-DEPLOYMENT_PLATFORM=vercel
-SLACK_WEBHOOK=https://hooks.slack.com/services/YOUR/SLACK/WEBHOOK
+### 4. Build Application
+
+```bash
+npm run build
 ```
 
-## Monitoring and Maintenance
+## Database Migration
 
-### 1. Set Up Monitoring
-- Configure uptime monitoring (Pingdom, UptimeRobot, etc.)
-- Set up error tracking (Sentry, Bugsnag, etc.)
-- Configure performance monitoring (New Relic, DataDog, etc.)
-- Set up log aggregation (LogRocket, Papertrail, etc.)
+### 1. Run Subscription System Migrations
 
-### 2. Regular Maintenance Tasks
+```bash
+npm run db:migrate:subscription
+```
 
-#### Daily
-- [ ] Check application health and uptime
-- [ ] Review error logs and fix critical issues
-- [ ] Monitor performance metrics
+### 2. Verify Migration Status
 
-#### Weekly
-- [ ] Review analytics and conversion metrics
-- [ ] Update dependencies with security patches
-- [ ] Run performance audits
-- [ ] Review and optimize Core Web Vitals
+```bash
+npm run db:status
+npm run db:verify
+```
 
-#### Monthly
-- [ ] Comprehensive security audit
-- [ ] A/B test analysis and optimization
-- [ ] Content updates and improvements
-- [ ] Backup verification and disaster recovery testing
+### 3. Test Database Connection
 
-### 3. Performance Targets
+```bash
+npm run db:check
+```
 
-#### Core Web Vitals
-- **Largest Contentful Paint (LCP)**: < 2.5 seconds
-- **First Input Delay (FID)**: < 100 milliseconds
-- **Cumulative Layout Shift (CLS)**: < 0.1
+## SSL Certificate Setup
 
-#### Additional Metrics
-- **First Contentful Paint (FCP)**: < 1.8 seconds
-- **Time to Interactive (TTI)**: < 3.8 seconds
-- **Total Blocking Time (TBT)**: < 200 milliseconds
+### Option 1: Let's Encrypt (Recommended)
+
+```bash
+sudo bash scripts/ssl-setup.sh your-domain.com admin@your-domain.com
+```
+
+### Option 2: Self-Signed Certificate (Development)
+
+```bash
+sudo bash scripts/ssl-setup.sh localhost admin@localhost.com self-signed
+```
+
+### Option 3: Commercial Certificate
+
+1. Place your certificate files:
+   - Certificate: `/etc/ssl/certs/subscription-system/your-domain.com.crt`
+   - Private Key: `/etc/ssl/private/subscription-system/your-domain.com.key`
+
+2. Update environment variables:
+   ```bash
+   SSL_CERT_PATH=/etc/ssl/certs/subscription-system/your-domain.com.crt
+   SSL_KEY_PATH=/etc/ssl/private/subscription-system/your-domain.com.key
+   ```
+
+## Production Deployment
+
+### Automated Deployment
+
+```bash
+# Full production deployment
+npm run deploy:production
+
+# Staging deployment
+npm run deploy:staging
+```
+
+### Manual Deployment Steps
+
+1. **Pre-deployment Backup**:
+   ```bash
+   npm run db:backup
+   ```
+
+2. **Deploy Application**:
+   ```bash
+   # Install dependencies
+   npm ci --only=production
+
+   # Build application
+   npm run build
+
+   # Run migrations
+   npm run db:migrate:subscription
+
+   # Start with PM2
+   npm run pm2:start
+   ```
+
+3. **Configure Nginx**:
+   ```bash
+   sudo systemctl start nginx
+   sudo systemctl enable nginx
+   ```
+
+4. **Verify Deployment**:
+   ```bash
+   npm run health:check
+   curl -f https://your-domain.com/api/health
+   ```
+
+## Docker Deployment
+
+### 1. Build Docker Image
+
+```bash
+docker build -t subscription-system:latest .
+```
+
+### 2. Deploy with Docker Compose
+
+```bash
+# Production deployment
+docker-compose up -d
+
+# With monitoring
+docker-compose --profile monitoring up -d
+```
+
+### 3. Environment Configuration
+
+Create `.env.production` file with production values before running Docker Compose.
+
+### 4. Database Migration in Docker
+
+```bash
+# Run migrations in container
+docker-compose exec app npm run db:migrate:subscription
+```
+
+## Monitoring and Health Checks
+
+### 1. System Health Monitoring
+
+The system includes automated health checks:
+
+```bash
+# Manual health check
+curl https://your-domain.com/api/health
+
+# Automated monitoring (runs every 5 minutes)
+npm run monitoring:health
+```
+
+### 2. Log Monitoring
+
+```bash
+# Application logs
+npm run logs:subscription
+
+# Error logs
+npm run logs:error
+
+# PM2 logs
+npm run pm2:logs
+```
+
+### 3. Performance Monitoring
+
+Access monitoring dashboards:
+- **Application**: `https://your-domain.com/admin/analytics`
+- **System Health**: `https://your-domain.com/admin/system`
+- **Grafana** (if enabled): `http://your-domain.com:3001`
+
+## Backup and Recovery
+
+### 1. Automated Backups
+
+Backups are automatically created daily at 2 AM:
+
+```bash
+# Manual backup
+npm run db:backup
+
+# Backup with custom location
+node scripts/backup-database.js --output /custom/path/backup.gz
+```
+
+### 2. Backup Verification
+
+```bash
+# List backups
+ls -la /var/backups/subscription-system/
+
+# Verify backup integrity
+node scripts/backup-database.js --verify /path/to/backup.gz
+```
+
+### 3. Recovery Process
+
+```bash
+# Stop application
+npm run pm2:stop
+
+# Restore database
+npm run db:restore -- --input /path/to/backup.gz
+
+# Start application
+npm run pm2:start
+
+# Verify recovery
+npm run health:check
+```
+
+## Webhook Configuration
+
+### 1. Flutterwave Webhook Setup
+
+Configure webhook URL in Flutterwave dashboard:
+- **URL**: `https://your-domain.com/api/webhooks/flutterwave`
+- **Secret Hash**: Use value from `FLUTTERWAVE_WEBHOOK_SECRET`
+
+### 2. Webhook Security
+
+The system automatically:
+- Verifies webhook signatures
+- Implements IP whitelisting
+- Provides idempotent processing
+- Includes retry mechanisms
+
+### 3. Test Webhook
+
+```bash
+# Test webhook endpoint
+curl -X POST https://your-domain.com/api/webhooks/flutterwave \
+  -H "Content-Type: application/json" \
+  -H "verif-hash: your-webhook-secret" \
+  -d '{"event": "charge.completed", "data": {...}}'
+```
+
+## Performance Optimization
+
+### 1. Caching Configuration
+
+Enable Redis caching:
+
+```bash
+# Install Redis
+sudo apt-get install redis-server
+
+# Configure in .env.production
+REDIS_URL=redis://localhost:6379
+```
+
+### 2. Database Optimization
+
+```bash
+# Verify database indexes
+npm run db:verify
+
+# Monitor database performance
+npm run db:stats
+```
+
+### 3. Application Optimization
+
+- Enable gzip compression in Nginx
+- Configure CDN for static assets
+- Implement database connection pooling
+- Use PM2 cluster mode
+
+## Security Checklist
+
+- [ ] SSL certificate installed and valid
+- [ ] Environment variables secured
+- [ ] Database authentication enabled
+- [ ] Webhook endpoints protected
+- [ ] Rate limiting configured
+- [ ] Security headers implemented
+- [ ] Regular security updates applied
+- [ ] Backup encryption enabled
 
 ## Troubleshooting
 
 ### Common Issues
 
-#### Build Failures
+1. **Database Connection Failed**:
+   ```bash
+   # Check MongoDB connection
+   npm run db:check
+
+   # Verify connection string
+   echo $MONGODB_URI
+   ```
+
+2. **SSL Certificate Issues**:
+   ```bash
+   # Check certificate validity
+   openssl x509 -in /path/to/cert.crt -noout -dates
+
+   # Test SSL configuration
+   curl -I https://your-domain.com
+   ```
+
+3. **Payment Webhook Failures**:
+   ```bash
+   # Check webhook logs
+   tail -f /var/log/subscription-system/webhook.log
+
+   # Verify webhook configuration
+   curl -f https://your-domain.com/api/webhooks/flutterwave
+   ```
+
+4. **Application Not Starting**:
+   ```bash
+   # Check PM2 status
+   npm run pm2:monit
+
+   # View error logs
+   npm run logs:error
+
+   # Restart application
+   npm run pm2:restart
+   ```
+
+### Log Locations
+
+- **Application Logs**: `/var/log/subscription-system/`
+- **Nginx Logs**: `/var/log/nginx/`
+- **PM2 Logs**: `~/.pm2/logs/`
+- **System Logs**: `/var/log/syslog`
+
+### Support Commands
+
 ```bash
-# Clear Next.js cache
-rm -rf .next
+# System status
+npm run pm2:monit
 
-# Clear node modules and reinstall
-rm -rf node_modules package-lock.json
-npm install
+# Health check
+npm run health:check
 
-# Check for TypeScript errors
-npm run type-check
-```
+# Database status
+npm run db:status
 
-#### Performance Issues
-```bash
-# Analyze bundle size
-ANALYZE=true npm run build
+# View recent logs
+npm run logs:subscription
 
-# Check for unused dependencies
-npx depcheck
-
-# Optimize images
-npx next-optimized-images
-```
-
-#### SEO Issues
-```bash
-# Validate structured data
-curl -s "https://search.google.com/structured-data/testing-tool/u/0/?url=https://boami.com/landingpage"
-
-# Check meta tags
-curl -s https://boami.com/landingpage | grep -i "<meta"
+# Restart services
+npm run pm2:restart
+sudo systemctl restart nginx
 ```
 
 ## Rollback Procedure
 
-### Quick Rollback
-1. Identify the last known good deployment
-2. Revert to previous version using platform-specific commands
-3. Verify application functionality
-4. Update monitoring and alerting
+If deployment fails:
 
-### Vercel Rollback
 ```bash
-# List deployments
-vercel ls
+# Automated rollback
+bash scripts/deploy-production.sh rollback
 
-# Promote previous deployment
-vercel promote [deployment-url]
+# Manual rollback
+npm run pm2:stop
+# Restore from backup
+npm run db:restore -- --input /path/to/backup.gz
+npm run pm2:start
 ```
 
-### Custom Server Rollback
-```bash
-# Switch to previous version
-ln -sfn /path/to/previous/version /path/to/current
+## Maintenance
 
-# Restart application
-pm2 restart boami-landing
+### Regular Tasks
+
+1. **Weekly**:
+   - Review system health metrics
+   - Check SSL certificate expiry
+   - Verify backup integrity
+
+2. **Monthly**:
+   - Update dependencies
+   - Review security logs
+   - Clean old backups
+
+3. **Quarterly**:
+   - Security audit
+   - Performance optimization
+   - Disaster recovery testing
+
+### Update Process
+
+```bash
+# Pull latest changes
+git pull origin main
+
+# Install dependencies
+npm ci --only=production
+
+# Run migrations
+npm run db:migrate:subscription
+
+# Build and restart
+npm run build
+npm run pm2:reload
 ```
 
-## Support and Contacts
+## Support
 
-- **Development Team**: dev-team@boami.com
-- **DevOps Team**: devops@boami.com
-- **Emergency Contact**: +1-XXX-XXX-XXXX
-- **Slack Channel**: #boami-alerts
+For deployment issues:
 
-## Additional Resources
+1. Check the troubleshooting section above
+2. Review application logs
+3. Verify environment configuration
+4. Test individual components
 
-- [Next.js Deployment Documentation](https://nextjs.org/docs/deployment)
-- [Vercel Deployment Guide](https://vercel.com/docs)
-- [Netlify Deployment Guide](https://docs.netlify.com/)
-- [Core Web Vitals Guide](https://web.dev/vitals/)
-- [Lighthouse Performance Auditing](https://developers.google.com/web/tools/lighthouse)
+For additional support, refer to the project documentation or contact the development team.

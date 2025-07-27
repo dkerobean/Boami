@@ -6,46 +6,18 @@ interface notificationType {
   subtitle: string;
 }
 
+// Real notifications will be fetched dynamically
+// This is kept as fallback for when API is unavailable
 const notifications: notificationType[] = [
   {
-    avatar: "/images/profile/user-2.jpg",
-    title: "Roman Joined the Team!",
-    subtitle: "Congratulate him",
+    avatar: "/images/profile/user-1.jpg",
+    title: "System Status",
+    subtitle: "All systems operational",
   },
   {
-    avatar: "/images/profile/user-3.jpg",
-    title: "New message received",
-    subtitle: "Salma sent you new message",
-  },
-  {
-    avatar: "/images/profile/user-4.jpg",
-    title: "New Payment received",
-    subtitle: "Check your earnings",
-  },
-  {
-    avatar: "/images/profile/user-5.jpg",
-    title: "Jolly completed tasks",
-    subtitle: "Assign her new tasks",
-  },
-  {
-    avatar: "/images/profile/user-6.jpg",
-    title: "Roman Joined the Team!",
-    subtitle: "Congratulate him",
-  },
-  {
-    avatar: "/images/profile/user-7.jpg",
-    title: "New message received",
-    subtitle: "Salma sent you new message",
-  },
-  {
-    avatar: "/images/profile/user-8.jpg",
-    title: "New Payment received",
-    subtitle: "Check your earnings",
-  },
-  {
-    avatar: "/images/profile/user-9.jpg",
-    title: "Jolly completed tasks",
-    subtitle: "Assign her new tasks",
+    avatar: "/images/icons/stock-icon.png",
+    title: "Stock Monitoring Active",
+    subtitle: "Monitoring inventory levels",
   },
 ];
 

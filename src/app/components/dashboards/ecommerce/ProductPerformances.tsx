@@ -4,6 +4,8 @@ const Chart = dynamic(() => import("react-apexcharts"), { ssr: false });
 import { useTheme } from '@mui/material/styles';
 import DashboardCard from '../../shared/DashboardCard';
 import CustomSelect from '../../forms/theme-elements/CustomSelect';
+import { FeatureGateWrapper } from '@/components/subscription';
+import { FEATURES } from '@/hooks/useFeatureAccess';
 import {
   MenuItem,
   Typography,
@@ -97,32 +99,32 @@ const ProductPerformances = ({ products = [] }: ProductPerformancesProps) => {
 
   const getStockStatus = (stock: number) => {
     if (stock <= 10) {
-      return { 
-        color: 'error' as const, 
+      return {
+        color: 'error' as const,
         bgcolor: (theme: any) => theme.palette.error.light,
         textColor: (theme: any) => theme.palette.error.main,
-        label: 'Low Stock' 
+        label: 'Low Stock'
       };
     }
     if (stock <= 50) {
-      return { 
-        color: 'warning' as const, 
+      return {
+        color: 'warning' as const,
         bgcolor: (theme: any) => theme.palette.warning.light,
         textColor: (theme: any) => theme.palette.warning.main,
-        label: 'Medium Stock' 
+        label: 'Medium Stock'
       };
     }
-    return { 
-      color: 'success' as const, 
+    return {
+      color: 'success' as const,
       bgcolor: (theme: any) => theme.palette.success.light,
       textColor: (theme: any) => theme.palette.success.main,
-      label: 'In Stock' 
+      label: 'In Stock'
     };
   };
 
   const generateSalesChart = (sales: number, maxSales: number) => {
     const intensity = Math.max(0.3, sales / maxSales);
-    const data = Array.from({ length: 5 }, () => 
+    const data = Array.from({ length: 5 }, () =>
       Math.floor(15 + (intensity * 25) + (Math.random() * 10))
     );
     return data;
@@ -131,22 +133,30 @@ const ProductPerformances = ({ products = [] }: ProductPerformancesProps) => {
   const maxSales = Math.max(...products.map(p => p.sales), 1);
 
   return (
-    <DashboardCard
-      title="Top Product Performance"
-      action={
-        <CustomSelect
-          labelId="month-dd"
-          id="month-dd"
-          size="small"
-          value={month}
-          onChange={handleChange}
-        >
-          <MenuItem value={1}>March 2025</MenuItem>
-          <MenuItem value={2}>April 2025</MenuItem>
-          <MenuItem value={3}>May 2025</MenuItem>
-        </CustomSelect>
-      }
+    <FeatureGateWrapper
+      feature={FEATURES.ADVANCED_ANALYTICS}
+      upgradePromptProps={{
+        title: "Advanced Analytics Requires Premium",
+        description: "Product performance analytics with detailed trends and insights are available with our premium plans.",
+        suggestedPlan: "Professional"
+      }}
     >
+      <DashboardCard
+        title="Top Product Performance"
+        action={
+          <CustomSelect
+            labelId="month-dd"
+            id="month-dd"
+            size="small"
+            value={month}
+            onChange={handleChange}
+          >
+            <MenuItem value={1}>March 2025</MenuItem>
+            <MenuItem value={2}>April 2025</MenuItem>
+            <MenuItem value={3}>May 2025</MenuItem>
+          </CustomSelect>
+        }
+      >
       <TableContainer>
         <Table
           aria-label="product performance table"
@@ -202,11 +212,11 @@ const ProductPerformances = ({ products = [] }: ProductPerformancesProps) => {
                   <TableRow key={product._id}>
                     <TableCell sx={{ pl: 0 }}>
                       <Stack direction="row" spacing={2}>
-                        <Avatar 
-                          src={product.image || "/images/products/default.jpg"} 
-                          variant="rounded" 
-                          alt={product.title} 
-                          sx={{ width: 48, height: 48 }} 
+                        <Avatar
+                          src={product.image || "/images/products/default.jpg"}
+                          variant="rounded"
+                          alt={product.title}
+                          sx={{ width: 48, height: 48 }}
                         />
                         <Box>
                           <Typography variant="subtitle2" fontWeight={600}>
@@ -266,6 +276,7 @@ const ProductPerformances = ({ products = [] }: ProductPerformancesProps) => {
         </Table>
       </TableContainer>
     </DashboardCard>
+    </FeatureGateWrapper>
   );
 };
 

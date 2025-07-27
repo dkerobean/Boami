@@ -20,8 +20,6 @@ import moment from "moment";
 import "react-big-calendar/lib/css/react-big-calendar.css";
 import "./Calendar.css";
 
-import PageContainer from "@/app/components/container/PageContainer";
-import Breadcrumb from "@/app/(DashboardLayout)/layout/shared/breadcrumb/Breadcrumb";
 import { IconCheck } from "@tabler/icons-react";
 import BlankCard from "@/app/components/shared/BlankCard";
 import { useSelector, useDispatch } from "@/store/hooks";
@@ -176,29 +174,25 @@ const BigCalendar = () => {
 
   if (error) {
     return (
-      <PageContainer title="Calendar" description="this is Calendar">
-        <Breadcrumb title="Calendar" subtitle="App" />
-        <BlankCard>
-          <CardContent>
-            <Alert severity="error" sx={{ mb: 2 }}>
-              {error}
-            </Alert>
-            <Button
-              variant="contained"
-              onClick={() => dispatch(fetchEvents())}
-              disabled={loading}
-            >
-              Retry
-            </Button>
-          </CardContent>
-        </BlankCard>
-      </PageContainer>
+      <BlankCard>
+        <CardContent>
+          <Alert severity="error" sx={{ mb: 2 }}>
+            {error}
+          </Alert>
+          <Button
+            variant="contained"
+            onClick={() => dispatch(fetchEvents())}
+            disabled={loading}
+          >
+            Retry
+          </Button>
+        </CardContent>
+      </BlankCard>
     );
   }
 
   return (
-    <PageContainer title="Calendar" description="this is Calendar">
-      <Breadcrumb title="Calendar" subtitle="App" />
+    <>
       <BlankCard>
         <CardContent>
           {loading && displayEvents.length === 0 ? (
@@ -362,7 +356,7 @@ const BigCalendar = () => {
           </DialogActions>
         </form>
       </Dialog>
-    </PageContainer>
+    </>
   );
 };
 

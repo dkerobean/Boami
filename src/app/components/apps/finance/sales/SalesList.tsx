@@ -53,6 +53,7 @@ import {
 import DashboardCard from '@/app/components/shared/DashboardCard';
 import BlankCard from '@/app/components/shared/BlankCard';
 import SaleForm from './SaleForm';
+import { useToast } from '@/app/components/shared/ToastContext';
 
 // Define sale data type
 interface SaleData {
@@ -91,82 +92,89 @@ const headCells: HeadCell[] = [
   { id: 'actions', label: 'Actions', numeric: false, sortable: false },
 ];
 
-// Mock API function - replace with actual API call
+// API function to fetch sales data from MongoDB
 const fetchSalesData = async (page: number, limit: number, filters?: any) => {
-  // This would be replaced with an actual API call
-  return {
-    sales: [
-      {
-        _id: '1',
-        productId: {
-          _id: 'prod1',
-          title: 'Wireless Bluetooth Headphones',
-          price: 79.99,
-          qty: 45,
-          sku: 'WBH-001',
-          image: '/images/products/s1.jpg'
-        },
-        quantity: 2,
-        unitPrice: 79.99,
-        totalAmount: 159.98,
-        date: '2023-07-15T00:00:00.000Z',
-        notes: 'Customer requested express shipping',
-        createdAt: '2023-07-15T10:30:00.000Z'
-      },
-      {
-        _id: '2',
-        productId: {
-          _id: 'prod2',
-          title: 'Smart Fitness Watch',
-          price: 199.99,
-          qty: 23,
-          sku: 'SFW-002'
-        },
-        quantity: 1,
-        unitPrice: 199.99,
-        totalAmount: 199.99,
-        date: '2023-07-14T00:00:00.000Z',
-        createdAt: '2023-07-14T14:20:00.000Z'
-      },
-      {
-        _id: '3',
-        productId: {
-          _id: 'prod3',
-          title: 'Portable Phone Charger',
-          price: 29.99,
-          qty: 78,
-          sku: 'PPC-003'
-        },
-        quantity: 3,
-        unitPrice: 29.99,
-        totalAmount: 89.97,
-        date: '2023-07-13T00:00:00.000Z',
-        notes: 'Bulk purchase discount applied',
-        createdAt: '2023-07-13T16:45:00.000Z'
-      },
-    ],
-    pagination: {
-      page,
-      limit,
-      total: 3,
-      pages: 1
-    },
-    summary: {
-      totalRevenue: 449.94,
-      totalQuantity: 6,
-      count: 3,
-      averageSale: 149.98
+  try {
+    const params = new URLSearchParams({
+      page: page.toString(),
+      limit: limit.toString(),
+      ...(filters?.search && { search: filters.search }),
+      ...(filters?.dateRange && filters.dateRange !== 'all' && { dateRange: filters.dateRange }),
+      ...(filters?.orderBy && { orderBy: filters.orderBy }),
+      ...(filters?.order && { order: filters.order }),
+    });
+
+    const response = await fetch(`/api/finance/sales?${params}`, {
+      credentials: 'include',
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to fetch sales');
     }
-  };
+
+    const data = await response.json();
+    
+    if (!data.success) {
+      throw new Error(data.error?.message || 'Failed to fetch sales');
+    }
+
+    const sales = data.data?.sales || [];
+    const pagination = data.data?.pagination || { page, limit, total: 0, pages: 0 };
+    const analytics = data.data?.analytics || {};
+    
+    // Transform sales data to match component expectations
+    const transformedSales = sales.map((sale: any) => ({
+      ...sale,
+      productId: sale.product || sale.productId // Handle different API response formats
+    }));
+    
+    // Calculate summary from sales data if analytics not available
+    const totalRevenue = transformedSales.reduce((sum: number, sale: any) => sum + (sale.totalAmount || 0), 0);
+    const totalQuantity = transformedSales.reduce((sum: number, sale: any) => sum + (sale.quantity || 0), 0);
+    const count = transformedSales.length;
+    const averageSale = count > 0 ? totalRevenue / count : 0;
+
+    return {
+      sales: transformedSales,
+      pagination,
+      summary: analytics.summary || {
+        totalRevenue,
+        totalQuantity,
+        count: pagination.total,
+        averageSale
+      }
+    };
+  } catch (error) {
+    console.error('Error fetching sales data:', error);
+    return {
+      sales: [],
+      pagination: { page, limit, total: 0, pages: 0 },
+      summary: { totalRevenue: 0, totalQuantity: 0, count: 0, averageSale: 0 }
+    };
+  }
 };
 
-// Mock delete function - replace with actual API call
+// API function to delete sale
 const deleteSale = async (id: string) => {
-  console.log(`Deleting sale with ID: ${id}`);
+  const response = await fetch(`/api/finance/sales/${id}`, {
+    method: 'DELETE',
+    credentials: 'include',
+  });
+  
+  if (!response.ok) {
+    throw new Error('Failed to delete sale');
+  }
+  
+  const result = await response.json();
+  if (!result.success) {
+    throw new Error(result.error?.message || 'Failed to delete sale');
+  }
+  
   return { success: true };
 };
 
 const SalesList = () => {
+  const { showToast } = useToast();
   // State for sales data
   const [sales, setSales] = useState<SaleData[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
@@ -307,11 +315,21 @@ const SalesList = () => {
             averageSale: prev.count > 1 ? (prev.totalRevenue - deletedSale.totalAmount) / (prev.count - 1) : 0
           }));
         }
+        
+        showToast({
+          message: 'Sale deleted successfully!',
+          severity: 'success'
+        });
       } else {
         setError('Failed to delete sale. Please try again.');
       }
     } catch (err) {
-      setError('An error occurred while deleting the sale.');
+      const errorMessage = err instanceof Error ? err.message : 'An error occurred while deleting the sale.';
+      setError(errorMessage);
+      showToast({
+        message: errorMessage,
+        severity: 'error'
+      });
       console.error('Error deleting sale:', err);
     }
   };

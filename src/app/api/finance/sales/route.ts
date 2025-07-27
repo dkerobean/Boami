@@ -4,7 +4,7 @@ import Sale from '@/lib/database/models/Sale';
 import Income from '@/lib/database/models/Income';
 import IncomeCategory from '@/lib/database/models/IncomeCategory';
 import Product from '@/lib/database/models/Product';
-import { verifyJWT } from '@/lib/auth/jwt';
+import { authenticateRequest } from '@/lib/auth/api-auth';
 
 /**
  * GET /api/finance/sales
@@ -13,18 +13,10 @@ import { verifyJWT } from '@/lib/auth/jwt';
 export async function GET(request: NextRequest) {
   try {
     // Verify authentication
-    const token = request.headers.get('authorization')?.replace('Bearer ', '');
-    if (!token) {
+    const authResult = await authenticateRequest(request);
+    if (!authResult.success || !authResult.userId) {
       return NextResponse.json(
-        { success: false, error: { code: 'UNAUTHORIZED', message: 'Authentication required' } },
-        { status: 401 }
-      );
-    }
-
-    const decoded = verifyJWT(token);
-    if (!decoded || !decoded.userId) {
-      return NextResponse.json(
-        { success: false, error: { code: 'INVALID_TOKEN', message: 'Invalid authentication token' } },
+        { success: false, error: authResult.error || { code: 'UNAUTHORIZED', message: 'Authentication required' } },
         { status: 401 }
       );
     }
@@ -40,7 +32,7 @@ export async function GET(request: NextRequest) {
     const endDate = searchParams.get('endDate');
 
     // Build query
-    const query: any = { userId: decoded.userId };
+    const query: any = { userId: authResult.userId };
 
     if (productId) {
       query.productId = productId;
@@ -81,7 +73,7 @@ export async function GET(request: NextRequest) {
     }));
 
     // Calculate analytics
-    const analytics = await Sale.getSalesAnalytics(decoded.userId);
+    const analytics = await Sale.getSalesAnalytics(authResult.userId);
 
     return NextResponse.json({
       success: true,
@@ -113,18 +105,10 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     // Verify authentication
-    const token = request.headers.get('authorization')?.replace('Bearer ', '');
-    if (!token) {
+    const authResult = await authenticateRequest(request);
+    if (!authResult.success || !authResult.userId) {
       return NextResponse.json(
-        { success: false, error: { code: 'UNAUTHORIZED', message: 'Authentication required' } },
-        { status: 401 }
-      );
-    }
-
-    const decoded = verifyJWT(token);
-    if (!decoded || !decoded.userId) {
-      return NextResponse.json(
-        { success: false, error: { code: 'INVALID_TOKEN', message: 'Invalid authentication token' } },
+        { success: false, error: authResult.error || { code: 'UNAUTHORIZED', message: 'Authentication required' } },
         { status: 401 }
       );
     }
@@ -186,7 +170,7 @@ export async function POST(request: NextRequest) {
       totalAmount,
       date: date ? new Date(date) : new Date(),
       notes: notes?.trim() || null,
-      userId: decoded.userId
+      userId: authResult.userId
     };
 
     const sale = new Sale(saleData);
@@ -214,14 +198,14 @@ export async function POST(request: NextRequest) {
         // Find or create "Product Sales" category
         let productSalesCategory = await IncomeCategory.findOne({
           name: 'Product Sales',
-          userId: decoded.userId
+          userId: authResult.userId
         });
 
         if (!productSalesCategory) {
           productSalesCategory = new IncomeCategory({
             name: 'Product Sales',
             description: 'Revenue from product sales',
-            userId: decoded.userId,
+            userId: authResult.userId,
             isDefault: false
           });
           await productSalesCategory.save();
@@ -235,7 +219,7 @@ export async function POST(request: NextRequest) {
           categoryId: productSalesCategory._id?.toString(),
           saleId: savedSale._id?.toString(),
           isRecurring: false,
-          userId: decoded.userId
+          userId: authResult.userId
         };
 
         const income = new Income(incomeData);

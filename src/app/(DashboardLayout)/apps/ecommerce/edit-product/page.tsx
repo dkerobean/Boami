@@ -176,25 +176,55 @@ const EcommerceEditProduct = () => {
         console.log('📤 Uploading image...', {
           fileName: imageFile.name,
           fileSize: imageFile.size,
-          fileType: imageFile.type
+          fileType: imageFile.type,
+          lastModified: imageFile.lastModified
         });
         
         const oldImageUrl = productData.photo; // Store old image URL for cleanup
         
         const formData = new FormData();
         formData.append("file", imageFile);
-
-        const uploadResponse = await fetch("/api/upload/product-image", {
-          method: "POST",
-          body: formData,
+        
+        console.log('📤 FormData created, contents:', {
+          hasFile: formData.has('file'),
+          formDataEntries: Array.from(formData.entries()).map(([key, value]) => [
+            key, 
+            value instanceof File ? `File: ${value.name} (${value.size} bytes)` : value
+          ])
         });
 
-        console.log('📤 Upload response status:', uploadResponse.status);
+        console.log('📤 Making upload request to /api/upload/product-image...');
+        
+        let uploadResponse;
+        try {
+          uploadResponse = await fetch("/api/upload/product-image", {
+            method: "POST",
+            body: formData,
+          });
+          console.log('📤 Upload response received:', {
+            status: uploadResponse.status,
+            statusText: uploadResponse.statusText,
+            headers: Object.fromEntries(uploadResponse.headers.entries())
+          });
+        } catch (fetchError) {
+          console.error('❌ Upload fetch failed:', fetchError);
+          throw new Error(`Upload request failed: ${fetchError.message}`);
+        }
 
         if (!uploadResponse.ok) {
-          const errorText = await uploadResponse.text();
-          console.error('❌ Upload failed:', errorText);
-          throw new Error("Failed to upload image");
+          let errorText;
+          try {
+            errorText = await uploadResponse.text();
+            console.error('❌ Upload failed with response:', {
+              status: uploadResponse.status,
+              statusText: uploadResponse.statusText,
+              errorText
+            });
+          } catch (textError) {
+            console.error('❌ Could not read error response:', textError);
+            errorText = 'Could not read error response';
+          }
+          throw new Error(`Failed to upload image (${uploadResponse.status}): ${errorText}`);
         }
 
         const uploadResult = await uploadResponse.json();
@@ -354,7 +384,17 @@ const EcommerceEditProduct = () => {
               </BlankCard>
 
               <BlankCard>
-                <MediaCard productData={productData} />
+                <MediaCard 
+                  productData={productData} 
+                  onMainImageChange={(file) => {
+                    console.log('🔗 Parent received main image from MediaCard:', {
+                      fileName: file.name,
+                      fileSize: file.size,
+                      fileType: file.type
+                    });
+                    handleImageChange(file);
+                  }}
+                />
               </BlankCard>
 
               <BlankCard>
@@ -378,7 +418,17 @@ const EcommerceEditProduct = () => {
           <Grid item lg={4}>
             <Stack spacing={3}>
               <BlankCard>
-                <Thumbnail product={productData} onImageChange={handleImageChange} />
+                <Thumbnail 
+                  product={productData} 
+                  onImageChange={(file) => {
+                    console.log('🔗 Parent received callback from Thumbnail:', {
+                      fileName: file.name,
+                      fileSize: file.size,
+                      fileType: file.type
+                    });
+                    handleImageChange(file);
+                  }} 
+                />
               </BlankCard>
 
               <BlankCard>

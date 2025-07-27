@@ -87,7 +87,7 @@ export function generatePaginationCacheKey(
 /**
  * Optimized query builder for productivity models
  */
-export class ProductivityQueryBuilder<T> {
+class ProductivityQueryBuilder<T> {
   private model: any;
   private query: FilterQuery<T> = {};
   private sortOptions: Record<string, SortOrder> = {};
@@ -232,7 +232,7 @@ export class ProductivityQueryBuilder<T> {
 /**
  * Cached query executor for productivity data
  */
-export class CachedProductivityQuery<T> {
+class CachedProductivityQuery<T> {
   private cacheType: string;
   private queryBuilder: ProductivityQueryBuilder<T>;
   private userId: string;
@@ -349,7 +349,7 @@ export class CachedProductivityQuery<T> {
 /**
  * Performance monitoring utilities
  */
-export class PerformanceMonitor {
+class PerformanceMonitor {
   private static timers = new Map<string, number>();
 
   /**
@@ -397,7 +397,7 @@ export class PerformanceMonitor {
 /**
  * Batch operation utilities for better performance
  */
-export class BatchOperations {
+class BatchOperations {
   /**
    * Batch create multiple documents
    */
@@ -463,7 +463,7 @@ export class BatchOperations {
 /**
  * Database connection optimization utilities
  */
-export class ConnectionOptimizer {
+class ConnectionOptimizer {
   /**
    * Optimize MongoDB connection for productivity workloads
    */

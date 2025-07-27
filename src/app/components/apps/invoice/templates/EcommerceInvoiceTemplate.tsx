@@ -77,7 +77,23 @@ const EcommerceInvoiceTemplate: React.FC<EcommerceInvoiceTemplateProps> = ({
               }}
             />
           ) : (
-            <Logo />
+            <Box
+              sx={{
+                width: 120,
+                height: 60,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                border: '2px dashed',
+                borderColor: 'divider',
+                borderRadius: 1,
+                bgcolor: 'grey.50',
+              }}
+            >
+              <Typography variant="caption" color="text.secondary" fontWeight="bold">
+                No Logo Set
+              </Typography>
+            </Box>
           )}
           <Box>
             <Typography

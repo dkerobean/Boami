@@ -83,9 +83,15 @@ const EnhancedEditInvoice = () => {
   const [formData, setFormData] = useState<InvoiceCreateFormData>({
     id: 0,
     billFrom: "",
+    billFromEmail: "", // Required by API
+    billFromPhone: "",
+    billFromFax: "",
     billTo: "",
+    billToEmail: "", // Required by API
+    billToPhone: "",
+    billToFax: "",
     totalCost: 0,
-    status: "Pending",
+    status: "Draft", // Match API schema
     billFromAddress: "",
     billToAddress: "",
     orders: [{ 
@@ -119,6 +125,7 @@ const EnhancedEditInvoice = () => {
     subtotalBeforeDiscount: 0,
     totalDiscount: 0,
     notes: "",
+    terms: "", // API field
   });
 
   // Load existing invoice data on component mount
@@ -128,9 +135,13 @@ const EnhancedEditInvoice = () => {
       let selectedInvoice;
       if (getTitle) {
         selectedInvoice = invoices.find(
-          (inv: any) => inv.billFrom === getTitle || inv.id.toString() === getTitle
+          (inv: any) => 
+            inv._id === getTitle || 
+            inv.id?.toString() === getTitle ||
+            inv.billFrom === getTitle // Backward compatibility
         );
         if (!selectedInvoice) {
+          console.warn(`Invoice not found for identifier: ${getTitle}`);
           selectedInvoice = invoices[0]; // Fallback to first invoice
         }
       } else {
@@ -138,13 +149,19 @@ const EnhancedEditInvoice = () => {
       }
 
       if (selectedInvoice) {
-        // Convert legacy invoice data to enhanced form data
+        // Convert invoice data to enhanced form data
         const enhancedData: InvoiceCreateFormData = {
-          id: selectedInvoice.id,
+          id: selectedInvoice.id || selectedInvoice._id,
           billFrom: selectedInvoice.billFrom || "",
+          billFromEmail: selectedInvoice.billFromEmail || "",
+          billFromPhone: selectedInvoice.billFromPhone?.toString() || "",
+          billFromFax: selectedInvoice.billFromFax?.toString() || "",
           billTo: selectedInvoice.billTo || "",
+          billToEmail: selectedInvoice.billToEmail || "",
+          billToPhone: selectedInvoice.billToPhone?.toString() || "",
+          billToFax: selectedInvoice.billToFax?.toString() || "",
           totalCost: selectedInvoice.totalCost || 0,
-          status: selectedInvoice.status || "Pending",
+          status: selectedInvoice.status || "Draft",
           billFromAddress: selectedInvoice.billFromAddress || "",
           billToAddress: selectedInvoice.billToAddress || "",
           orders: selectedInvoice.orders || [],
@@ -172,6 +189,7 @@ const EnhancedEditInvoice = () => {
           subtotalBeforeDiscount: selectedInvoice.subtotalBeforeDiscount || selectedInvoice.totalCost || 0,
           totalDiscount: selectedInvoice.totalDiscount || 0,
           notes: selectedInvoice.notes || "",
+          terms: selectedInvoice.terms || "",
           manualTaxOverride: selectedInvoice.manualTaxOverride,
         };
 
@@ -469,6 +487,17 @@ const EnhancedEditInvoice = () => {
                 value={formData.billFrom}
                 onChange={handleChange}
                 fullWidth
+                required
+              />
+              <CustomFormLabel htmlFor="bill-from-email" sx={{ mt: 1 }}>Bill From Email</CustomFormLabel>
+              <CustomTextField
+                id="bill-from-email"
+                name="billFromEmail"
+                type="email"
+                value={formData.billFromEmail}
+                onChange={handleChange}
+                fullWidth
+                required
               />
             </Grid>
             <Grid item xs={12} sm={6}>
@@ -476,8 +505,8 @@ const EnhancedEditInvoice = () => {
                 htmlFor="bill-to"
                 sx={{
                   mt: {
-                    xs: 0,
-                    sm: 3,
+                    xs: 2,
+                    sm: 0,
                   },
                 }}
               >
@@ -488,6 +517,17 @@ const EnhancedEditInvoice = () => {
                 value={formData.billTo}
                 onChange={handleChange}
                 fullWidth
+                required
+              />
+              <CustomFormLabel htmlFor="bill-to-email" sx={{ mt: 1 }}>Bill To Email</CustomFormLabel>
+              <CustomTextField
+                id="bill-to-email"
+                name="billToEmail"
+                type="email"
+                value={formData.billToEmail}
+                onChange={handleChange}
+                fullWidth
+                required
               />
             </Grid>
             <Grid item xs={12} sm={6}>

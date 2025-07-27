@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { exportService } from '@/lib/services/exportService';
+import { createFeatureProtectedRoute } from '@/lib/auth/feature-access-middleware';
+import { FEATURES } from '@/hooks/useFeatureAccess';
 
 // Validation schemas
 const createExportJobSchema = z.object({
@@ -26,34 +28,36 @@ const querySchema = z.object({
  * GET /api/bulk-export
  * Retrieves export jobs with filtering, sorting, and pagination
  */
-export async function GET(request: NextRequest) {
+export const GET = createFeatureProtectedRoute(
+  FEATURES.BULK_OPERATIONS,
+  async (request: NextRequest) => {
   try {
     const { searchParams } = new URL(request.url);
     const queryParams = Object.fromEntries(searchParams);
-    
+
     const validatedQuery = querySchema.parse(queryParams);
-    
+
     // Get all export jobs from the service
     let allJobs = exportService.getAllExportJobs();
-    
+
     // Apply filters
     let filteredJobs = allJobs.filter(job => {
       let matches = true;
-      
+
       // Status filter
       if (validatedQuery.status) {
         matches = matches && job.status === validatedQuery.status;
       }
-      
+
       return matches;
     });
-    
+
     // Apply sorting
     filteredJobs.sort((a, b) => {
       const { sortBy, sortOrder } = validatedQuery;
       let aValue: any;
       let bValue: any;
-      
+
       switch (sortBy) {
         case 'createdAt':
           aValue = new Date(a.createdAt);
@@ -71,19 +75,19 @@ export async function GET(request: NextRequest) {
           aValue = a.createdAt;
           bValue = b.createdAt;
       }
-      
+
       if (sortOrder === 'desc') {
         return aValue > bValue ? -1 : aValue < bValue ? 1 : 0;
       } else {
         return aValue < bValue ? -1 : aValue > bValue ? 1 : 0;
       }
     });
-    
+
     // Apply pagination
     const startIndex = (validatedQuery.page - 1) * validatedQuery.limit;
     const endIndex = startIndex + validatedQuery.limit;
     const paginatedJobs = filteredJobs.slice(startIndex, endIndex);
-    
+
     // Calculate statistics
     const statistics = {
       total: filteredJobs.length,
@@ -92,7 +96,7 @@ export async function GET(request: NextRequest) {
       completed: filteredJobs.filter(j => j.status === 'completed').length,
       failed: filteredJobs.filter(j => j.status === 'failed').length,
     };
-    
+
     return NextResponse.json({
       success: true,
       data: paginatedJobs,
@@ -106,10 +110,10 @@ export async function GET(request: NextRequest) {
       },
       statistics,
     });
-    
+
   } catch (error) {
     console.error('Error fetching export jobs:', error);
-    
+
     if (error instanceof z.ZodError) {
       return NextResponse.json({
         success: false,
@@ -117,23 +121,25 @@ export async function GET(request: NextRequest) {
         details: error.issues,
       }, { status: 400 });
     }
-    
+
     return NextResponse.json({
       success: false,
       error: 'Failed to fetch export jobs',
     }, { status: 500 });
   }
-}
+});
 
 /**
  * POST /api/bulk-export
  * Creates a new export job
  */
-export async function POST(request: NextRequest) {
+export const POST = createFeatureProtectedRoute(
+  FEATURES.BULK_OPERATIONS,
+  async (request: NextRequest) => {
   try {
     const body = await request.json();
     const validatedData = createExportJobSchema.parse(body);
-    
+
     // Create the export job using the service
     const newExportJob = await exportService.createExportJob(
       validatedData.type,
@@ -143,16 +149,16 @@ export async function POST(request: NextRequest) {
         category: validatedData.category,
       }
     );
-    
+
     return NextResponse.json({
       success: true,
       data: newExportJob,
       message: 'Export job created successfully',
     }, { status: 201 });
-    
+
   } catch (error) {
     console.error('Error creating export job:', error);
-    
+
     if (error instanceof z.ZodError) {
       return NextResponse.json({
         success: false,
@@ -160,13 +166,13 @@ export async function POST(request: NextRequest) {
         details: error.issues,
       }, { status: 400 });
     }
-    
+
     return NextResponse.json({
       success: false,
       error: 'Failed to create export job',
     }, { status: 500 });
   }
-}
+});
 
 /**
  * DELETE /api/bulk-export
@@ -176,21 +182,21 @@ export async function DELETE(request: NextRequest) {
   try {
     const body = await request.json();
     const { jobIds } = body;
-    
+
     if (!Array.isArray(jobIds) || jobIds.length === 0) {
       return NextResponse.json({
         success: false,
         error: 'Job IDs array is required',
       }, { status: 400 });
     }
-    
+
     const deletedJobs: string[] = [];
     const cancelledJobs: string[] = [];
-    
+
     for (const jobId of jobIds) {
       const job = exportService.getExportJob(jobId);
       if (!job) continue;
-      
+
       if (['pending', 'processing'].includes(job.status)) {
         // For now, we'll just delete pending/processing jobs
         // In a real implementation, you'd properly cancel running jobs
@@ -201,17 +207,17 @@ export async function DELETE(request: NextRequest) {
         if (deleted) deletedJobs.push(jobId);
       }
     }
-    
+
     return NextResponse.json({
       success: true,
       message: `${cancelledJobs.length} jobs cancelled, ${deletedJobs.length} jobs deleted`,
       cancelled: cancelledJobs,
       deleted: deletedJobs,
     });
-    
+
   } catch (error) {
     console.error('Error managing export jobs:', error);
-    
+
     return NextResponse.json({
       success: false,
       error: 'Failed to manage export jobs',

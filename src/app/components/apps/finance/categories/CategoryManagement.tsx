@@ -137,8 +137,19 @@ const CategoryManagement = () => {
         fetchCategories('expense')
       ]);
 
-      setIncomeCategories(incomeResponse.categories);
-      setExpenseCategories(expenseResponse.categories);
+      // Add type field to categories since API doesn't include it
+      const enrichedIncomeCategories = incomeResponse.categories.map((cat: any) => ({
+        ...cat,
+        type: 'income' as const
+      }));
+      
+      const enrichedExpenseCategories = expenseResponse.categories.map((cat: any) => ({
+        ...cat,
+        type: 'expense' as const
+      }));
+
+      setIncomeCategories(enrichedIncomeCategories);
+      setExpenseCategories(enrichedExpenseCategories);
       setSummary({
         income: incomeResponse.summary,
         expense: expenseResponse.summary

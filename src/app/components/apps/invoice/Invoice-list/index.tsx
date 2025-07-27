@@ -49,7 +49,7 @@ function InvoiceList() {
   const [selectAll, setSelectAll] = useState(false);
   const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
 
-  const tabItem = ["All", "Shipped", "Delivered", "Pending"];
+  const tabItem = ["All", "Draft", "Pending", "Sent", "Paid", "Overdue"];
   const [currentIndex, setCurrentIndex] = useState(0);
 
 
@@ -75,14 +75,20 @@ function InvoiceList() {
 
 
   // Calculate the counts for different statuses
-  const Shipped = invoices.filter(
-    (t: { status: string }) => t.status === "Shipped"
-  ).length;
-  const Delivered = invoices.filter(
-    (t: { status: string }) => t.status === "Delivered"
+  const Draft = invoices.filter(
+    (t: { status: string }) => t.status === "Draft"
   ).length;
   const Pending = invoices.filter(
     (t: { status: string }) => t.status === "Pending"
+  ).length;
+  const Sent = invoices.filter(
+    (t: { status: string }) => t.status === "Sent"
+  ).length;
+  const Paid = invoices.filter(
+    (t: { status: string }) => t.status === "Paid"
+  ).length;
+  const Overdue = invoices.filter(
+    (t: { status: string }) => t.status === "Overdue"
   ).length;
 
   // Toggle all checkboxes
@@ -90,7 +96,7 @@ function InvoiceList() {
     const selectAllValue = !selectAll;
     setSelectAll(selectAllValue);
     if (selectAllValue) {
-      setSelectedProducts(invoices.map((invoice: { id: any }) => invoice.id));
+      setSelectedProducts(invoices.map((invoice: { _id: any }) => invoice._id));
     } else {
       setSelectedProducts([]);
     }
@@ -161,7 +167,7 @@ function InvoiceList() {
           </Box>
         </Grid>
         <Grid item xs={12} sm={6} lg={3}>
-          <Box bgcolor="secondary.light" p={3} onClick={() => handleClick("Shipped")} sx={{ cursor: "pointer" }}>
+          <Box bgcolor="secondary.light" p={3} onClick={() => handleClick("Draft")} sx={{ cursor: "pointer" }}>
             <Stack direction="row" gap={2} alignItems="center">
               <Box
                 width={38}
@@ -181,14 +187,14 @@ function InvoiceList() {
                 </Typography>
               </Box>
               <Box>
-                <Typography>Shipped</Typography>
-                <Typography fontWeight={500}>{Shipped} Invoices</Typography>
+                <Typography>Draft</Typography>
+                <Typography fontWeight={500}>{Draft} Invoices</Typography>
               </Box>
             </Stack>
           </Box>
         </Grid>
         <Grid item xs={12} sm={6} lg={3}>
-          <Box bgcolor="success.light" p={3} onClick={() => handleClick("Delivered")} sx={{ cursor: "pointer" }}>
+          <Box bgcolor="success.light" p={3} onClick={() => handleClick("Paid")} sx={{ cursor: "pointer" }}>
             <Stack direction="row" gap={2} alignItems="center">
               <Box
                 width={38}
@@ -208,8 +214,8 @@ function InvoiceList() {
                 </Typography>
               </Box>
               <Box>
-                <Typography>Delivered</Typography>
-                <Typography fontWeight={500}>{Delivered} Invoices</Typography>
+                <Typography>Paid</Typography>
+                <Typography fontWeight={500}>{Paid} Invoices</Typography>
               </Box>
             </Stack>
           </Box>
@@ -332,22 +338,24 @@ function InvoiceList() {
           <TableBody>
             {filteredInvoices.map(
               (invoice: {
-                id: any;
+                _id: any;
+                invoiceNumber: any;
                 billFrom: any;
                 billTo: any;
                 totalCost: any;
+                grandTotal: any;
                 status: any;
               }) => (
-                <TableRow key={invoice.id}>
+                <TableRow key={invoice._id}>
                   <TableCell padding="checkbox">
                     <CustomCheckbox
-                      checked={selectedProducts.includes(invoice.id)}
-                      onChange={() => toggleSelectProduct(invoice.id)}
+                      checked={selectedProducts.includes(invoice._id)}
+                      onChange={() => toggleSelectProduct(invoice._id)}
                     />
                   </TableCell>
                   <TableCell>
                     <Typography variant="h6" fontSize="14px">
-                      {invoice.id}
+                      {invoice.invoiceNumber || invoice._id}
                     </Typography>
                   </TableCell>
                   <TableCell>
@@ -359,20 +367,17 @@ function InvoiceList() {
                     <Typography fontSize="14px">{invoice.billTo}</Typography>
                   </TableCell>
                   <TableCell>
-                    <Typography fontSize="14px">{invoice.totalCost}</Typography>
+                    <Typography fontSize="14px">
+                      ${(invoice.grandTotal || invoice.totalCost || 0).toFixed(2)}
+                    </Typography>
                   </TableCell>
                   <TableCell>
-                    {invoice.status === "Shipped" ? (
+                    {invoice.status === "Draft" ? (
                       <Chip
-                        color="primary"
+                        color="default"
                         label={invoice.status}
                         size="small"
-                      />
-                    ) : invoice.status === "Delivered" ? (
-                      <Chip
-                        color="success"
-                        label={invoice.status}
-                        size="small"
+                        variant="outlined"
                       />
                     ) : invoice.status === "Pending" ? (
                       <Chip
@@ -380,8 +385,31 @@ function InvoiceList() {
                         label={invoice.status}
                         size="small"
                       />
+                    ) : invoice.status === "Sent" ? (
+                      <Chip
+                        color="info"
+                        label={invoice.status}
+                        size="small"
+                      />
+                    ) : invoice.status === "Paid" ? (
+                      <Chip
+                        color="success"
+                        label={invoice.status}
+                        size="small"
+                      />
+                    ) : invoice.status === "Overdue" ? (
+                      <Chip
+                        color="error"
+                        label={invoice.status}
+                        size="small"
+                      />
                     ) : (
-                      ""
+                      <Chip
+                        color="default"
+                        label={invoice.status || "Unknown"}
+                        size="small"
+                        variant="outlined"
+                      />
                     )}
                   </TableCell>
                   <TableCell align="center">
@@ -389,7 +417,7 @@ function InvoiceList() {
                       <IconButton
                         color="success"
                         component={Link}
-                        href={`/apps/invoice/edit/${invoice.billFrom}`}
+                        href={`/apps/invoice/edit/${invoice._id}`}
                       >
                         <IconEdit width={22} />
                       </IconButton>
@@ -398,7 +426,7 @@ function InvoiceList() {
                       <IconButton
                         color="primary"
                         component={Link}
-                        href={`/apps/invoice/detail/${invoice.billFrom}`}
+                        href={`/apps/invoice/detail/${invoice._id}`}
                       >
                         <IconEye width={22} />
                       </IconButton>
@@ -407,7 +435,7 @@ function InvoiceList() {
                       <IconButton
                         color="error"
                         onClick={() => {
-                          setSelectedProducts([invoice.id]);
+                          setSelectedProducts([invoice._id]);
                           handleDelete();
                         }}
                       >

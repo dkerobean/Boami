@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   IconButton,
   Box,
@@ -9,6 +9,7 @@ import {
   Typography,
   Button,
   Chip,
+  CircularProgress,
 } from '@mui/material';
 import * as dropdownData from './data';
 import Scrollbar from '@/app/components/custom-scroll/Scrollbar';
@@ -17,16 +18,64 @@ import { IconBellRinging } from '@tabler/icons-react';
 import { Stack } from '@mui/system';
 import Link from 'next/link';
 
+interface NotificationData {
+  avatar: string;
+  title: string;
+  subtitle: string;
+}
+
 const Notifications = () => {
   const [anchorEl2, setAnchorEl2] = useState(null);
+  const [notifications, setNotifications] = useState<NotificationData[]>(dropdownData.notifications);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [loading, setLoading] = useState(false);
 
   const handleClick2 = (event: any) => {
     setAnchorEl2(event.currentTarget);
+    // Fetch fresh notifications when dropdown opens
+    fetchRealNotifications();
   };
 
   const handleClose2 = () => {
     setAnchorEl2(null);
   };
+
+  const fetchRealNotifications = async () => {
+    try {
+      setLoading(true);
+      const response = await fetch('/api/notifications/real?format=header&limit=8');
+
+      if (response.ok) {
+        const realNotifications = await response.json();
+        setNotifications(realNotifications);
+
+        // Get unread count
+        const countResponse = await fetch('/api/notifications/real?limit=50');
+        if (countResponse.ok) {
+          const countData = await countResponse.json();
+          setUnreadCount(countData.unreadCount || 0);
+        }
+      } else {
+        console.warn('Failed to fetch real notifications, using fallback');
+        setNotifications(dropdownData.notifications);
+      }
+    } catch (error) {
+      console.error('Error fetching notifications:', error);
+      setNotifications(dropdownData.notifications);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Fetch notifications on component mount
+  useEffect(() => {
+    fetchRealNotifications();
+
+    // Set up periodic refresh (every 30 seconds)
+    const interval = setInterval(fetchRealNotifications, 30000);
+
+    return () => clearInterval(interval);
+  }, []);
 
   return (
     <Box>
@@ -41,7 +90,11 @@ const Notifications = () => {
         }}
         onClick={handleClick2}
       >
-        <Badge variant="dot" color="primary">
+        <Badge
+          badgeContent={unreadCount > 0 ? unreadCount : undefined}
+          color="primary"
+          variant={unreadCount > 0 ? 'standard' : 'dot'}
+        >
           <IconBellRinging size="21" stroke="1.5" />
         </Badge>
       </IconButton>
@@ -64,10 +117,13 @@ const Notifications = () => {
       >
         <Stack direction="row" py={2} px={4} justifyContent="space-between" alignItems="center">
           <Typography variant="h6">Notifications</Typography>
-          <Chip label="5 new" color="primary" size="small" />
+          {unreadCount > 0 && (
+            <Chip label={`${unreadCount} new`} color="primary" size="small" />
+          )}
+          {loading && <CircularProgress size={16} />}
         </Stack>
         <Scrollbar sx={{ height: '385px' }}>
-          {dropdownData.notifications.map((notification, index) => (
+          {notifications.map((notification, index) => (
             <Box key={index}>
               <MenuItem sx={{ py: 2, px: 4 }}>
                 <Stack direction="row" spacing={2}>

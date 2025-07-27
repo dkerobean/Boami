@@ -16,6 +16,9 @@ import { IconHome, IconUser } from '@tabler/icons-react';
 import ProfileImageUpload from './ProfileImageUpload';
 import ProfileForm from './ProfileForm';
 import { useAuth } from '@/hooks/useAuth';
+import { SubscriptionStatus } from '@/components/subscription';
+import { useSubscription } from '@/app/context/SubscriptionContext';
+import SubscriptionManagement from './SubscriptionManagement';
 
 const SimpleProfilePage: React.FC = () => {
   const { user, loading, error, updateUser, refetch } = useAuth();
@@ -38,7 +41,7 @@ const SimpleProfilePage: React.FC = () => {
       }
 
       const result = await response.json();
-      
+
       if (result.success) {
         setSuccessMessage('Profile image updated successfully!');
         await refetch(); // Refresh user data
@@ -154,7 +157,7 @@ const SimpleProfilePage: React.FC = () => {
             Profile
           </Typography>
         </Breadcrumbs>
-        
+
         <Typography variant="h4" fontWeight={600} gutterBottom>
           Edit Profile
         </Typography>
@@ -174,7 +177,7 @@ const SimpleProfilePage: React.FC = () => {
             <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
               Update your profile picture to help others recognize you
             </Typography>
-            
+
             <ProfileImageUpload
               currentImage={user.profileImage || user.avatar}
               onImageUpload={handleImageUpload}
@@ -200,6 +203,21 @@ const SimpleProfilePage: React.FC = () => {
           />
         </Grid>
       </Grid>
+
+      {/* Subscription Management Section */}
+      <Box mt={4}>
+        <Paper elevation={1} sx={{ p: 4 }}>
+          <Typography variant="h6" fontWeight={600} gutterBottom>
+            Subscription & Billing
+          </Typography>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+            Manage your subscription plan and billing information
+          </Typography>
+
+          <SubscriptionManagement userId={user._id} />
+        </Paper>
+      </Box>
+
 
       {/* User Info Display */}
       <Box mt={4}>

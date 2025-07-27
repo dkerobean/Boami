@@ -78,13 +78,13 @@ export class StockAlertsManager {
 
     try {
       this.alertRules = alertRules.length > 0 ? alertRules : this.getDefaultAlertRules();
-      
+
       // Initialize change streams
       await this.initializeChangeStreams();
-      
+
       // Cleanup old alerts
       await this.cleanupOldAlerts();
-      
+
       this.isInitialized = true;
       console.log('Stock alerts system initialized successfully');
     } catch (error) {
@@ -217,7 +217,7 @@ export class StockAlertsManager {
 
       try {
         const shouldCreateAlert = await this.checkRuleConditions(rule, currentStock, itemType, context);
-        
+
         if (shouldCreateAlert) {
           await this.createAlertFromRule(rule, sku, currentStock, itemType, context);
         }
@@ -249,7 +249,7 @@ export class StockAlertsManager {
     // Check category filter
     if (conditions.categories && conditions.categories.length > 0) {
       const categories = context.category || [];
-      const hasMatchingCategory = conditions.categories.some(cat => 
+      const hasMatchingCategory = conditions.categories.some(cat =>
         categories.includes(cat)
       );
       if (!hasMatchingCategory) {
@@ -268,7 +268,7 @@ export class StockAlertsManager {
     // Check stock level condition
     if (conditions.stockLevel) {
       const threshold = conditions.stockLevel.useThreshold ? context.threshold : conditions.stockLevel.value;
-      
+
       switch (conditions.stockLevel.operator) {
         case 'lte':
           if (currentStock > threshold) return false;
@@ -326,11 +326,11 @@ export class StockAlertsManager {
       if (recentLogs.length === 0) return false;
 
       const totalChange = recentLogs.reduce((sum, log) => sum + log.quantityChange, 0);
-      
+
       if (changeCondition.operator === 'decrease' && totalChange >= 0) {
         return false;
       }
-      
+
       if (changeCondition.operator === 'increase' && totalChange <= 0) {
         return false;
       }
@@ -339,7 +339,7 @@ export class StockAlertsManager {
       if (changeCondition.percentage) {
         const oldStock = currentStock - totalChange;
         if (oldStock === 0) return true; // Any change from 0 is significant
-        
+
         const percentageChange = Math.abs(totalChange / oldStock) * 100;
         return percentageChange >= changeCondition.percentage;
       }
@@ -429,11 +429,51 @@ export class StockAlertsManager {
   }
 
   /**
-   * Send email notification (placeholder implementation)
+   * Send email notification using the new email notification system
    */
   private static async sendEmailNotification(alert: any, emailSettings: any): Promise<void> {
-    // TODO: Implement email sending using your preferred email service
-    console.log(`Email notification sent for alert: ${alert.message}`);
+    try {
+      // Import the notification service
+      const { notificationService } = await import('../notifications/notification-service');
+
+      // Find the product to get more details
+      const Product = (await import('../database/models/Product')).default;
+      const product = await Product.findById(alert.productId);
+
+      if (!product) {
+        console.warn('Product not found for stock alert:', alert.productId);
+        return;
+      }
+
+      // Find users to notify (you may want to customize this logic)
+      const User = (await import('../database/models/User')).default;
+      const users = await User.find({
+        isActive: true,
+        role: { $in: ['admin', 'manager'] } // Only notify admins and managers
+      });
+
+      // Send email notification to each user
+      for (const user of users) {
+        await notificationService.triggerNotification({
+          type: 'stock_alert',
+          userId: user._id.toString(),
+          data: {
+            product: {
+              _id: product._id.toString(),
+              title: product.title,
+              sku: product.sku,
+              qty: alert.currentStock,
+              lowStockThreshold: alert.threshold
+            }
+          },
+          priority: alert.priority === 'critical' ? 'critical' : 'high'
+        });
+      }
+
+      console.log(`Email notification sent for stock alert: ${alert.sku}`);
+    } catch (error) {
+      console.error('Error sending email notification for stock alert:', error);
+    }
   }
 
   /**
@@ -591,7 +631,7 @@ export class StockAlertsManager {
       for (const alert of pendingAlerts) {
         // Find matching rule for this alert
         const rule = this.alertRules.find(r => r.actions.alertType === alert.alertType);
-        
+
         if (rule && rule.actions.notifications) {
           await this.sendAlertNotifications(alert, rule.actions.notifications);
           processedCount++;
@@ -684,7 +724,7 @@ export class StockAlertsManager {
         await this.changeStream.close();
         this.changeStream = null;
       }
-      
+
       this.isInitialized = false;
       console.log('Stock alerts system shutdown completed');
     } catch (error) {

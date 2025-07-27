@@ -29,7 +29,21 @@ export { default as Plan } from './Plan';
 export { default as Subscription } from './Subscription';
 export { default as Transaction } from './Transaction';
 
+// Notification system models
+export { default as NotificationEvent } from './NotificationEvent';
+export { default as QueuedNotification } from './QueuedNotification';
+export { default as EmailTemplate } from './EmailTemplate';
+export { default as NotificationLog } from './NotificationLog';
+export { default as EmailPreferences } from './EmailPreferences';
+
 // Type exports for subscription models
 export type { IPlan, IPlanDocument, IPlanModel, IFeatureConfig } from './Plan';
 export type { ISubscription, ISubscriptionDocument, ISubscriptionModel, SubscriptionStatus } from './Subscription';
 export type { ITransaction, ITransactionDocument, ITransactionModel, TransactionStatus, TransactionType } from './Transaction';
+
+// Type exports for notification models
+export type { INotificationEvent, INotificationEventDocument, INotificationEventModel, NotificationType, NotificationPriority } from './NotificationEvent';
+export type { IQueuedNotification, IQueuedNotificationDocument, IQueuedNotificationModel, NotificationStatus } from './QueuedNotification';
+export type { IEmailTemplate, IEmailTemplateDocument, IEmailTemplateModel } from './EmailTemplate';
+export type { INotificationLog, INotificationLogDocument, INotificationLogModel, NotificationLogStatus } from './NotificationLog';
+export type { IEmailPreferences, IEmailPreferencesDocument, IEmailPreferencesModel, DigestFrequency } from './EmailPreferences';

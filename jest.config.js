@@ -23,6 +23,7 @@ const customJestConfig = {
     '!src/app/loading.tsx',
     '!src/app/not-found.tsx',
     '!src/app/global.css',
+    '!src/__tests__/**/*',
   ],
   coverageThreshold: {
     global: {
@@ -31,6 +32,25 @@ const customJestConfig = {
       lines: 70,
       statements: 70,
     },
+    // Specific thresholds for subscription system
+    'src/lib/services/SubscriptionService.ts': {
+      branches: 80,
+      functions: 80,
+      lines: 80,
+      statements: 80,
+    },
+    'src/lib/services/PaymentService.ts': {
+      branches: 80,
+      functions: 80,
+      lines: 80,
+      statements: 80,
+    },
+    'src/lib/email/subscription-email-service.ts': {
+      branches: 75,
+      functions: 75,
+      lines: 75,
+      statements: 75,
+    }
   },
   testTimeout: 10000,
   // Handle MongoDB Memory Server

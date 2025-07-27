@@ -9,14 +9,11 @@ import { webhookRetryQueue, webhookHealthChecker } from '../../../../../lib/util
  * Implements secure webhook processing with signature verification and idempotency
  */
 
-// Rate limiting for webhook endpoints
-const webhookLimiter = rateLimit({
+// Rate limiting configuration (implement with middleware in production)
+const WEBHOOK_RATE_LIMIT = {
   windowMs: 60 * 1000, // 1 minute
   max: 100, // 100 requests per minute per IP
-  message: 'Too many webhook requests',
-  standardHeaders: true,
-  legacyHeaders: false,
-});
+};
 
 // In-memory store for processed webhook IDs (in production, use Redis)
 const processedWebhooks = new Set<string>();
@@ -80,6 +77,24 @@ function logWebhookEvent(event: string, status: 'success' | 'error' | 'duplicate
 }
 
 /**
+ * Check if error is retryable
+ */
+function isRetryableError(error: any): boolean {
+  // Don't retry signature verification errors
+  if (error.message?.includes('signature') || error.message?.includes('authentication')) {
+    return false;
+  }
+
+  // Don't retry validation errors
+  if (error.message?.includes('validation') || error.message?.includes('invalid')) {
+    return false;
+  }
+
+  // Retry database errors, network errors, and other transient failures
+  return true;
+}
+
+/**
  * Handle POST requests to webhook endpoint
  */
 export async function POST(request: NextRequest) {
@@ -125,10 +140,25 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Verify webhook signature
+    // Record webhook received
+    webhookMonitor.recordEvent({
+      id: webhookId || `webhook_${Date.now()}`,
+      event: eventType || 'unknown',
+      status: 'received',
+      payload: webhookPayload
+    });
+
+    // Process webhook
     const paymentService = new PaymentService();
 
     try {
+      // Record processing start
+      webhookMonitor.recordEvent({
+        id: webhookId || `processing_${Date.now()}`,
+        event: eventType || 'unknown',
+        status: 'processing'
+      });
+
       const result = await paymentService.processWebhook(body, signature);
 
       // Mark webhook as processed
@@ -141,13 +171,18 @@ export async function POST(request: NextRequest) {
         }
       }
 
-      // Log successful processing
       const processingTime = Date.now() - startTime;
-      logWebhookEvent(eventType || 'unknown', 'success', {
-        webhookId,
+
+      // Record success
+      webhookMonitor.recordEvent({
+        id: webhookId || `success_${Date.now()}`,
+        event: eventType || 'unknown',
+        status: 'success',
         processingTime,
-        result: result.success ? 'processed' : 'failed'
+        metadata: { result: result.success ? 'processed' : 'failed' }
       });
+
+      webhookHealthChecker.recordSuccess();
 
       return NextResponse.json(
         {
@@ -158,15 +193,25 @@ export async function POST(request: NextRequest) {
       );
 
     } catch (processingError: any) {
-      // Log processing error but don't expose internal details
-      logWebhookEvent(eventType || 'unknown', 'error', {
-        webhookId,
-        error: processingError.message,
-        processingTime: Date.now() - startTime
+      const processingTime = Date.now() - startTime;
+
+      // Record processing failure
+      webhookMonitor.recordEvent({
+        id: webhookId || `error_${Date.now()}`,
+        event: eventType || 'unknown',
+        status: 'failed',
+        processingTime,
+        error: processingError.message
       });
 
-      // Return success to Flutterwave to avoid retries for our internal errors
-      // Log the error for internal investigation
+      webhookHealthChecker.recordFailure();
+
+      // Add to retry queue if it's a retryable error
+      if (webhookId && isRetryableError(processingError)) {
+        webhookRetryQueue.addToQueue(webhookId, body, signature);
+      }
+
+      // Return success to Flutterwave to avoid their retries for our internal errors
       console.error('Webhook processing internal error:', processingError);
 
       return NextResponse.json(

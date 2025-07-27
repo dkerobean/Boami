@@ -1,6 +1,7 @@
 "use client";
 import React, { useState, useContext, useEffect } from "react";
 import { InvoiceContext } from "@/app/context/InvoiceContext";
+import axios from 'axios';
 import {
   Box,
   Typography,
@@ -76,6 +77,7 @@ const EnhancedCreateInvoice = () => {
   const [showAlert, setShowAlert] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
   const [productSelectorOpen, setProductSelectorOpen] = useState(false);
+  const [companySettings, setCompanySettings] = useState<any>(null);
   const router = useRouter();
 
   const [formData, setFormData] = useState<Partial<InvoiceList>>({
@@ -106,6 +108,34 @@ const EnhancedCreateInvoice = () => {
     },
     notes: "",
   });
+
+  // Fetch company settings and load logo
+  const fetchCompanySettings = async () => {
+    try {
+      const response = await axios.get('/api/company');
+      
+      if (response.data.success) {
+        const settings = response.data.data;
+        setCompanySettings(settings);
+        
+        // Pre-populate form with company settings
+        setFormData(prev => ({
+          ...prev,
+          logoUrl: settings.logoUrl || "",
+          billFrom: settings.name || "",
+          billFromEmail: settings.email || "",
+          billFromAddress: settings.address || "",
+          billFromPhone: settings.phone || 0,
+        }));
+      }
+    } catch (error) {
+      console.error('Error fetching company settings:', error);
+    }
+  };
+
+  useEffect(() => {
+    fetchCompanySettings();
+  }, []);
 
   useEffect(() => {
     if (invoices.length > 0) {

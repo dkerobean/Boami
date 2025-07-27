@@ -2,6 +2,8 @@
 import React, { useContext, useEffect, useState } from "react";
 import { InvoiceContext } from "@/app/context/InvoiceContext/index";
 import { usePathname } from "next/navigation";
+import axios from 'axios';
+import toast from 'react-hot-toast';
 import {
   Card,
   CardContent,
@@ -27,19 +29,63 @@ import {
 } from "@mui/material";
 import { format, isValid, parseISO } from "date-fns";
 import Link from "next/link";
-import Logo from "@/app/(DashboardLayout)/layout/shared/logo/Logo";
+import Image from "next/image";
 import { TemplateType } from "@/app/(DashboardLayout)/types/apps/invoice";
 import TemplateSelector from "../templates/TemplateSelector";
 import InvoicePrintExport from "../InvoicePrintExport";
 import ModernBusinessTemplate from "../templates/ModernBusinessTemplate";
 import CorporateTemplate from "../templates/CorporateTemplate";
 import CreativeTemplate from "../templates/CreativeTemplate";
+import EcommerceInvoiceTemplate from "../templates/EcommerceInvoiceTemplate";
 
 const InvoiceDetail = () => {
   const { invoices } = useContext(InvoiceContext);
   const [selectedInvoice, setSelectedInvoice]: any = useState(null);
   const [selectedTemplate, setSelectedTemplate] = useState<TemplateType>("modern");
   const [viewMode, setViewMode] = useState<"classic" | "template">("template");
+  const [companySettings, setCompanySettings] = useState<any>(null);
+  const [loadingCompany, setLoadingCompany] = useState(false);
+
+  // Fetch company settings
+  const fetchCompanySettings = async () => {
+    try {
+      console.log('🔍 [Invoice Detail] Starting to fetch company settings...');
+      setLoadingCompany(true);
+      
+      const response = await axios.get('/api/company');
+      console.log('📡 [Invoice Detail] API response received:', {
+        status: response.status,
+        success: response.data?.success,
+        hasData: !!response.data?.data,
+        logoUrl: response.data?.data?.logoUrl
+      });
+      
+      if (response.data.success) {
+        console.log('✅ [Invoice Detail] Company settings loaded successfully:', {
+          name: response.data.data.name,
+          hasLogoUrl: !!response.data.data.logoUrl,
+          logoUrl: response.data.data.logoUrl
+        });
+        setCompanySettings(response.data.data);
+      } else {
+        console.error('❌ [Invoice Detail] Failed to fetch company settings - success flag is false');
+        console.error('Response data:', response.data);
+      }
+    } catch (error: any) {
+      console.error('💥 [Invoice Detail] Error fetching company settings:', {
+        message: error.message,
+        status: error.response?.status,
+        statusText: error.response?.statusText,
+        responseData: error.response?.data
+      });
+    } finally {
+      setLoadingCompany(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchCompanySettings();
+  }, []);
 
   useEffect(() => {
     // Set the first invoice as the default selected invoice initially
@@ -71,14 +117,25 @@ const InvoiceDetail = () => {
   }
 
   const renderTemplateView = () => {
+    const logoUrl = companySettings?.logoUrl;
+    
+    console.log('🎨 [Invoice Detail] Rendering template view:', {
+      selectedTemplate,
+      hasCompanySettings: !!companySettings,
+      logoUrl,
+      hasLogoUrl: !!logoUrl
+    });
+    
     switch (selectedTemplate) {
       case "corporate":
-        return <CorporateTemplate invoice={selectedInvoice} />;
+        return <CorporateTemplate invoice={selectedInvoice} logoUrl={logoUrl} />;
       case "creative":
-        return <CreativeTemplate invoice={selectedInvoice} />;
+        return <CreativeTemplate invoice={selectedInvoice} logoUrl={logoUrl} />;
+      case "ecommerce":
+        return <EcommerceInvoiceTemplate invoice={selectedInvoice} logoUrl={logoUrl} />;
       case "modern":
       default:
-        return <ModernBusinessTemplate invoice={selectedInvoice} />;
+        return <ModernBusinessTemplate invoice={selectedInvoice} logoUrl={logoUrl} />;
     }
   };
 
@@ -164,7 +221,49 @@ const InvoiceDetail = () => {
               </Box>
             </Box>
 
-            <Logo />
+            {/* Company Logo */}
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              {loadingCompany ? (
+                <Box sx={{ width: 120, height: 60, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <Typography variant="body2" color="text.secondary">Loading...</Typography>
+                </Box>
+              ) : companySettings?.logoUrl ? (
+                <Image
+                  src={companySettings.logoUrl}
+                  alt={companySettings.name || 'Company Logo'}
+                  width={120}
+                  height={60}
+                  style={{
+                    objectFit: 'contain',
+                    maxWidth: '120px',
+                    maxHeight: '60px',
+                  }}
+                />
+              ) : (
+                <Box
+                  sx={{
+                    width: 120,
+                    height: 60,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    border: '2px dashed',
+                    borderColor: 'divider',
+                    borderRadius: 1,
+                    bgcolor: 'grey.50',
+                  }}
+                >
+                  <Stack alignItems="center" spacing={0.5}>
+                    <Typography variant="caption" color="text.secondary" fontWeight="bold">
+                      {companySettings?.name || 'Company Name'}
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary" fontSize="10px">
+                      No Logo Set
+                    </Typography>
+                  </Stack>
+                </Box>
+              )}
+            </Box>
             <Box textAlign="right">
               {selectedInvoice.status === "Shipped" ? (
                 <Chip size="small" color="primary" label={selectedInvoice.status} />
@@ -323,7 +422,7 @@ const InvoiceDetail = () => {
           variant="contained"
           color="secondary"
           component={Link}
-          href={`/apps/invoice/edit/${selectedInvoice.billFrom}`}
+          href={`/apps/invoice/edit/${selectedInvoice._id || selectedInvoice.id}`}
         >
           Edit Invoice
         </Button>

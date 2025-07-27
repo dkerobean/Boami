@@ -57,11 +57,16 @@ export async function GET(request: NextRequest) {
       return map;
     }, {} as any);
 
-    // Enrich vendor data with expense information
-    const enrichedVendors = vendors.map(vendor => ({
-      ...vendor,
-      expenseStats: expenseMap[vendor._id.toString()] || { count: 0, totalAmount: 0 }
-    }));
+    // Enrich vendor data with expense information to match component expectations
+    const enrichedVendors = vendors.map(vendor => {
+      const stats = expenseMap[vendor._id.toString()] || { count: 0, totalAmount: 0 };
+      return {
+        ...vendor,
+        expenseCount: stats.count,
+        totalExpenses: stats.totalAmount,
+        expenseStats: stats // Keep for backward compatibility
+      };
+    });
 
     return NextResponse.json({
       success: true,

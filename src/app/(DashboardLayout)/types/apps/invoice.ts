@@ -77,7 +77,13 @@ export interface InvoiceList {
 export interface InvoiceCreateFormData {
   id: number;
   billFrom: string;
+  billFromEmail: string;
+  billFromPhone?: string;
+  billFromFax?: string;
   billTo: string;
+  billToEmail: string;
+  billToPhone?: string;
+  billToFax?: string;
   totalCost: number;
   status: string;
   billFromAddress: string;
@@ -98,4 +104,5 @@ export interface InvoiceCreateFormData {
   manualTaxOverride?: number;
   manualDiscountOverride?: number;
   notes?: string;
+  terms?: string;
 }

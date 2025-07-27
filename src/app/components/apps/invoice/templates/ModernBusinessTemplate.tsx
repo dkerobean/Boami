@@ -21,9 +21,17 @@ import { InvoiceList } from "@/app/(DashboardLayout)/types/apps/invoice";
 
 interface ModernBusinessTemplateProps {
   invoice: InvoiceList;
+  logoUrl?: string;
 }
 
-const ModernBusinessTemplate: React.FC<ModernBusinessTemplateProps> = ({ invoice }) => {
+const ModernBusinessTemplate: React.FC<ModernBusinessTemplateProps> = ({ invoice, logoUrl }) => {
+  console.log('🏢 [ModernBusinessTemplate] Template rendered with:', {
+    invoiceId: invoice.id,
+    hasLogoUrl: !!logoUrl,
+    logoUrl,
+    logoUrlType: typeof logoUrl
+  });
+
   const orderDate = invoice.orderDate
     ? isValid(parseISO(invoice.orderDate.toString()))
       ? format(parseISO(invoice.orderDate.toString()), "EEEE, MMMM dd, yyyy")
@@ -59,7 +67,38 @@ const ModernBusinessTemplate: React.FC<ModernBusinessTemplateProps> = ({ invoice
         }}
       >
         <Box>
-          <Logo />
+          {logoUrl ? (
+            <Box
+              component="img"
+              src={logoUrl}
+              alt="Company Logo"
+              sx={{
+                maxHeight: 60,
+                maxWidth: 120,
+                objectFit: "contain",
+                mb: 1,
+              }}
+            />
+          ) : (
+            <Box
+              sx={{
+                width: 120,
+                height: 60,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                border: '2px dashed',
+                borderColor: 'divider',
+                borderRadius: 1,
+                bgcolor: 'grey.50',
+                mb: 1,
+              }}
+            >
+              <Typography variant="caption" color="text.secondary" fontWeight="bold">
+                No Logo Set
+              </Typography>
+            </Box>
+          )}
           <Typography
             variant="h4"
             fontWeight={700}

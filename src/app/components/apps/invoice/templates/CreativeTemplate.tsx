@@ -22,9 +22,10 @@ import { InvoiceList } from "@/app/(DashboardLayout)/types/apps/invoice";
 
 interface CreativeTemplateProps {
   invoice: InvoiceList;
+  logoUrl?: string;
 }
 
-const CreativeTemplate: React.FC<CreativeTemplateProps> = ({ invoice }) => {
+const CreativeTemplate: React.FC<CreativeTemplateProps> = ({ invoice, logoUrl }) => {
   const orderDate = invoice.orderDate
     ? isValid(parseISO(invoice.orderDate.toString()))
       ? format(parseISO(invoice.orderDate.toString()), "EEEE, MMMM dd, yyyy")
@@ -94,8 +95,37 @@ const CreativeTemplate: React.FC<CreativeTemplateProps> = ({ invoice }) => {
           }}
         >
           <Box>
-            <Box sx={{ filter: "brightness(0) invert(1)" }}>
-              <Logo />
+            <Box sx={{ filter: logoUrl ? "none" : "brightness(0) invert(1)" }}>
+              {logoUrl ? (
+                <Box
+                  component="img"
+                  src={logoUrl}
+                  alt="Company Logo"
+                  sx={{
+                    maxHeight: 60,
+                    maxWidth: 120,
+                    objectFit: "contain",
+                  }}
+                />
+              ) : (
+                <Box
+                  sx={{
+                    width: 120,
+                    height: 60,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    border: '2px dashed',
+                    borderColor: 'rgba(255,255,255,0.5)',
+                    borderRadius: 1,
+                    bgcolor: 'rgba(255,255,255,0.1)',
+                  }}
+                >
+                  <Typography variant="caption" color="white" fontWeight="bold">
+                    No Logo Set
+                  </Typography>
+                </Box>
+              )}
             </Box>
             <Typography
               variant="h3"

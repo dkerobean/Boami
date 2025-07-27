@@ -61,8 +61,9 @@ import {
 } from "@/app/(DashboardLayout)/types/apps/invoice";
 
 const EnhancedInvoiceCreation = () => {
-  const { addInvoice, invoices } = useContext(InvoiceContext);
+  const { addInvoice, invoices, loading } = useContext(InvoiceContext);
   const [showAlert, setShowAlert] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
   const router = useRouter();
   
   // Product selection states
@@ -80,9 +81,15 @@ const EnhancedInvoiceCreation = () => {
   const [formData, setFormData] = useState<InvoiceCreateFormData>({
     id: 0,
     billFrom: "",
+    billFromEmail: "", // Required by API
+    billFromPhone: "",
+    billFromFax: "",
     billTo: "",
+    billToEmail: "", // Required by API
+    billToPhone: "",
+    billToFax: "",
     totalCost: 0,
-    status: "Pending",
+    status: "Draft", // Match API schema
     billFromAddress: "",
     billToAddress: "",
     orders: [{ 
@@ -116,6 +123,7 @@ const EnhancedInvoiceCreation = () => {
     subtotalBeforeDiscount: 0,
     totalDiscount: 0,
     notes: "",
+    terms: "", // API field
   });
 
   // Initialize invoice ID
@@ -315,24 +323,94 @@ const EnhancedInvoiceCreation = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setSubmitError(null);
+    
+    // Basic validation
+    if (!formData.billFrom.trim()) {
+      setSubmitError('Bill From name is required');
+      return;
+    }
+    if (!formData.billFromEmail.trim()) {
+      setSubmitError('Bill From email is required');
+      return;
+    }
+    if (!formData.billTo.trim()) {
+      setSubmitError('Bill To name is required');
+      return;
+    }
+    if (!formData.billToEmail.trim()) {
+      setSubmitError('Bill To email is required');
+      return;
+    }
+    if (formData.orders.length === 0 || !formData.orders[0].itemName.trim()) {
+      setSubmitError('At least one item is required');
+      return;
+    }
+    
     try {
-      // Convert enhanced form data to legacy format for backward compatibility
-      const legacyInvoiceData = {
-        ...formData,
-        // Map enhanced fields to legacy fields
-        vat: formData.tax,
-        totalCost: formData.subtotal,
+      // Transform enhanced form data to API-expected format
+      const apiInvoiceData = {
+        // Don't send invoiceNumber - it will be auto-generated
+        
+        // Billing details
+        billFrom: formData.billFrom,
+        billFromEmail: formData.billFromEmail,
+        billFromAddress: formData.billFromAddress || undefined,
+        billFromPhone: formData.billFromPhone ? parseInt(formData.billFromPhone) : undefined,
+        billFromFax: formData.billFromFax ? parseInt(formData.billFromFax) : undefined,
+        
+        billTo: formData.billTo,
+        billToEmail: formData.billToEmail,
+        billToAddress: formData.billToAddress || undefined,
+        billToPhone: formData.billToPhone ? parseInt(formData.billToPhone) : undefined,
+        billToFax: formData.billToFax ? parseInt(formData.billToFax) : undefined,
+        
+        // Items
+        orders: formData.orders.map(order => ({
+          productId: order.productId || undefined,
+          itemName: order.itemName,
+          sku: order.sku || undefined,
+          description: order.description || undefined,
+          unitPrice: parseFloat(order.unitPrice.toString()),
+          units: parseFloat(order.units.toString()),
+          unitTotalPrice: parseFloat(order.unitTotalPrice.toString()),
+          image: order.image || undefined
+        })),
+        
+        // Dates
+        orderDate: new Date(formData.date),
+        dueDate: undefined,
+        
+        // Financial details - these will be calculated by the schema
+        totalCost: formData.subtotal, // Required by schema
+        vat: 0, // Will be calculated by pre-save middleware
+        vatRate: formData.taxConfig.rates[0]?.rate || 10,
+        discount: formData.totalDiscount || 0,
+        discountType: formData.totalDiscount > 0 ? 'fixed' : 'percentage',
+        grandTotal: formData.grandTotal, // Required by schema
+        
+        // Status and notes
+        status: formData.status,
+        completed: false,
+        notes: formData.notes || undefined,
+        terms: formData.terms || undefined
       };
       
-      await addInvoice(legacyInvoiceData);
+      await addInvoice(apiInvoiceData);
       
       // Reset form
       setFormData({
         id: 0,
         billFrom: "",
+        billFromEmail: "",
+        billFromPhone: "",
+        billFromFax: "",
         billTo: "",
+        billToEmail: "",
+        billToPhone: "",
+        billToFax: "",
         totalCost: 0,
-        status: "Pending",
+        status: "Draft",
         billFromAddress: "",
         billToAddress: "",
         orders: [{ 
@@ -364,6 +442,7 @@ const EnhancedInvoiceCreation = () => {
         subtotalBeforeDiscount: 0,
         totalDiscount: 0,
         notes: "",
+        terms: "",
       });
       
       setShowAlert(true);
@@ -371,8 +450,21 @@ const EnhancedInvoiceCreation = () => {
         setShowAlert(false);
       }, 5000);
       router.push("/apps/invoice/list");
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error adding invoice:", error);
+      let errorMessage = 'Failed to create invoice';
+      
+      if (error?.response?.data?.errors) {
+        // Handle validation errors from the API
+        const errors = Object.values(error.response.data.errors).join(', ');
+        errorMessage = `Validation Error: ${errors}`;
+      } else if (error?.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      } else if (error?.message) {
+        errorMessage = error.message;
+      }
+      
+      setSubmitError(errorMessage);
     }
   };
 
@@ -402,8 +494,14 @@ const EnhancedInvoiceCreation = () => {
               >
                 Cancel
               </Button>
-              <Button type="submit" variant="contained" color="primary">
-                Create Invoice
+              <Button 
+                type="submit" 
+                variant="contained" 
+                color="primary"
+                disabled={loading}
+                startIcon={loading ? <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary"></div> : undefined}
+              >
+                {loading ? 'Creating...' : 'Create Invoice'}
               </Button>
             </Box>
           </Stack>
@@ -423,13 +521,16 @@ const EnhancedInvoiceCreation = () => {
               <CustomSelect
                 labelId="demo-simple-select-label"
                 id="demo-simple-select"
+                name="status"
                 value={formData.status}
                 onChange={handleChange}
-                disabled
               >
+                <MenuItem value="Draft">Draft</MenuItem>
                 <MenuItem value="Pending">Pending</MenuItem>
-                <MenuItem value="Shipped">Shipped</MenuItem>
-                <MenuItem value="Delivered">Delivered</MenuItem>
+                <MenuItem value="Sent">Sent</MenuItem>
+                <MenuItem value="Paid">Paid</MenuItem>
+                <MenuItem value="Overdue">Overdue</MenuItem>
+                <MenuItem value="Cancelled">Cancelled</MenuItem>
               </CustomSelect>
             </Box>
             <Box textAlign="right">
@@ -450,6 +551,17 @@ const EnhancedInvoiceCreation = () => {
                 value={formData.billFrom}
                 onChange={handleChange}
                 fullWidth
+                required
+              />
+              <CustomFormLabel htmlFor="bill-from-email" sx={{ mt: 1 }}>Bill From Email</CustomFormLabel>
+              <CustomTextField
+                id="bill-from-email"
+                name="billFromEmail"
+                type="email"
+                value={formData.billFromEmail}
+                onChange={handleChange}
+                fullWidth
+                required
               />
             </Grid>
             <Grid item xs={12} sm={6}>
@@ -457,8 +569,8 @@ const EnhancedInvoiceCreation = () => {
                 htmlFor="bill-to"
                 sx={{
                   mt: {
-                    xs: 0,
-                    sm: 3,
+                    xs: 2,
+                    sm: 0,
                   },
                 }}
               >
@@ -469,6 +581,17 @@ const EnhancedInvoiceCreation = () => {
                 value={formData.billTo}
                 onChange={handleChange}
                 fullWidth
+                required
+              />
+              <CustomFormLabel htmlFor="bill-to-email" sx={{ mt: 1 }}>Bill To Email</CustomFormLabel>
+              <CustomTextField
+                id="bill-to-email"
+                name="billToEmail"
+                type="email"
+                value={formData.billToEmail}
+                onChange={handleChange}
+                fullWidth
+                required
               />
             </Grid>
             <Grid item xs={12} sm={6}>
@@ -522,6 +645,30 @@ const EnhancedInvoiceCreation = () => {
               Add Item
             </Button>
           </Stack>
+
+          {/* Quick Add Products Section */}
+          <Box mb={2}>
+            <Button
+              variant="outlined"
+              startIcon={<IconPackage />}
+              onClick={() => {
+                // Add a new empty row and immediately open product selector for it
+                handleAddItem();
+                setTimeout(() => openProductSelector(formData.orders.length), 100);
+              }}
+              sx={{ mr: 2 }}
+            >
+              Quick Add Products
+            </Button>
+            <Button
+              variant="text"
+              startIcon={<IconSquareRoundedPlus />}
+              onClick={handleAddItem}
+              size="small"
+            >
+              Add Blank Row
+            </Button>
+          </Box>
 
           <Paper variant="outlined">
             <TableContainer sx={{ whiteSpace: { xs: "nowrap", md: "unset" } }}>
@@ -743,9 +890,19 @@ const EnhancedInvoiceCreation = () => {
           {showAlert && (
             <Alert
               severity="success"
-              sx={{ position: "fixed", top: 16, right: 16 }}
+              sx={{ position: "fixed", top: 16, right: 16, zIndex: 9999 }}
             >
               Invoice added successfully.
+            </Alert>
+          )}
+          
+          {submitError && (
+            <Alert
+              severity="error"
+              sx={{ mb: 2 }}
+              onClose={() => setSubmitError(null)}
+            >
+              {submitError}
             </Alert>
           )}
         </Box>

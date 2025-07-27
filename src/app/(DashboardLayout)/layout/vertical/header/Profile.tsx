@@ -9,11 +9,13 @@ import {
   Button,
   IconButton,
   CircularProgress,
+  Chip,
 } from '@mui/material';
-import { IconMail } from '@tabler/icons-react';
+import { IconMail, IconCrown, IconTrendingUp } from '@tabler/icons-react';
 import { Stack } from '@mui/system';
 import Image from 'next/image';
 import { useAuthContext } from '@/app/context/AuthContext';
+import { useSubscription } from '@/app/context/SubscriptionContext';
 import { AuthLoading } from '@/app/components/shared/AuthLoading';
 
 const profile: any[] = [
@@ -22,6 +24,12 @@ const profile: any[] = [
     title: "My Profile",
     subtitle: "Account Settings",
     icon: "/images/svgs/icon-account.svg",
+  },
+  {
+    href: "/subscription",
+    title: "Subscription & Billing",
+    subtitle: "Manage your plan",
+    icon: "/images/svgs/icon-account.svg", // You can replace with a billing icon
   },
   {
     href: "/apps/email",
@@ -41,6 +49,7 @@ const profile: any[] = [
 const Profile = () => {
   const [anchorEl2, setAnchorEl2] = useState(null);
   const { user, isLoading, logout, isAuthenticated } = useAuthContext();
+  const { subscription, isSubscriptionActive } = useSubscription();
 
   const handleClick2 = (event: any) => {
     setAnchorEl2(event.currentTarget);
@@ -194,20 +203,67 @@ const Profile = () => {
           </Box>
         ))}
         <Box mt={2}>
-          <Box bgcolor="primary.light" p={3} mb={3} overflow="hidden" position="relative">
-            <Box display="flex" justifyContent="space-between">
-              <Box>
-                <Typography variant="h5" mb={2}>
-                  Unlimited <br />
-                  Access
-                </Typography>
-                <Button variant="contained" color="primary">
-                  Upgrade
-                </Button>
+          {/* Dynamic Subscription Section */}
+          {isSubscriptionActive && subscription ? (
+            // Active subscription - show current plan
+            <Box bgcolor="success.light" p={3} mb={3} overflow="hidden" position="relative">
+              <Box display="flex" justifyContent="space-between" alignItems="center">
+                <Box>
+                  <Box display="flex" alignItems="center" gap={1} mb={1}>
+                    <IconCrown size={20} color="#f59e0b" />
+                    <Typography variant="h6" fontWeight={600}>
+                      {subscription.plan?.name || 'Pro Plan'}
+                    </Typography>
+                  </Box>
+                  <Typography variant="body2" color="text.secondary" mb={2}>
+                    {subscription.status === 'active' ? 'Active' : subscription.status}
+                  </Typography>
+                  <Link href="/subscription" style={{ textDecoration: 'none' }}>
+                    <Button variant="contained" size="small" startIcon={<IconTrendingUp />}>
+                      Manage Plan
+                    </Button>
+                  </Link>
+                </Box>
+                <Image
+                  src={"/images/backgrounds/unlimited-bg.png"}
+                  width={120}
+                  height={140}
+                  style={{ height: 'auto', width: 'auto' }}
+                  alt="subscription"
+                  className="signup-bg"
+                />
               </Box>
-              <Image src={"/images/backgrounds/unlimited-bg.png"} width={150} height={183} style={{ height: 'auto', width: 'auto' }} alt="unlimited" className="signup-bg" />
             </Box>
-          </Box>
+          ) : (
+            // No active subscription - show upgrade prompt
+            <Box bgcolor="primary.light" p={3} mb={3} overflow="hidden" position="relative">
+              <Box display="flex" justifyContent="space-between">
+                <Box>
+                  <Typography variant="h5" mb={1}>
+                    Unlock <br />
+                    Premium Features
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary" mb={2}>
+                    Get unlimited access to all features
+                  </Typography>
+                  <Link href="/subscription" style={{ textDecoration: 'none' }}>
+                    <Button variant="contained" color="primary" startIcon={<IconTrendingUp />}>
+                      Upgrade Now
+                    </Button>
+                  </Link>
+                </Box>
+                <Image
+                  src={"/images/backgrounds/unlimited-bg.png"}
+                  width={150}
+                  height={183}
+                  style={{ height: 'auto', width: 'auto' }}
+                  alt="unlimited"
+                  className="signup-bg"
+                />
+              </Box>
+            </Box>
+          )}
+
           <Button
             variant="outlined"
             color="primary"

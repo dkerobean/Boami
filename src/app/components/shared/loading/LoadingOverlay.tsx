@@ -42,49 +42,65 @@ export const LoadingOverlay: React.FC<LoadingOverlayProps> = React.memo(({
     }
   }, [isVisible, config.fadeOutDuration]);
 
-  // Handle accessibility announcements
+  // Handle accessibility announcements with improved error handling
   useEffect(() => {
+    let announcement: HTMLElement | null = null;
+    let cleanup: NodeJS.Timeout | null = null;
+
+    const safeRemoveAnnouncement = (element: HTMLElement) => {
+      try {
+        if (element && document.body.contains(element)) {
+          document.body.removeChild(element);
+        }
+      } catch (error) {
+        // Silently handle the case where element was already removed
+        console.debug('LoadingOverlay: Announcement element was already removed');
+      }
+    };
+
     if (isVisible) {
       // Announce loading start to screen readers
-      const announcement = document.createElement('div');
+      announcement = document.createElement('div');
       announcement.setAttribute('aria-live', 'polite');
       announcement.setAttribute('aria-atomic', 'true');
       announcement.className = 'sr-only';
       announcement.textContent = 'Page is loading, please wait...';
+      announcement.dataset.loadingAnnouncement = 'start';
       document.body.appendChild(announcement);
 
       // Clean up announcement after a short delay
-      const cleanup = setTimeout(() => {
-        if (document.body.contains(announcement)) {
-          document.body.removeChild(announcement);
+      cleanup = setTimeout(() => {
+        if (announcement) {
+          safeRemoveAnnouncement(announcement);
         }
       }, 1000);
 
       return () => {
-        clearTimeout(cleanup);
-        if (document.body.contains(announcement)) {
-          document.body.removeChild(announcement);
+        if (cleanup) clearTimeout(cleanup);
+        if (announcement) {
+          safeRemoveAnnouncement(announcement);
         }
       };
     } else {
       // Announce loading completion
-      const announcement = document.createElement('div');
+      announcement = document.createElement('div');
       announcement.setAttribute('aria-live', 'polite');
       announcement.setAttribute('aria-atomic', 'true');
       announcement.className = 'sr-only';
       announcement.textContent = 'Page loading completed';
+      announcement.dataset.loadingAnnouncement = 'complete';
       document.body.appendChild(announcement);
 
-      const cleanup = setTimeout(() => {
-        if (document.body.contains(announcement)) {
-          document.body.removeChild(announcement);
+      cleanup = setTimeout(() => {
+        if (announcement) {
+          safeRemoveAnnouncement(announcement);
         }
       }, 1000);
 
       return () => {
-        clearTimeout(cleanup);
-        if (document.body.contains(announcement)) {
-          document.body.removeChild(announcement);
+        if (cleanup) clearTimeout(cleanup);
+        if (announcement) {
+          safeRemoveAnnouncement(announcement);
         }
       };
     }

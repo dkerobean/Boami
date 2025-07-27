@@ -9,6 +9,8 @@ import { AppRouterCacheProvider } from '@mui/material-nextjs/v14-appRouter';
 import { AppState } from "@/store/store";
 import { LoadingProvider } from "@/app/components/shared/loading";
 import { AuthProvider } from "@/app/context/AuthContext";
+import { SubscriptionProvider } from "@/app/context/SubscriptionContext";
+import { InvoiceProvider } from "@/app/context/InvoiceContext";
 import "@/utils/i18n";
 import "@/app/api/index";
 
@@ -36,9 +38,13 @@ const MyApp = ({ children }: { children: React.ReactNode }) => {
                     <RTL direction={customizer.activeDir}>
                         <CssBaseline />
                         <AuthProvider>
-                            <LoadingProvider config={loadingConfig}>
-                                {children}
-                            </LoadingProvider>
+                            <SubscriptionProvider>
+                                <InvoiceProvider>
+                                    <LoadingProvider config={loadingConfig}>
+                                        {children}
+                                    </LoadingProvider>
+                                </InvoiceProvider>
+                            </SubscriptionProvider>
                         </AuthProvider>
                     </RTL>
                 </ThemeProvider>

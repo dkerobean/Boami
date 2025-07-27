@@ -23,6 +23,25 @@ export interface IUser {
   company?: string;
   department?: string;
   lastLogin?: Date;
+  emailPreferences?: {
+    subscriptionConfirmation: boolean;
+    paymentNotifications: boolean;
+    renewalReminders: boolean;
+    cancellationNotifications: boolean;
+    marketingEmails: boolean;
+    securityAlerts: boolean;
+  };
+  subscription?: {
+    active: boolean;
+    subscriptionId?: string;
+    planId?: string;
+    status?: string;
+    updatedAt?: Date;
+    cancelledAt?: Date;
+    cancelAtPeriodEnd?: boolean;
+    renewedAt?: Date;
+    expiredAt?: Date;
+  };
   createdAt: Date;
   updatedAt: Date;
 }
@@ -149,6 +168,73 @@ const userSchema = new Schema<IUserDocument, IUserModel>({
   lastLogin: {
     type: Date,
     default: null
+  },
+  emailPreferences: {
+    subscriptionConfirmation: {
+      type: Boolean,
+      default: true
+    },
+    paymentNotifications: {
+      type: Boolean,
+      default: true
+    },
+    renewalReminders: {
+      type: Boolean,
+      default: true
+    },
+    cancellationNotifications: {
+      type: Boolean,
+      default: true
+    },
+    marketingEmails: {
+      type: Boolean,
+      default: true
+    },
+    securityAlerts: {
+      type: Boolean,
+      default: true
+    }
+  },
+  subscription: {
+    active: {
+      type: Boolean,
+      default: false
+    },
+    subscriptionId: {
+      type: Schema.Types.ObjectId,
+      ref: 'Subscription',
+      default: null
+    },
+    planId: {
+      type: Schema.Types.ObjectId,
+      ref: 'Plan',
+      default: null
+    },
+    status: {
+      type: String,
+      enum: ['active', 'cancelled', 'expired', 'past_due'],
+      default: null
+    },
+    updatedAt: {
+      type: Date,
+      default: null
+    },
+    cancelledAt: {
+      type: Date,
+      default: null
+    },
+    cancelAtPeriodEnd: {
+      type: Boolean,
+      default: false
+    },
+    renewedAt: {
+      type: Date,
+      default: null
+    },
+    expiredAt: {
+      type: Date,
+      default: null
+    }
   }
 }, {
   timestamps: true, // Automatically adds createdAt and updatedAt
@@ -265,7 +351,7 @@ userSchema.statics.findUnverifiedUsers = function() {
  */
 userSchema.methods.getSubscription = async function(): Promise<any> {
   const Subscription = mongoose.model('Subscription');
-  return await Subscription.findByUserId(this._id);
+  return await Subscription.findOne({ userId: this._id, isActive: true });
 };
 
 /**
@@ -274,7 +360,7 @@ userSchema.methods.getSubscription = async function(): Promise<any> {
  */
 userSchema.methods.hasActiveSubscription = async function(): Promise<boolean> {
   const subscription = await this.getSubscription();
-  return subscription?.isActive() || false;
+  return subscription?.isActive || false;
 };
 
 /**

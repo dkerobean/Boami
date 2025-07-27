@@ -1,5 +1,5 @@
 "use client";
-import React, { useState } from "react";
+import React, { useState, useContext, useEffect, useMemo } from "react";
 import dynamic from "next/dynamic";
 const Chart = dynamic(() => import("react-apexcharts"), { ssr: false });
 import {
@@ -19,6 +19,7 @@ import {
   Tab,
   Tabs,
   Divider,
+  CircularProgress,
 } from "@mui/material";
 import { useTheme } from "@mui/material/styles";
 import {
@@ -31,6 +32,7 @@ import {
   IconDownload,
   IconFilter,
 } from "@tabler/icons-react";
+import { InvoiceContext } from "@/app/context/InvoiceContext";
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -63,16 +65,107 @@ const InvoiceReports: React.FC = () => {
   
   const [activeTab, setActiveTab] = useState(0);
   const [timeRange, setTimeRange] = useState("last_30_days");
+  
+  const context = useContext(InvoiceContext);
+  
+  if (!context) {
+    throw new Error('InvoiceReports must be used within an InvoiceProvider');
+  }
+  
+  const { invoices, loading, fetchInvoices } = context;
 
-  // Sample data for demonstration
-  const invoiceStats = {
-    totalRevenue: 124850,
-    totalInvoices: 156,
-    pendingAmount: 23450,
-    overdueAmount: 8750,
-    averageValue: 800.32,
-    collectionRate: 89.5,
+  useEffect(() => {
+    if (!invoices.length && !loading) {
+      fetchInvoices();
+    }
+  }, [invoices.length, loading, fetchInvoices]);
+
+  // Calculate date range based on timeRange filter
+  const getDateRange = (range: string) => {
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    let startDate = new Date();
+
+    switch (range) {
+      case "last_7_days":
+        startDate.setDate(today.getDate() - 7);
+        break;
+      case "last_30_days":
+        startDate.setDate(today.getDate() - 30);
+        break;
+      case "last_90_days":
+        startDate.setDate(today.getDate() - 90);
+        break;
+      case "last_year":
+        startDate.setFullYear(today.getFullYear() - 1);
+        break;
+      default:
+        startDate.setDate(today.getDate() - 30);
+    }
+
+    return { startDate, endDate: today };
   };
+
+  // Filter invoices based on time range
+  const filteredInvoices = useMemo(() => {
+    if (!invoices.length) return [];
+    
+    const { startDate, endDate } = getDateRange(timeRange);
+    
+    return invoices.filter(invoice => {
+      const invoiceDate = new Date(invoice.orderDate);
+      return invoiceDate >= startDate && invoiceDate <= endDate;
+    });
+  }, [invoices, timeRange]);
+
+  // Calculate real invoice statistics
+  const invoiceStats = useMemo(() => {
+    if (!filteredInvoices.length) {
+      return {
+        totalRevenue: 0,
+        totalInvoices: 0,
+        pendingAmount: 0,
+        overdueAmount: 0,
+        averageValue: 0,
+        collectionRate: 0,
+      };
+    }
+
+    const totalRevenue = filteredInvoices.reduce((sum, invoice) => {
+      if (invoice.status === 'Paid' || invoice.completed) {
+        return sum + (invoice.grandTotal || invoice.totalCost);
+      }
+      return sum;
+    }, 0);
+
+    const pendingAmount = filteredInvoices.reduce((sum, invoice) => {
+      if (invoice.status === 'Pending' || invoice.status === 'Sent') {
+        return sum + (invoice.grandTotal || invoice.totalCost);
+      }
+      return sum;
+    }, 0);
+
+    const overdueAmount = filteredInvoices.reduce((sum, invoice) => {
+      if (invoice.status === 'Overdue') {
+        return sum + (invoice.grandTotal || invoice.totalCost);
+      }
+      return sum;
+    }, 0);
+
+    const totalInvoices = filteredInvoices.length;
+    const averageValue = totalInvoices > 0 ? (totalRevenue + pendingAmount + overdueAmount) / totalInvoices : 0;
+    const paidInvoices = filteredInvoices.filter(inv => inv.status === 'Paid' || inv.completed).length;
+    const collectionRate = totalInvoices > 0 ? (paidInvoices / totalInvoices) * 100 : 0;
+
+    return {
+      totalRevenue,
+      totalInvoices,
+      pendingAmount,
+      overdueAmount,
+      averageValue,
+      collectionRate,
+    };
+  }, [filteredInvoices]);
 
   // Revenue trend data
   const revenueChartOptions: any = {
@@ -119,14 +212,47 @@ const InvoiceReports: React.FC = () => {
     },
   };
 
+  // Generate real chart data
+  const revenueChartData = useMemo(() => {
+    if (!filteredInvoices.length) {
+      return {
+        categories: ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"],
+        revenue: new Array(12).fill(0),
+        collections: new Array(12).fill(0)
+      };
+    }
+
+    const monthlyData = new Array(12).fill(0).map(() => ({ revenue: 0, collections: 0 }));
+    const currentYear = new Date().getFullYear();
+    
+    filteredInvoices.forEach(invoice => {
+      const date = new Date(invoice.orderDate);
+      if (date.getFullYear() === currentYear) {
+        const month = date.getMonth();
+        const amount = invoice.grandTotal || invoice.totalCost;
+        
+        monthlyData[month].revenue += amount;
+        if (invoice.status === 'Paid' || invoice.completed) {
+          monthlyData[month].collections += amount;
+        }
+      }
+    });
+
+    return {
+      categories: ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"],
+      revenue: monthlyData.map(m => m.revenue),
+      collections: monthlyData.map(m => m.collections)
+    };
+  }, [filteredInvoices]);
+
   const revenueChartSeries = [
     {
       name: "Revenue",
-      data: [8000, 12000, 9500, 15000, 18000, 14000, 16500, 19000, 22000, 17500, 20000, 24000],
+      data: revenueChartData.revenue,
     },
     {
       name: "Collections",
-      data: [7200, 10800, 8550, 13500, 16200, 12600, 14850, 17100, 19800, 15750, 18000, 21600],
+      data: revenueChartData.collections,
     },
   ];
 
@@ -160,7 +286,32 @@ const InvoiceReports: React.FC = () => {
     },
   };
 
-  const statusChartSeries = [89, 35, 12, 8];
+  // Calculate status distribution from real data
+  const statusDistribution = useMemo(() => {
+    if (!filteredInvoices.length) {
+      return { paid: 0, pending: 0, overdue: 0, draft: 0 };
+    }
+
+    return filteredInvoices.reduce((acc, invoice) => {
+      if (invoice.status === 'Paid' || invoice.completed) {
+        acc.paid++;
+      } else if (invoice.status === 'Pending' || invoice.status === 'Sent') {
+        acc.pending++;
+      } else if (invoice.status === 'Overdue') {
+        acc.overdue++;
+      } else {
+        acc.draft++;
+      }
+      return acc;
+    }, { paid: 0, pending: 0, overdue: 0, draft: 0 });
+  }, [filteredInvoices]);
+
+  const statusChartSeries = [
+    statusDistribution.paid,
+    statusDistribution.pending,
+    statusDistribution.overdue,
+    statusDistribution.draft
+  ];
 
   // Payment timeline
   const paymentTimelineOptions: any = {
@@ -207,18 +358,54 @@ const InvoiceReports: React.FC = () => {
     },
   };
 
+  // Calculate payment timeline data
+  const paymentTimelineData = useMemo(() => {
+    if (!filteredInvoices.length) {
+      return {
+        onTime: new Array(12).fill(0),
+        late: new Array(12).fill(0),
+        overdue: new Array(12).fill(0)
+      };
+    }
+
+    const monthlyPayments = new Array(12).fill(0).map(() => ({ onTime: 0, late: 0, overdue: 0 }));
+    const currentYear = new Date().getFullYear();
+    
+    filteredInvoices.forEach(invoice => {
+      const date = new Date(invoice.orderDate);
+      if (date.getFullYear() === currentYear) {
+        const month = date.getMonth();
+        const amount = invoice.grandTotal || invoice.totalCost;
+        
+        if (invoice.status === 'Paid' || invoice.completed) {
+          monthlyPayments[month].onTime += amount;
+        } else if (invoice.status === 'Pending' || invoice.status === 'Sent') {
+          monthlyPayments[month].late += amount;
+        } else if (invoice.status === 'Overdue') {
+          monthlyPayments[month].overdue += amount;
+        }
+      }
+    });
+
+    return {
+      onTime: monthlyPayments.map(m => m.onTime),
+      late: monthlyPayments.map(m => m.late),
+      overdue: monthlyPayments.map(m => m.overdue)
+    };
+  }, [filteredInvoices]);
+
   const paymentTimelineSeries = [
     {
       name: "On Time",
-      data: [15000, 18000, 12000, 22000, 19000, 16000, 21000, 25000, 18000, 20000, 23000, 27000],
+      data: paymentTimelineData.onTime,
     },
     {
       name: "Late (1-30 days)",
-      data: [3000, 4000, 2500, 5000, 3500, 3000, 4500, 6000, 3800, 4200, 5100, 6500],
+      data: paymentTimelineData.late,
     },
     {
       name: "Overdue (30+ days)",
-      data: [1000, 1500, 800, 2000, 1200, 1000, 1800, 2500, 1500, 1800, 2200, 2800],
+      data: paymentTimelineData.overdue,
     },
   ];
 
@@ -232,6 +419,14 @@ const InvoiceReports: React.FC = () => {
       currency: 'USD',
     }).format(amount);
   };
+
+  if (loading) {
+    return (
+      <Box display="flex" justifyContent="center" alignItems="center" minHeight="400px">
+        <CircularProgress size={40} />
+      </Box>
+    );
+  }
 
   return (
     <Box>
@@ -478,7 +673,7 @@ const InvoiceReports: React.FC = () => {
                       />
                       <Typography>Paid Invoices</Typography>
                     </Stack>
-                    <Chip label="89 invoices" color="success" variant="outlined" />
+                    <Chip label={`${statusDistribution.paid} invoices`} color="success" variant="outlined" />
                   </Box>
                   <Box display="flex" justifyContent="space-between" alignItems="center">
                     <Stack direction="row" alignItems="center" spacing={2}>
@@ -492,7 +687,7 @@ const InvoiceReports: React.FC = () => {
                       />
                       <Typography>Pending Payment</Typography>
                     </Stack>
-                    <Chip label="35 invoices" color="warning" variant="outlined" />
+                    <Chip label={`${statusDistribution.pending} invoices`} color="warning" variant="outlined" />
                   </Box>
                   <Box display="flex" justifyContent="space-between" alignItems="center">
                     <Stack direction="row" alignItems="center" spacing={2}>
@@ -506,7 +701,7 @@ const InvoiceReports: React.FC = () => {
                       />
                       <Typography>Overdue</Typography>
                     </Stack>
-                    <Chip label="12 invoices" color="error" variant="outlined" />
+                    <Chip label={`${statusDistribution.overdue} invoices`} color="error" variant="outlined" />
                   </Box>
                   <Box display="flex" justifyContent="space-between" alignItems="center">
                     <Stack direction="row" alignItems="center" spacing={2}>
@@ -520,7 +715,7 @@ const InvoiceReports: React.FC = () => {
                       />
                       <Typography>Draft</Typography>
                     </Stack>
-                    <Chip label="8 invoices" variant="outlined" />
+                    <Chip label={`${statusDistribution.draft} invoices`} variant="outlined" />
                   </Box>
                 </Stack>
               </Grid>

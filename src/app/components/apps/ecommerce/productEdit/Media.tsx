@@ -8,9 +8,10 @@ import { IconX, IconPhoto } from "@tabler/icons-react";
 interface MediaCardProps {
   productData?: any;
   onImagesChange?: (images: string[]) => void;
+  onMainImageChange?: (file: File) => void;
 }
 
-const MediaCard = ({ productData, onImagesChange }: MediaCardProps) => {
+const MediaCard = ({ productData, onImagesChange, onMainImageChange }: MediaCardProps) => {
   const theme = useTheme();
   const [currentImages, setCurrentImages] = useState<string[]>(productData?.gallery || []);
 
@@ -18,10 +19,13 @@ const MediaCard = ({ productData, onImagesChange }: MediaCardProps) => {
     accept: {
       'image/*': ['.jpeg', '.jpg', '.png', '.gif', '.webp']
     },
+    maxFiles: 1, // For main image, only allow one file
     onDrop: (files) => {
-      // Handle file upload - for now just show the files
-      // In a real implementation, you'd upload to server and get URLs
-      console.log('Files dropped:', files);
+      console.log('🖼️ MediaCard: Files dropped:', files);
+      if (files.length > 0 && onMainImageChange) {
+        console.log('🖼️ MediaCard: Calling onMainImageChange with first file:', files[0].name);
+        onMainImageChange(files[0]);
+      }
     }
   });
 
@@ -111,6 +115,9 @@ const MediaCard = ({ productData, onImagesChange }: MediaCardProps) => {
       {/* Upload Area */}
       <Typography variant="h6" gutterBottom>
         Upload New Images
+      </Typography>
+      <Typography variant="body2" color="text.secondary" gutterBottom>
+        Drop an image here to set as the main product photo
       </Typography>
       <Box
         sx={{

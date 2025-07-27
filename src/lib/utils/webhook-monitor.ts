@@ -1,458 +1,384 @@
-/**
- * Webhook monitoring and logging system
- * Provides comprehensive monitoring, alerting, and analytics for webhook processing
- */
-
-export interface WebhookEvent {
-  id: string;
-  timestamp: Date;
-  event: string;
-  status: 'received' | 'processing' | 'success' | 'failed' | 'retry';
-  processingTime?: number;
-  error?: string;
-  payload?: any;
-  metadata?: Record<string, any>;
-}
-
-export interface WebhookMetrics {
-  totalEvents: number;
-  successfulEvents: number;
-  failedEvents: number;
-  averageProcessingTime: number;
-  successRate: number;
-  eventsByType: Record<string, number>;
-  errorsByType: Record<string, number>;
-  recentEvents: WebhookEvent[];
-}
+import { SubscriptionLogger } from './subscription-logger';
+import { SubscriptionCache } from '../cache/subscription-cache';
 
 /**
- * Webhook monitoring service
+ * Webhook monitoring andlity service
  */
 export class WebhookMonitor {
-  private events: WebhookEvent[] = [];
-  private maxEvents = 1000; // Keep last 1000 events in memory
-  private alertThresholds = {
-    failureRate: 0.1, // Alert if failure rate > 10%
-    consecutiveFailures: 5,
-    processingTime: 10000 // Alert if processing time > 10 seconds
-  };
+  private static webhookStats = new Map<string, any>();
+  private static failedWebhooks: any[] = [];
 
   /**
-   * Record webhook event
+   * Record webhook attempt
    */
-  recordEvent(event: Omit<WebhookEvent, 'timestamp'>): void {
-    const webhookEvent: WebhookEvent = {
-      ...event,
-      timestamp: new Date()
+  static async recordWebhookAttempt(
+    webhookId: string,
+    endpoint: string,
+    payload: any,
+    success: boolean,
+    responseTime: number,
+    statusCode?: number,
+    error?: string
+  ): Promise<void> {
+    const timestamp = new Date();
+
+    // Update statistics
+    const stats = this.webhookStats.get(endpoint) || {
+      totalAttempts: 0,
+      successfulAttempts: 0,
+      failedAttempts: 0,
+      averageResponseTime: 0,
+      lastAttempt: null,
+      lastSuccess: null,
+      lastFailure: null
     };
 
-    this.events.push(webhookEvent);
+    stats.totalAttempts++;
+    stats.lastAttempt = timestamp;
 
-    // Keep only recent events
-    if (this.events.length > this.maxEvents) {
-      this.events = this.events.slice(-this.maxEvents);
+    if (success) {
+      stats.successfulAttempts++;
+      stats.lastSuccess = timestamp;
+    } else {
+      stats.failedAttempts++;
+      stats.lastFailure = timestamp;
+
+      // Record failed webhook for retry
+      this.failedWebhooks.push({
+        webhookId,
+        endpoint,
+        payload,
+        timestamp,
+        statusCode,
+        error,
+        retryCount: 0
+      });
     }
 
-    // Check for alerts
-    this.checkAlerts(webhookEvent);
+    // Update average response time
+    stats.averageResponseTime = (
+      (stats.averageResponseTime * (stats.totalAttempts - 1) + responseTime) /
+      stats.totalAttempts
+    );
 
-    // Log event
-    this.logEvent(webhookEvent);
+    this.webhookStats.set(endpoint, stats);
+
+    // Log webhook attempt
+    await SubscriptionLogger.logAccessActivity(
+      'webhook_attempt',
+      {
+        webhookId,
+        endpoint,
+        success,
+        responseTime,
+        statusCode,
+        error: success ? undefined : error
+      },
+      {
+        severity: success ? 'info' : 'warning'
+      }
+    );
+
+    // Cache webhook stats
+    await SubscriptionCache.setCustomCache(
+      `webhook_stats:${endpoint}`,
+      stats,
+      3600 // 1 hour
+    );
   }
 
   /**
-   * Get webhook metrics
+   * Get webhook statistics
    */
-  getMetrics(timeRange?: { start: Date; end: Date }): WebhookMetrics {
-    let filteredEvents = this.events;
-
-    if (timeRange) {
-      filteredEvents = this.events.filter(event =>
-        event.timestamp >= timeRange.start && event.timestamp <= timeRange.end
-      );
+  static getWebhookStats(endpoint?: string): any {
+    if (endpoint) {
+      return this.webhookStats.get(endpoint) || null;
     }
 
-    const totalEvents = filteredEvents.length;
-    const successfulEvents = filteredEvents.filter(e => e.status === 'success').length;
-    const failedEvents = filteredEvents.filter(e => e.status === 'failed').length;
-
-    const processingTimes = filteredEvents
-      .filter(e => e.processingTime)
-      .map(e => e.processingTime!);
-
-    const averageProcessingTime = processingTimes.length > 0
-      ? processingTimes.reduce((sum, time) => sum + time, 0) / processingTimes.length
-      : 0;
-
-    const successRate = totalEvents > 0 ? (successfulEvents / totalEvents) * 100 : 100;
-
-    // Group events by type
-    const eventsByType: Record<string, number> = {};
-    filteredEvents.forEach(event => {
-      eventsByType[event.event] = (eventsByType[event.event] || 0) + 1;
+    // Return all stats
+    const allStats: any = {};
+    this.webhookStats.forEach((stats, endpoint) => {
+      allStats[endpoint] = {
+        ...stats,
+        successRate: stats.totalAttempts > 0 ?
+          (stats.successfulAttempts / stats.totalAttempts) * 100 : 0
+      };
     });
 
-    // Group errors by type
-    const errorsByType: Record<string, number> = {};
-    filteredEvents
-      .filter(event => event.status === 'failed' && event.error)
-      .forEach(event => {
-        const errorType = this.categorizeError(event.error!);
-        errorsByType[errorType] = (errorsByType[errorType] || 0) + 1;
-      });
-
-    return {
-      totalEvents,
-      successfulEvents,
-      failedEvents,
-      averageProcessingTime,
-      successRate,
-      eventsByType,
-      errorsByType,
-      recentEvents: filteredEvents.slice(-10) // Last 10 events
-    };
+    return allStats;
   }
 
   /**
-   * Get health status
+   * Get failed webhooks for retry
    */
-  getHealthStatus(): {
-    status: 'healthy' | 'degraded' | 'critical';
-    issues: string[];
-    lastEvent?: Date;
-    uptime: number;
-  } {
-    const recentEvents = this.events.slice(-100); // Last 100 events
-    const issues: string[] = [];
-    let status: 'healthy' | 'degraded' | 'critical' = 'healthy';
-
-    if (recentEvents.length === 0) {
-      return {
-        status: 'healthy',
-        issues: [],
-        uptime: 100
-      };
-    }
-
-    // Check failure rate
-    const failedCount = recentEvents.filter(e => e.status === 'failed').length;
-    const failureRate = failedCount / recentEvents.length;
-
-    if (failureRate > this.alertThresholds.failureRate) {
-      issues.push(`High failure rate: ${(failureRate * 100).toFixed(1)}%`);
-      status = failureRate > 0.25 ? 'critical' : 'degraded';
-    }
-
-    // Check consecutive failures
-    let consecutiveFailures = 0;
-    for (let i = recentEvents.length - 1; i >= 0; i--) {
-      if (recentEvents[i].status === 'failed') {
-        consecutiveFailures++;
-      } else {
-        break;
-      }
-    }
-
-    if (consecutiveFailures >= this.alertThresholds.consecutiveFailures) {
-      issues.push(`${consecutiveFailures} consecutive failures`);
-      status = consecutiveFailures >= 10 ? 'critical' : 'degraded';
-    }
-
-    // Check processing time
-    const recentProcessingTimes = recentEvents
-      .filter(e => e.processingTime)
-      .map(e => e.processingTime!)
-      .slice(-10);
-
-    if (recentProcessingTimes.length > 0) {
-      const avgProcessingTime = recentProcessingTimes.reduce((sum, time) => sum + time, 0) / recentProcessingTimes.length;
-
-      if (avgProcessingTime > this.alertThresholds.processingTime) {
-        issues.push(`Slow processing: ${avgProcessingTime.toFixed(0)}ms average`);
-        status = status === 'healthy' ? 'degraded' : status;
-      }
-    }
-
-    const uptime = ((recentEvents.length - failedCount) / recentEvents.length) * 100;
-
-    return {
-      status,
-      issues,
-      lastEvent: recentEvents[recentEvents.length - 1]?.timestamp,
-      uptime
-    };
+  static getFailedWebhooks(maxRetries: number = 3): any[] {
+    return this.failedWebhooks.filter(webhook => webhook.retryCount < maxRetries);
   }
 
   /**
-   * Get webhook analytics for dashboard
+   * Retry failed webhooks
    */
-  getAnalytics(period: 'hour' | 'day' | 'week' | 'month' = 'day'): any {
-    const now = new Date();
-    let startTime: Date;
+  static async retryFailedWebhooks(): Promise<any> {
+    const webhooksToRetry = this.getFailedWebhooks();
+    const results = [];
 
-    switch (period) {
-      case 'hour':
-        startTime = new Date(now.getTime() - 60 * 60 * 1000);
-        break;
-      case 'day':
-        startTime = new Date(now.getTime() - 24 * 60 * 60 * 1000);
-        break;
-      case 'week':
-        startTime = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-        break;
-      case 'month':
-        startTime = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-        break;
-    }
+    for (const webhook of webhooksToRetry) {
+      try {
+        const startTime = Date.now();
 
-    const periodEvents = this.events.filter(event => event.timestamp >= startTime);
+        // Attempt to resend webhook
+        const response = await fetch(webhook.endpoint, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Webhook-Retry': 'true',
+            'X-Retry-Count': webhook.retryCount.toString()
+          },
+          body: JSON.stringify(webhook.payload)
+        });
 
-    // Group events by time intervals
-    const intervals = this.groupEventsByInterval(periodEvents, period);
+        const responseTime = Date.now() - startTime;
+        const success = response.ok;
 
-    // Calculate trends
-    const trends = this.calculateTrends(intervals);
+        // Record retry attempt
+        await this.recordWebhookAttempt(
+          webhook.webhookId,
+          webhook.endpoint,
+          webhook.payload,
+          success,
+          responseTime,
+          response.status,
+          success ? undefined : `Retry failed: ${response.statusText}`
+        );
 
-    return {
-      period,
-      intervals,
-      trends,
-      summary: this.getMetrics({ start: startTime, end: now })
-    };
-  }
+        webhook.retryCount++;
 
-  /**
-   * Check for alert conditions
-   */
-  private checkAlerts(event: WebhookEvent): void {
-    // Check processing time alert
-    if (event.processingTime && event.processingTime > this.alertThresholds.processingTime) {
-      this.sendAlert('slow_processing', {
-        event: event.event,
-        processingTime: event.processingTime,
-        threshold: this.alertThresholds.processingTime
-      });
-    }
+        if (success) {
+          // Remove from failed list
+          const index = this.failedWebhooks.indexOf(webhook);
+          if (index > -1) {
+            this.failedWebhooks.splice(index, 1);
+          }
+        }
 
-    // Check consecutive failures
-    if (event.status === 'failed') {
-      const recentEvents = this.events.slice(-this.alertThresholds.consecutiveFailures);
-      const allFailed = recentEvents.every(e => e.status === 'failed');
+        results.push({
+          webhookId: webhook.webhookId,
+          endpoint: webhook.endpoint,
+          success,
+          retryCount: webhook.retryCount,
+          responseTime
+        });
 
-      if (allFailed && recentEvents.length === this.alertThresholds.consecutiveFailures) {
-        this.sendAlert('consecutive_failures', {
-          count: this.alertThresholds.consecutiveFailures,
-          lastError: event.error
+        // Add delay between retries to avoid overwhelming the endpoint
+        await new Promise(resolve => setTimeout(resolve, 1000));
+
+      } catch (error) {
+        webhook.retryCount++;
+        results.push({
+          webhookId: webhook.webhookId,
+          endpoint: webhook.endpoint,
+          success: false,
+          retryCount: webhook.retryCount,
+          error: error.message
         });
       }
     }
-  }
 
-  /**
-   * Send alert notification
-   */
-  private sendAlert(type: string, data: any): void {
-    const alert = {
-      type,
-      timestamp: new Date(),
-      data,
-      severity: this.getAlertSeverity(type)
-    };
-
-    console.error('Webhook Alert:', alert);
-
-    // In production, send to alerting system:
-    // - Slack/Teams notification
-    // - Email alert
-    // - PagerDuty incident
-    // - Monitoring dashboard
-  }
-
-  /**
-   * Get alert severity
-   */
-  private getAlertSeverity(type: string): 'low' | 'medium' | 'high' | 'critical' {
-    const severityMap: Record<string, 'low' | 'medium' | 'high' | 'critical'> = {
-      slow_processing: 'medium',
-      consecutive_failures: 'high',
-      high_failure_rate: 'critical'
-    };
-
-    return severityMap[type] || 'medium';
-  }
-
-  /**
-   * Categorize error for analytics
-   */
-  private categorizeError(error: string): string {
-    if (error.includes('signature')) return 'signature_verification';
-    if (error.includes('timeout')) return 'timeout';
-    if (error.includes('network')) return 'network';
-    if (error.includes('database')) return 'database';
-    if (error.includes('validation')) return 'validation';
-    if (error.includes('authentication')) return 'authentication';
-    return 'unknown';
-  }
-
-  /**
-   * Log webhook event
-   */
-  private logEvent(event: WebhookEvent): void {
-    const logLevel = event.status === 'failed' ? 'error' : 'info';
-    const logData = {
-      webhookId: event.id,
-      event: event.event,
-      status: event.status,
-      processingTime: event.processingTime,
-      error: event.error
-    };
-
-    if (logLevel === 'error') {
-      console.error('Webhook Event:', logData);
-    } else {
-      console.log('Webhook Event:', logData);
-    }
-
-    // In production, send to logging service:
-    // - CloudWatch Logs
-    // - DataDog
-    // - Splunk
-    // - ELK Stack
-  }
-
-  /**
-   * Group events by time intervals
-   */
-  private groupEventsByInterval(events: WebhookEvent[], period: string): any[] {
-    const intervals: any[] = [];
-    const intervalMs = this.getIntervalMs(period);
-
-    if (events.length === 0) return intervals;
-
-    const startTime = events[0].timestamp.getTime();
-    const endTime = events[events.length - 1].timestamp.getTime();
-
-    for (let time = startTime; time <= endTime; time += intervalMs) {
-      const intervalStart = new Date(time);
-      const intervalEnd = new Date(time + intervalMs);
-
-      const intervalEvents = events.filter(event =>
-        event.timestamp >= intervalStart && event.timestamp < intervalEnd
-      );
-
-      intervals.push({
-        start: intervalStart,
-        end: intervalEnd,
-        total: intervalEvents.length,
-        successful: intervalEvents.filter(e => e.status === 'success').length,
-        failed: intervalEvents.filter(e => e.status === 'failed').length,
-        averageProcessingTime: this.calculateAverageProcessingTime(intervalEvents)
-      });
-    }
-
-    return intervals;
-  }
-
-  /**
-   * Get interval milliseconds based on period
-   */
-  private getIntervalMs(period: string): number {
-    switch (period) {
-      case 'hour': return 5 * 60 * 1000; // 5 minutes
-      case 'day': return 60 * 60 * 1000; // 1 hour
-      case 'week': return 24 * 60 * 60 * 1000; // 1 day
-      case 'month': return 24 * 60 * 60 * 1000; // 1 day
-      default: return 60 * 60 * 1000;
-    }
-  }
-
-  /**
-   * Calculate average processing time for events
-   */
-  private calculateAverageProcessingTime(events: WebhookEvent[]): number {
-    const processingTimes = events
-      .filter(e => e.processingTime)
-      .map(e => e.processingTime!);
-
-    return processingTimes.length > 0
-      ? processingTimes.reduce((sum, time) => sum + time, 0) / processingTimes.length
-      : 0;
-  }
-
-  /**
-   * Calculate trends from intervals
-   */
-  private calculateTrends(intervals: any[]): any {
-    if (intervals.length < 2) {
-      return {
-        volume: 'stable',
-        successRate: 'stable',
-        processingTime: 'stable'
-      };
-    }
-
-    const recent = intervals.slice(-5); // Last 5 intervals
-    const previous = intervals.slice(-10, -5); // Previous 5 intervals
-
-    const recentAvg = {
-      volume: recent.reduce((sum, i) => sum + i.total, 0) / recent.length,
-      successRate: recent.reduce((sum, i) => sum + (i.successful / (i.total || 1)), 0) / recent.length,
-      processingTime: recent.reduce((sum, i) => sum + i.averageProcessingTime, 0) / recent.length
-    };
-
-    const previousAvg = {
-      volume: previous.reduce((sum, i) => sum + i.total, 0) / previous.length,
-      successRate: previous.reduce((sum, i) => sum + (i.successful / (i.total || 1)), 0) / previous.length,
-      processingTime: previous.reduce((sum, i) => sum + i.averageProcessingTime, 0) / previous.length
-    };
+    // Clean up webhooks that have exceeded max retries
+    this.failedWebhooks = this.failedWebhooks.filter(webhook => webhook.retryCount < 3);
 
     return {
-      volume: this.getTrend(recentAvg.volume, previousAvg.volume),
-      successRate: this.getTrend(recentAvg.successRate, previousAvg.successRate),
-      processingTime: this.getTrend(previousAvg.processingTime, recentAvg.processingTime) // Inverted for processing time
+      attempted: results.length,
+      successful: results.filter(r => r.success).length,
+      failed: results.filter(r => !r.success).length,
+      results
     };
   }
 
   /**
-   * Get trend direction
+   * Monitor webhook health
    */
-  private getTrend(current: number, previous: number): 'up' | 'down' | 'stable' {
-    const threshold = 0.1; // 10% change threshold
-    const change = (current - previous) / (previous || 1);
+  static async monitorWebhookHealth(): Promise<any> {
+    const healthReport = {
+      overall: { healthy: true, issues: [] },
+      endpoints: {},
+      failedWebhooks: this.failedWebhooks.length,
+      recommendations: []
+    };
 
-    if (change > threshold) return 'up';
-    if (change < -threshold) return 'down';
-    return 'stable';
-  }
+    // Check each endpoint
+    this.webhookStats.forEach((stats, endpoint) => {
+      const successRate = stats.totalAttempts > 0 ?
+        (stats.successfulAttempts / stats.totalAttempts) * 100 : 100;
 
-  /**
-   * Clear old events (for memory management)
-   */
-  clearOldEvents(olderThan: Date): void {
-    this.events = this.events.filter(event => event.timestamp > olderThan);
-  }
+      const endpointHealth = {
+        healthy: true,
+        successRate,
+        averageResponseTime: stats.averageResponseTime,
+        totalAttempts: stats.totalAttempts,
+        recentFailures: 0,
+        issues: []
+      };
 
-  /**
-   * Export events for analysis
-   */
-  exportEvents(format: 'json' | 'csv' = 'json'): string {
-    if (format === 'csv') {
-      const headers = ['timestamp', 'id', 'event', 'status', 'processingTime', 'error'];
-      const rows = this.events.map(event => [
-        event.timestamp.toISOString(),
-        event.id,
-        event.event,
-        event.status,
-        event.processingTime || '',
-        event.error || ''
-      ]);
+      // Check success rate
+      if (successRate < 95) {
+        endpointHealth.healthy = false;
+        endpointHealth.issues.push(`Low success rate: ${successRate.toFixed(2)}%`);
+        healthReport.overall.healthy = false;
+        healthReport.overall.issues.push(`${endpoint}: Low success rate`);
+      }
 
-      return [headers, ...rows].map(row => row.join(',')).join('\n');
+      // Check response time
+      if (stats.averageResponseTime > 5000) { // 5 seconds
+        endpointHealth.issues.push(`Slow response time: ${stats.averageResponseTime}ms`);
+        healthReport.recommendations.push(`Optimize ${endpoint} response time`);
+      }
+
+      // Check for recent failures
+      const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
+      const recentFailures = this.failedWebhooks.filter(
+        webhook => webhook.endpoint === endpoint && webhook.timestamp > oneHourAgo
+      ).length;
+
+      endpointHealth.recentFailures = recentFailures;
+
+      if (recentFailures > 5) {
+        endpointHealth.healthy = false;
+        endpointHealth.issues.push(`${recentFailures} failures in the last hour`);
+        healthReport.overall.healthy = false;
+        healthReport.overall.issues.push(`${endpoint}: High failure rate`);
+      }
+
+      healthReport.endpoints[endpoint] = endpointHealth;
+    });
+
+    // Check for stuck webhooks
+    if (this.failedWebhooks.length > 50) {
+      healthReport.overall.healthy = false;
+      healthReport.overall.issues.push('Too many failed webhooks in queue');
+      healthReport.recommendations.push('Review webhook endpoints and clear failed queue');
     }
 
-    return JSON.stringify(this.events, null, 2);
+    return healthReport;
+  }
+
+  /**
+   * Get webhook delivery metrics
+   */
+  static getDeliveryMetrics(timeframe: string = '24h'): any {
+    const now = Date.now();
+    let timeframeMs: number;
+
+    switch (timeframe) {
+      case '1h':
+        timeframeMs = 60 * 60 * 1000;
+        break;
+      case '24h':
+        timeframeMs = 24 * 60 * 60 * 1000;
+        break;
+      case '7d':
+        timeframeMs = 7 * 24 * 60 * 60 * 1000;
+        break;
+      default:
+        timeframeMs = 24 * 60 * 60 * 1000;
+    }
+
+    const cutoffTime = new Date(now - timeframeMs);
+
+    // Filter failed webhooks by timeframe
+    const recentFailures = this.failedWebhooks.filter(
+      webhook => webhook.timestamp > cutoffTime
+    );
+
+    // Calculate metrics
+    let totalAttempts = 0;
+    let successfulAttempts = 0;
+    let totalResponseTime = 0;
+
+    this.webhookStats.forEach(stats => {
+      totalAttempts += stats.totalAttempts;
+      successfulAttempts += stats.successfulAttempts;
+      totalResponseTime += stats.averageResponseTime * stats.totalAttempts;
+    });
+
+    const averageResponseTime = totalAttempts > 0 ? totalResponseTime / totalAttempts : 0;
+    const successRate = totalAttempts > 0 ? (successfulAttempts / totalAttempts) * 100 : 100;
+
+    return {
+      timeframe,
+      totalAttempts,
+      successfulAttempts,
+      failedAttempts: totalAttempts - successfulAttempts,
+      successRate: Math.round(successRate * 100) / 100,
+      averageResponseTime: Math.round(averageResponseTime),
+      recentFailures: recentFailures.length,
+      endpointCount: this.webhookStats.size
+    };
+  }
+
+  /**
+   * Clear webhook statistics
+   */
+  static clearStats(): void {
+    this.webhookStats.clear();
+    this.failedWebhooks = [];
+    console.log('🗑️ Webhook statistics cleared');
+  }
+
+  /**
+   * Get webhook retry queue status
+   */
+  static getRetryQueueStatus(): any {
+    const queueByEndpoint = {};
+
+    this.failedWebhooks.forEach(webhook => {
+      if (!queueByEndpoint[webhook.endpoint]) {
+        queueByEndpoint[webhook.endpoint] = {
+          count: 0,
+          oldestFailure: webhook.timestamp,
+          newestFailure: webhook.timestamp
+        };
+      }
+
+      const endpointQueue = queueByEndpoint[webhook.endpoint];
+      endpointQueue.count++;
+
+      if (webhook.timestamp < endpointQueue.oldestFailure) {
+        endpointQueue.oldestFailure = webhook.timestamp;
+      }
+
+      if (webhook.timestamp > endpointQueue.newestFailure) {
+        endpointQueue.newestFailure = webhook.timestamp;
+      }
+    });
+
+    return {
+      totalFailed: this.failedWebhooks.length,
+      byEndpoint: queueByEndpoint,
+      retryable: this.getFailedWebhooks().length
+    };
+  }
+
+  /**
+   * Setup automatic retry scheduler
+   */
+  static setupRetryScheduler(intervalMinutes: number = 15): void {
+    setInterval(async () => {
+      const failedCount = this.failedWebhooks.length;
+
+      if (failedCount > 0) {
+        console.log(`🔄 Retrying ${failedCount} failed webhooks...`);
+
+        const results = await this.retryFailedWebhooks();
+
+        console.log(`✅ Webhook retry completed: ${results.successful}/${results.attempted} successful`);
+
+        if (results.failed > 0) {
+          console.warn(`⚠️ ${results.failed} webhooks still failing after retry`);
+        }
+      }
+    }, intervalMinutes * 60 * 1000);
+
+    console.log(`🔄 Webhook retry scheduler started (every ${intervalMinutes} minutes)`);
   }
 }
-
-// Export singleton instance
-export const webhookMonitor = new WebhookMonitor();

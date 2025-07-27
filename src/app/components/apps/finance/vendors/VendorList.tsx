@@ -46,6 +46,7 @@ import {
 
 import DashboardCard from '@/app/components/shared/DashboardCard';
 import VendorForm from './VendorForm';
+import { useToast } from '@/app/components/shared/ToastContext';
 
 // Define vendor data type
 interface VendorData {
@@ -81,70 +82,79 @@ const headCells: HeadCell[] = [
   { id: 'actions', label: 'Actions', numeric: false, sortable: false },
 ];
 
-// Mock API function - replace with actual API call
+// API function to fetch vendor data from MongoDB
 const fetchVendorData = async (page: number, limit: number, filters?: any) => {
-  // This would be replaced with an actual API call
-  return {
-    vendors: [
-      {
-        _id: '1',
-        name: 'Office Depot',
-        email: 'orders@officedepot.com',
-        phone: '+1-555-0123',
-        address: '123 Business St, City, State 12345',
-        website: 'https://www.officedepot.com',
-        contactPerson: 'John Smith',
-        notes: 'Preferred supplier for office supplies',
-        expenseCount: 15,
-        totalExpenses: 2450.75,
-        createdAt: '2023-01-15T00:00:00.000Z'
-      },
-      {
-        _id: '2',
-        name: 'Property Management Co',
-        email: 'rent@propmanage.com',
-        phone: '+1-555-0456',
-        address: '456 Real Estate Ave, City, State 12345',
-        contactPerson: 'Sarah Johnson',
-        notes: 'Monthly rent payments',
-        expenseCount: 12,
-        totalExpenses: 14400.00,
-        createdAt: '2023-01-01T00:00:00.000Z'
-      },
-      {
-        _id: '3',
-        name: 'Tech Solutions Inc',
-        email: 'support@techsolutions.com',
-        phone: '+1-555-0789',
-        website: 'https://www.techsolutions.com',
-        contactPerson: 'Mike Davis',
-        notes: 'IT services and software licenses',
-        expenseCount: 8,
-        ts: 3200.50,
-        createdAt: '2023-02-10T00:00:00.000Z'
-      },
-    ],
-    pagination: {
-      page,
-      limit,
-      total: 3,
-      pages: 1
-    },
-    summary: {
-      totalVendors: 3,
-      totalExpenses: 20051.25,
-      averageExpensePerVendor: 6683.75
+  try {
+    const params = new URLSearchParams({
+      page: page.toString(),
+      limit: limit.toString(),
+      ...(filters?.search && { search: filters.search }),
+      ...(filters?.orderBy && { orderBy: filters.orderBy }),
+      ...(filters?.order && { order: filters.order }),
+    });
+
+    const response = await fetch(`/api/finance/vendors?${params}`, {
+      credentials: 'include',
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to fetch vendors');
     }
-  };
+
+    const data = await response.json();
+    
+    if (!data.success) {
+      throw new Error(data.error?.message || 'Failed to fetch vendors');
+    }
+
+    const vendors = data.data?.vendors || [];
+    const pagination = data.data?.pagination || { page, limit, total: 0, pages: 0 };
+    
+    // Calculate summary from vendor data
+    const totalVendors = vendors.length;
+    const totalExpenses = vendors.reduce((sum: number, vendor: any) => sum + (vendor.totalExpenses || 0), 0);
+    const averageExpensePerVendor = totalVendors > 0 ? totalExpenses / totalVendors : 0;
+
+    return {
+      vendors,
+      pagination,
+      summary: {
+        totalVendors: pagination.total,
+        totalExpenses,
+        averageExpensePerVendor
+      }
+    };
+  } catch (error) {
+    console.error('Error fetching vendor data:', error);
+    return {
+      vendors: [],
+      pagination: { page, limit, total: 0, pages: 0 },
+      summary: { totalVendors: 0, totalExpenses: 0, averageExpensePerVendor: 0 }
+    };
+  }
 };
 
-// Mock delete function - replace with actual API call
+// API function to delete vendor
 const deleteVendor = async (id: string) => {
-  console.log(`Deleting vendor with ID: ${id}`);
+  const response = await fetch(`/api/finance/vendors/${id}`, {
+    method: 'DELETE',
+    credentials: 'include',
+  });
+  
+  if (!response.ok) {
+    throw new Error('Failed to delete vendor');
+  }
+  
+  const result = await response.json();
+  if (!result.success) {
+    throw new Error(result.error?.message || 'Failed to delete vendor');
+  }
+  
   return { success: true };
 };
 
 const VendorList = () => {
+  const { showToast } = useToast();
   // State for vendor data
   const [vendors, setVendors] = useState<VendorData[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
@@ -269,11 +279,21 @@ const VendorList = () => {
             ? (prev.totalExpenses - (vendorToDelete.totalExpenses || 0)) / (prev.totalVendors - 1)
             : 0
         }));
+        
+        showToast({
+          message: 'Vendor deleted successfully!',
+          severity: 'success'
+        });
       } else {
         setError('Failed to delete vendor. Please try again.');
       }
     } catch (err) {
-      setError('An error occurred while deleting the vendor.');
+      const errorMessage = err instanceof Error ? err.message : 'An error occurred while deleting the vendor.';
+      setError(errorMessage);
+      showToast({
+        message: errorMessage,
+        severity: 'error'
+      });
       console.error('Error deleting vendor:', err);
     }
   };

@@ -8,6 +8,8 @@ import Breadcrumb from '@/app/(DashboardLayout)/layout/shared/breadcrumb/Breadcr
 import BlankCard from '@/app/components/shared/BlankCard';
 import SimpleExportPanel, { ExportType } from '@/app/components/apps/ecommerce/bulkExport/SimpleExportPanel';
 import ExportHistoryTable from '@/app/components/apps/ecommerce/bulkExport/ExportHistoryTable';
+import { FeatureGateWrapper } from '@/components/subscription';
+import { FEATURES } from '@/hooks/useFeatureAccess';
 
 const BCrumb = [
   {
@@ -69,7 +71,7 @@ const BulkExportPage = () => {
       setLoading(true);
       const response = await fetch('/api/bulk-export');
       const result = await response.json();
-      
+
       if (result.success) {
         // Transform the API response to match our interface
         const transformedHistory = result.data.map((job: any) => ({
@@ -105,10 +107,10 @@ const BulkExportPage = () => {
 
   const handleExport = async (options: SimpleExportOptions) => {
     console.log('Starting export with options:', options);
-    
+
     try {
       setLoading(true);
-      
+
       // Create export job via API
       const response = await fetch('/api/bulk-export', {
         method: 'POST',
@@ -125,24 +127,24 @@ const BulkExportPage = () => {
           category: options.category,
         }),
       });
-      
+
       const result = await response.json();
-      
+
       if (result.success) {
         setSuccess('Export job created successfully!');
         setError(null);
-        
+
         // Switch to history tab to show progress
         setActiveTab('history');
-        
+
         // Refresh the export history to show the new job
         await fetchExportHistory();
-        
+
         // Poll for updates every 2 seconds for 30 seconds
         const pollInterval = setInterval(async () => {
           await fetchExportHistory();
         }, 2000);
-        
+
         // Stop polling after 30 seconds
         setTimeout(() => {
           clearInterval(pollInterval);
@@ -151,7 +153,7 @@ const BulkExportPage = () => {
         setError(result.error || 'Failed to create export job');
         console.error('Export creation failed:', result.error);
       }
-      
+
     } catch (error) {
       console.error('Export failed:', error);
       setError('Failed to create export job. Please try again.');
@@ -166,14 +168,14 @@ const BulkExportPage = () => {
       setError('Export is not ready for download yet.');
       return;
     }
-    
+
     // Add to downloading set
     setDownloadingJobs(prev => new Set(prev).add(job.id));
     setError(null); // Clear any previous errors
-    
+
     try {
       console.log(`Downloading ${job.fileName}...`);
-      
+
       // Try multiple download methods for better browser compatibility
       const downloadMethods = [
         // Method 1: Use the direct download URL (static file serving)
@@ -186,15 +188,15 @@ const BulkExportPage = () => {
           link.click();
           document.body.removeChild(link);
         },
-        
+
         // Method 2: Fetch and blob download
         async () => {
           const response = await fetch(job.downloadUrl!);
           if (!response.ok) throw new Error(`HTTP ${response.status}`);
-          
+
           const blob = await response.blob();
           const url = window.URL.createObjectURL(blob);
-          
+
           const link = document.createElement('a');
           link.href = url;
           link.download = job.fileName;
@@ -202,19 +204,19 @@ const BulkExportPage = () => {
           document.body.appendChild(link);
           link.click();
           document.body.removeChild(link);
-          
+
           // Clean up
           setTimeout(() => window.URL.revokeObjectURL(url), 100);
         },
-        
+
         // Method 3: API endpoint fallback
         async () => {
           const response = await fetch(`/api/bulk-export/download/${job.id}`);
           if (!response.ok) throw new Error(`HTTP ${response.status}`);
-          
+
           const blob = await response.blob();
           const url = window.URL.createObjectURL(blob);
-          
+
           const link = document.createElement('a');
           link.href = url;
           link.download = job.fileName;
@@ -222,11 +224,11 @@ const BulkExportPage = () => {
           document.body.appendChild(link);
           link.click();
           document.body.removeChild(link);
-          
+
           setTimeout(() => window.URL.revokeObjectURL(url), 100);
         }
       ];
-      
+
       // Try methods in order until one succeeds
       for (let i = 0; i < downloadMethods.length; i++) {
         try {
@@ -241,7 +243,7 @@ const BulkExportPage = () => {
           }
         }
       }
-      
+
     } catch (error) {
       console.error('All download methods failed:', error);
       setError(`Failed to download ${job.fileName}: ${error instanceof Error ? error.message : 'Unknown error'}`);
@@ -271,9 +273,17 @@ const BulkExportPage = () => {
   return (
     <PageContainer title="Bulk Export" description="Export products to CSV, Excel, or JSON files">
       <Breadcrumb title="Bulk Export" items={BCrumb} />
-      
-      {/* Export Statistics */}
-      <Grid container spacing={3} mb={3}>
+
+      <FeatureGateWrapper
+        feature={FEATURES.BULK_OPERATIONS}
+        upgradePromptProps={{
+          title: "Bulk Export Requires Premium",
+          description: "Bulk export functionality is available with our premium plans. Upgrade to export your data in CSV, Excel, or JSON formats.",
+          suggestedPlan: "Professional"
+        }}
+      >
+        {/* Export Statistics */}
+        <Grid container spacing={3} mb={3}>
         <Grid item xs={12} sm={6} md={3}>
           <Card>
             <CardContent>
@@ -291,7 +301,7 @@ const BulkExportPage = () => {
             </CardContent>
           </Card>
         </Grid>
-        
+
         <Grid item xs={12} sm={6} md={3}>
           <Card>
             <CardContent>
@@ -309,7 +319,7 @@ const BulkExportPage = () => {
             </CardContent>
           </Card>
         </Grid>
-        
+
         <Grid item xs={12} sm={6} md={3}>
           <Card>
             <CardContent>
@@ -327,7 +337,7 @@ const BulkExportPage = () => {
             </CardContent>
           </Card>
         </Grid>
-        
+
         <Grid item xs={12} sm={6} md={3}>
           <Card>
             <CardContent>
@@ -377,14 +387,14 @@ const BulkExportPage = () => {
             <Typography variant="body2" color="text.secondary" mb={3}>
               Choose what data to export and download in your preferred format.
             </Typography>
-            
+
             <Alert severity="info" sx={{ mb: 3 }}>
               <Typography variant="body2">
-                <strong>Export Tips:</strong> Large exports may take several minutes to process. 
+                <strong>Export Tips:</strong> Large exports may take several minutes to process.
                 You can continue using the application while exports are running in the background.
               </Typography>
             </Alert>
-            
+
             <SimpleExportPanel onExport={handleExport} />
           </CardContent>
         </BlankCard>
@@ -394,14 +404,14 @@ const BulkExportPage = () => {
             <Box display="flex" alignItems="center" justifyContent="space-between" mb={3}>
               <Typography variant="h5">Export History</Typography>
               <Box>
-                <Chip 
-                  label={`${stats.total} total exports`} 
-                  color="primary" 
-                  variant="outlined" 
+                <Chip
+                  label={`${stats.total} total exports`}
+                  color="primary"
+                  variant="outlined"
                 />
               </Box>
             </Box>
-            
+
             <ExportHistoryTable
               exportHistory={exportHistory}
               loading={loading}
@@ -411,7 +421,7 @@ const BulkExportPage = () => {
           </CardContent>
         </BlankCard>
       )}
-      
+
       {/* Error/Success Snackbars */}
       <Snackbar
         open={!!error}
@@ -422,7 +432,7 @@ const BulkExportPage = () => {
           {error}
         </Alert>
       </Snackbar>
-      
+
       <Snackbar
         open={!!success}
         autoHideDuration={4000}
@@ -432,6 +442,7 @@ const BulkExportPage = () => {
           {success}
         </Alert>
       </Snackbar>
+      </FeatureGateWrapper>
     </PageContainer>
   );
 };

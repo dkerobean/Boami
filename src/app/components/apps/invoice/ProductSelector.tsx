@@ -24,6 +24,7 @@ import {
   InputLabel,
   Select,
   MenuItem,
+  CircularProgress,
 } from "@mui/material";
 import {
   IconSearch,
@@ -35,6 +36,8 @@ import {
 } from "@tabler/icons-react";
 import { ProductType } from "@/app/(DashboardLayout)/types/apps/eCommerce";
 import { InvoiceItem } from "@/app/(DashboardLayout)/types/apps/invoice";
+import axios from 'axios';
+import toast from 'react-hot-toast';
 
 interface ProductSelectorProps {
   open: boolean;
@@ -43,73 +46,6 @@ interface ProductSelectorProps {
   selectedProducts?: InvoiceItem[];
 }
 
-// Mock product data - in real implementation, this would come from your product API
-const mockProducts: ProductType[] = [
-  {
-    id: "1",
-    title: "Premium Wireless Headphones",
-    price: 299.99,
-    discount: 10,
-    salesPrice: 269.99,
-    category: ["Electronics", "Audio"],
-    stock: true,
-    qty: 50,
-    rating: 4.5,
-    related: false,
-    gender: "Unisex",
-    photo: "/images/products/headphones.jpg",
-    colors: ["Black", "White", "Silver"],
-    created: new Date(),
-  },
-  {
-    id: "2", 
-    title: "Smart Fitness Watch",
-    price: 199.99,
-    discount: 15,
-    salesPrice: 169.99,
-    category: ["Electronics", "Wearables"],
-    stock: true,
-    qty: 30,
-    rating: 4.3,
-    related: false,
-    gender: "Unisex",
-    photo: "/images/products/watch.jpg",
-    colors: ["Black", "Blue", "Rose Gold"],
-    created: new Date(),
-  },
-  {
-    id: "3",
-    title: "Organic Cotton T-Shirt",
-    price: 29.99,
-    discount: 0,
-    salesPrice: 29.99,
-    category: ["Clothing", "Shirts"],
-    stock: true,
-    qty: 100,
-    rating: 4.7,
-    related: false,
-    gender: "Unisex",
-    photo: "/images/products/tshirt.jpg",
-    colors: ["White", "Black", "Navy", "Grey"],
-    created: new Date(),
-  },
-  {
-    id: "4",
-    title: "Bluetooth Speaker",
-    price: 79.99,
-    discount: 20,
-    salesPrice: 63.99,
-    category: ["Electronics", "Audio"],
-    stock: false,
-    qty: 0,
-    rating: 4.2,
-    related: false,
-    gender: "Unisex",
-    photo: "/images/products/speaker.jpg",
-    colors: ["Black", "Red", "Blue"],
-    created: new Date(),
-  },
-];
 
 const ProductSelector: React.FC<ProductSelectorProps> = ({
   open,
@@ -118,46 +54,72 @@ const ProductSelector: React.FC<ProductSelectorProps> = ({
   selectedProducts = [],
 }) => {
   const [searchTerm, setSearchTerm] = useState("");
-  const [filteredProducts, setFilteredProducts] = useState<ProductType[]>([]);
+  const [products, setProducts] = useState<ProductType[]>([]);
+  const [categories, setCategories] = useState<string[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string>("All");
   const [stockFilter, setStockFilter] = useState<string>("All");
+  const [loading, setLoading] = useState(false);
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
 
-  // Get unique categories
-  const categories = ["All", ...Array.from(new Set(mockProducts.flatMap(p => p.category)))];
+  // Fetch products from API
+  const fetchProducts = async (resetProducts = false) => {
+    try {
+      setLoading(true);
+      const params = new URLSearchParams({
+        search: searchTerm,
+        category: selectedCategory,
+        stockStatus: stockFilter,
+        page: resetProducts ? '1' : page.toString(),
+        limit: '20'
+      });
 
+      const response = await axios.get(`/api/products?${params}`);
+      
+      if (response.data.success) {
+        const newProducts = response.data.data || [];
+        if (resetProducts) {
+          setProducts(newProducts);
+          setPage(1);
+        } else {
+          setProducts(prev => [...prev, ...newProducts]);
+          setPage(prev => prev + 1);
+        }
+        
+        // Set hasMore based on whether we got a full page of results
+        setHasMore(newProducts.length >= 20);
+        
+        // Set categories, ensuring "All" is not in the list
+        const cats = response.data.categories || [];
+        setCategories(cats.filter((cat: string) => cat !== "All"));
+      } else {
+        toast.error('Failed to fetch products');
+      }
+    } catch (error: any) {
+      toast.error('Error fetching products');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Debounce search term
   useEffect(() => {
-    let filtered = mockProducts;
+    const timer = setTimeout(() => {
+      if (open) {
+        setPage(1);
+        setHasMore(true);
+        fetchProducts(true);
+      }
+    }, 300);
 
-    // Filter by search term
-    if (searchTerm) {
-      filtered = filtered.filter(product =>
-        product.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        product.id.toLowerCase().includes(searchTerm.toLowerCase())
-      );
-    }
-
-    // Filter by category
-    if (selectedCategory !== "All") {
-      filtered = filtered.filter(product =>
-        product.category.includes(selectedCategory)
-      );
-    }
-
-    // Filter by stock status
-    if (stockFilter === "In Stock") {
-      filtered = filtered.filter(product => product.stock && product.qty > 0);
-    } else if (stockFilter === "Out of Stock") {
-      filtered = filtered.filter(product => !product.stock || product.qty === 0);
-    }
-
-    setFilteredProducts(filtered);
-  }, [searchTerm, selectedCategory, stockFilter]);
+    return () => clearTimeout(timer);
+  }, [open, searchTerm, selectedCategory, stockFilter]);
 
   const handleProductSelect = (product: ProductType) => {
     const invoiceItem: InvoiceItem = {
       productId: product.id,
       itemName: product.title,
-      sku: `SKU-${product.id}`,
+      sku: product.sku || `SKU-${product.id}`,
       description: `${product.title} - ${product.category.join(", ")}`,
       unitPrice: product.salesPrice || product.price,
       units: 1,
@@ -166,6 +128,7 @@ const ProductSelector: React.FC<ProductSelectorProps> = ({
     };
 
     onProductSelect(invoiceItem);
+    toast.success(`${product.title} added to invoice`);
   };
 
   const isProductSelected = (productId: string) => {
@@ -176,6 +139,9 @@ const ProductSelector: React.FC<ProductSelectorProps> = ({
     setSearchTerm("");
     setSelectedCategory("All");
     setStockFilter("All");
+    setProducts([]);
+    setPage(1);
+    setHasMore(true);
     onClose();
   };
 
@@ -183,10 +149,15 @@ const ProductSelector: React.FC<ProductSelectorProps> = ({
     <Dialog
       open={open}
       onClose={handleClose}
-      maxWidth="lg"
+      maxWidth="xl"
       fullWidth
       PaperProps={{
-        sx: { height: "80vh" }
+        sx: { 
+          height: "90vh",
+          maxHeight: "90vh",
+          width: "95vw",
+          maxWidth: "1400px"
+        }
       }}
     >
       <DialogTitle>
@@ -203,99 +174,128 @@ const ProductSelector: React.FC<ProductSelectorProps> = ({
 
       <DialogContent>
         {/* Search and Filters */}
-        <Box mb={3}>
-          <Grid container spacing={2} alignItems="center">
-            <Grid item xs={12} md={6}>
-              <TextField
-                fullWidth
-                placeholder="Search products by name or SKU..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                InputProps={{
-                  startAdornment: (
-                    <InputAdornment position="start">
-                      <IconSearch size={20} />
-                    </InputAdornment>
-                  ),
-                }}
-              />
-            </Grid>
-            <Grid item xs={12} md={3}>
-              <FormControl fullWidth>
-                <InputLabel>Category</InputLabel>
-                <Select
-                  value={selectedCategory}
-                  label="Category"
-                  onChange={(e) => setSelectedCategory(e.target.value)}
-                >
-                  {categories.map((category) => (
-                    <MenuItem key={category} value={category}>
-                      {category}
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-            </Grid>
-            <Grid item xs={12} md={3}>
-              <FormControl fullWidth>
-                <InputLabel>Stock Status</InputLabel>
-                <Select
-                  value={stockFilter}
-                  label="Stock Status"
-                  onChange={(e) => setStockFilter(e.target.value)}
-                >
-                  <MenuItem value="All">All</MenuItem>
-                  <MenuItem value="In Stock">In Stock</MenuItem>
-                  <MenuItem value="Out of Stock">Out of Stock</MenuItem>
-                </Select>
-              </FormControl>
-            </Grid>
-          </Grid>
-        </Box>
+        <Stack spacing={2} mb={3}>
+          <TextField
+            fullWidth
+            placeholder="Search products by name or SKU..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <IconSearch size={20} />
+                </InputAdornment>
+              ),
+            }}
+          />
+          <Stack direction="row" spacing={2}>
+            <FormControl sx={{ minWidth: 120 }}>
+              <InputLabel size="small">Category</InputLabel>
+              <Select
+                size="small"
+                value={selectedCategory}
+                label="Category"
+                onChange={(e) => setSelectedCategory(e.target.value)}
+              >
+                <MenuItem value="All">All</MenuItem>
+                {categories.filter(cat => cat !== "All").map((category) => (
+                  <MenuItem key={category} value={category}>
+                    {category}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+            <FormControl sx={{ minWidth: 120 }}>
+              <InputLabel size="small">Stock Status</InputLabel>
+              <Select
+                size="small"
+                value={stockFilter}
+                label="Stock Status"
+                onChange={(e) => setStockFilter(e.target.value)}
+              >
+                <MenuItem value="All">All</MenuItem>
+                <MenuItem value="In Stock">In Stock</MenuItem>
+                <MenuItem value="Out of Stock">Out of Stock</MenuItem>
+              </Select>
+            </FormControl>
+          </Stack>
+        </Stack>
 
         {/* Products Grid */}
-        <Box sx={{ height: "400px", overflow: "auto" }}>
-          {filteredProducts.length > 0 ? (
-            <Grid container spacing={2}>
-              {filteredProducts.map((product) => (
-                <Grid item xs={12} sm={6} md={4} key={product.id}>
+        <Box sx={{ height: "calc(90vh - 200px)", overflow: "auto", pr: 1 }}>
+          {loading && products.length === 0 ? (
+            <Box display="flex" justifyContent="center" alignItems="center" height="100%">
+              <CircularProgress />
+            </Box>
+          ) : products.length > 0 ? (
+            <Grid container spacing={3}>
+              {products.map((product) => (
+                <Grid item xs={12} sm={6} md={4} lg={3} key={product.id}>
                   <Card
                     sx={{
-                      height: "100%",
+                      height: "320px",
                       cursor: "pointer",
                       border: isProductSelected(product.id) ? "2px solid" : "1px solid",
                       borderColor: isProductSelected(product.id) ? "success.main" : "divider",
                       "&:hover": {
-                        boxShadow: 3,
+                        boxShadow: 4,
                         transform: "translateY(-2px)",
                       },
-                      transition: "all 0.2s ease-in-out",
+                      transition: "all 0.3s ease-in-out",
+                      display: "flex",
+                      flexDirection: "column",
                     }}
                     onClick={() => !isProductSelected(product.id) && handleProductSelect(product)}
                   >
-                    <Box position="relative">
+                    <Box position="relative" sx={{ height: "180px", overflow: "hidden" }}>
                       {product.photo ? (
                         <CardMedia
                           component="img"
-                          height="140"
+                          height="180"
                           image={product.photo}
                           alt={product.title}
-                          sx={{ objectFit: "cover" }}
+                          sx={{ 
+                            objectFit: "cover",
+                            backgroundColor: "grey.50",
+                            p: 0.5,
+                            borderRadius: 1
+                          }}
                         />
                       ) : (
                         <Box
                           sx={{
-                            height: 140,
-                            bgcolor: "grey.100",
+                            height: "100%",
+                            bgcolor: "grey.50",
                             display: "flex",
                             alignItems: "center",
                             justifyContent: "center",
                           }}
                         >
-                          <IconPackage size={48} color="grey" />
+                          <IconPackage size={40} color="#999" />
                         </Box>
                       )}
                       
+                      {/* Selected Badge */}
+                      {isProductSelected(product.id) && (
+                        <Box
+                          sx={{
+                            position: "absolute",
+                            top: 4,
+                            right: 4,
+                            bgcolor: "success.main",
+                            color: "white",
+                            borderRadius: "50%",
+                            width: 20,
+                            height: 20,
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                          }}
+                        >
+                          <IconCheck size={14} />
+                        </Box>
+                      )}
+
                       {/* Stock Status Badge */}
                       <Chip
                         size="small"
@@ -303,115 +303,112 @@ const ProductSelector: React.FC<ProductSelectorProps> = ({
                         color={product.stock && product.qty > 0 ? "success" : "error"}
                         sx={{
                           position: "absolute",
-                          top: 8,
-                          right: 8,
+                          bottom: 4,
+                          right: 4,
+                          fontSize: "0.6rem",
+                          height: "18px",
                         }}
                       />
-
-                      {/* Selected Badge */}
-                      {isProductSelected(product.id) && (
-                        <Box
-                          sx={{
-                            position: "absolute",
-                            top: 8,
-                            left: 8,
-                            bgcolor: "success.main",
-                            color: "white",
-                            borderRadius: "50%",
-                            width: 24,
-                            height: 24,
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                          }}
-                        >
-                          <IconCheck size={16} />
-                        </Box>
-                      )}
                     </Box>
 
-                    <CardContent>
-                      <Typography variant="h6" fontSize="14px" gutterBottom noWrap>
+                    <CardContent sx={{ p: 2, flexGrow: 1, display: "flex", flexDirection: "column" }}>
+                      <Typography 
+                        variant="subtitle2" 
+                        fontWeight="bold" 
+                        gutterBottom 
+                        noWrap
+                        title={product.title}
+                      >
                         {product.title}
                       </Typography>
                       
-                      <Typography variant="body2" color="text.secondary" gutterBottom>
-                        SKU: SKU-{product.id}
+                      <Typography variant="caption" color="text.secondary" gutterBottom>
+                        {product.sku || `SKU-${product.id}`}
                       </Typography>
 
-                      <Stack direction="row" flexWrap="wrap" gap={0.5} mb={1}>
-                        {product.category.slice(0, 2).map((cat) => (
-                          <Chip
-                            key={cat}
-                            label={cat}
-                            size="small"
-                            variant="outlined"
-                            sx={{ fontSize: "0.65rem" }}
-                          />
-                        ))}
-                      </Stack>
+                      <Chip
+                        label={product.category[0] || "General"}
+                        size="small"
+                        variant="outlined"
+                        sx={{ fontSize: "0.6rem", height: "20px", alignSelf: "flex-start", mb: 1 }}
+                      />
 
-                      <Box display="flex" justifyContent="space-between" alignItems="center">
-                        <Box>
-                          {product.discount > 0 ? (
-                            <Stack direction="row" alignItems="center" spacing={1}>
-                              <Typography
-                                variant="body2"
-                                color="text.secondary"
-                                sx={{ textDecoration: "line-through" }}
-                              >
+                      <Box sx={{ mt: "auto" }}>
+                        <Stack direction="row" justifyContent="space-between" alignItems="center" mb={1}>
+                          <Box>
+                            {product.discount > 0 ? (
+                              <Stack direction="column">
+                                <Typography
+                                  variant="caption"
+                                  color="text.secondary"
+                                  sx={{ textDecoration: "line-through", lineHeight: 1 }}
+                                >
+                                  ${product.price.toFixed(2)}
+                                </Typography>
+                                <Typography variant="body2" fontWeight="bold" color="primary.main">
+                                  ${product.salesPrice.toFixed(2)}
+                                </Typography>
+                              </Stack>
+                            ) : (
+                              <Typography variant="body2" fontWeight="bold" color="primary.main">
                                 ${product.price.toFixed(2)}
                               </Typography>
-                              <Typography variant="h6" color="primary.main">
-                                ${product.salesPrice.toFixed(2)}
-                              </Typography>
-                            </Stack>
-                          ) : (
-                            <Typography variant="h6" color="primary.main">
-                              ${product.price.toFixed(2)}
-                            </Typography>
-                          )}
-                        </Box>
+                            )}
+                          </Box>
 
-                        <Typography variant="body2" color="text.secondary">
-                          Qty: {product.qty}
-                        </Typography>
+                          <Typography variant="caption" color="text.secondary">
+                            Qty: {product.qty}
+                          </Typography>
+                        </Stack>
+
+                        {!isProductSelected(product.id) ? (
+                          <Button
+                            fullWidth
+                            variant="contained"
+                            size="small"
+                            startIcon={<IconShoppingCart size={16} />}
+                            disabled={!product.stock || product.qty === 0}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleProductSelect(product);
+                            }}
+                            sx={{ fontSize: "0.75rem", py: 0.5 }}
+                          >
+                            Add to Invoice
+                          </Button>
+                        ) : (
+                          <Button
+                            fullWidth
+                            variant="outlined"
+                            size="small"
+                            color="success"
+                            startIcon={<IconCheck size={16} />}
+                            disabled
+                            sx={{ fontSize: "0.75rem", py: 0.5 }}
+                          >
+                            Added
+                          </Button>
+                        )}
                       </Box>
-
-                      {!isProductSelected(product.id) && (
-                        <Button
-                          fullWidth
-                          variant="contained"
-                          size="small"
-                          startIcon={<IconShoppingCart />}
-                          sx={{ mt: 1 }}
-                          disabled={!product.stock || product.qty === 0}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleProductSelect(product);
-                          }}
-                        >
-                          Add to Invoice
-                        </Button>
-                      )}
-
-                      {isProductSelected(product.id) && (
-                        <Button
-                          fullWidth
-                          variant="outlined"
-                          size="small"
-                          color="success"
-                          startIcon={<IconCheck />}
-                          sx={{ mt: 1 }}
-                          disabled
-                        >
-                          Added to Invoice
-                        </Button>
-                      )}
                     </CardContent>
                   </Card>
                 </Grid>
               ))}
+              
+              {/* Load More Button */}
+              {hasMore && !loading && (
+                <Grid item xs={12}>
+                  <Box display="flex" justifyContent="center" mt={2}>
+                    <Button
+                      variant="outlined"
+                      onClick={() => fetchProducts(false)}
+                      disabled={loading}
+                    >
+                      Load More Products
+                    </Button>
+                  </Box>
+                </Grid>
+              )}
             </Grid>
           ) : (
             <Box

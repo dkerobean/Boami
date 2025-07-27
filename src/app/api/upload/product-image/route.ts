@@ -22,11 +22,30 @@ const MAX_FILE_SIZE = 5 * 1024 * 1024;
  * Returns permanent URL for uploaded image
  */
 export async function POST(request: NextRequest) {
+  console.log('🔧 Upload API called:', {
+    method: request.method,
+    url: request.url,
+    headers: Object.fromEntries(request.headers.entries())
+  });
+
   try {
+    console.log('🔧 Parsing FormData...');
     const formData = await request.formData();
+    console.log('🔧 FormData entries:', Array.from(formData.entries()).map(([key, value]) => [
+      key, 
+      value instanceof File ? `File: ${value.name} (${value.size} bytes, ${value.type})` : value
+    ]));
+    
     const file = formData.get('file') as File;
+    console.log('🔧 Extracted file:', {
+      hasFile: !!file,
+      name: file?.name,
+      size: file?.size,
+      type: file?.type
+    });
 
     if (!file) {
+      console.error('🔧 No file provided in FormData');
       return NextResponse.json({
         success: false,
         error: 'No file provided'
@@ -60,18 +79,28 @@ export async function POST(request: NextRequest) {
     const filePath = path.join(uploadDir, uniqueFilename);
 
     // Ensure upload directory exists
+    console.log('🔧 Checking upload directory:', uploadDir);
     if (!existsSync(uploadDir)) {
+      console.log('🔧 Upload directory does not exist, creating...');
       await mkdir(uploadDir, { recursive: true });
+      console.log('🔧 Upload directory created successfully');
+    } else {
+      console.log('🔧 Upload directory already exists');
     }
 
     // Convert file to buffer and save
+    console.log('🔧 Converting file to buffer...');
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
+    console.log('🔧 Buffer created, size:', buffer.length);
     
+    console.log('🔧 Writing file to:', filePath);
     await writeFile(filePath, buffer);
+    console.log('🔧 File written successfully');
 
     // Return the public URL
     const publicUrl = `/uploads/products/${uniqueFilename}`;
+    console.log('🔧 Generated public URL:', publicUrl);
 
     return NextResponse.json({
       success: true,
@@ -86,10 +115,15 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('Upload error:', error);
+    console.error('🔧 Upload error occurred:', {
+      error: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined,
+      type: error?.constructor?.name
+    });
     return NextResponse.json({
       success: false,
-      error: 'Failed to upload file'
+      error: 'Failed to upload file',
+      details: error instanceof Error ? error.message : String(error)
     }, { status: 500 });
   }
 }

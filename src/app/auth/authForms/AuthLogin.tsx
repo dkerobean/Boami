@@ -21,6 +21,7 @@ import CustomCheckbox from "@/app/components/forms/theme-elements/CustomCheckbox
 import CustomTextField from "@/app/components/forms/theme-elements/CustomTextField";
 import CustomFormLabel from "@/app/components/forms/theme-elements/CustomFormLabel";
 import AuthSocialButtons from "./AuthSocialButtons";
+import { useAuthContext } from "@/app/context/AuthContext";
 
 const validationSchema = yup.object({
   email: yup
@@ -47,6 +48,7 @@ interface LoginFormValues {
 
 const AuthLogin = ({ title, subtitle, subtext }: loginType) => {
   const router = useRouter();
+  const { login } = useAuthContext();
   const [isLoading, setIsLoading] = useState(false);
   const [verificationRequired, setVerificationRequired] = useState<string | null>(null);
 
@@ -55,29 +57,32 @@ const AuthLogin = ({ title, subtitle, subtext }: loginType) => {
     setVerificationRequired(null);
 
     try {
-      const response = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        credentials: 'include',
-        body: JSON.stringify(values),
+      const result = await login({
+        email: values.email,
+        password: values.password,
       });
 
-      const data = await response.json();
-
-      if (data.success) {
+      if (result.success) {
         toast.success('Login successful! Welcome back!');
 
-        // Force a page reload to ensure auth context is updated
+        // Check for returnUrl parameter or use default dashboard
+        const urlParams = new URLSearchParams(window.location.search);
+        const returnUrl = urlParams.get('returnUrl') || '/dashboards/modern';
+
+        console.log('Redirecting to:', returnUrl);
+
+        // Use Next.js router for navigation
         setTimeout(() => {
-          window.location.href = '/dashboards/ecommerce';
-        }, 1500);
-      } else if (data.requiresVerification) {
-        setVerificationRequired(data.email);
-        toast.error('Please verify your email address to continue.');
+          router.push(returnUrl);
+        }, 500);
       } else {
-        toast.error(data.error || 'Login failed. Please check your credentials.');
+        // Check if it's a verification error
+        if (result.message?.includes('verify') || result.message?.includes('verification')) {
+          setVerificationRequired(values.email);
+          toast.error('Please verify your email address to continue.');
+        } else {
+          toast.error(result.message || 'Login failed. Please check your credentials.');
+        }
       }
     } catch (error) {
       console.error('Login error:', error);

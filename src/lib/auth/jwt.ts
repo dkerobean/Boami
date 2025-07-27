@@ -259,40 +259,74 @@ export class JWTManager {
   }
 
   /**
-   * Extracts user information from current request cookies
+   * Extracts user information from current request cookies (server-only)
    * @returns IJWTPayload | null - User info or null if not authenticated
    */
   static getCurrentUser(): IJWTPayload | null {
-    const accessToken = this.getAccessTokenFromCookies();
-    if (!accessToken) {
+    // This method should only be called in server components
+    if (typeof window !== 'undefined') {
+      console.warn('JWTManager.getCurrentUser() should not be called on the client side. Use JWTClientManager instead.');
       return null;
     }
-    return this.verifyAccessToken(accessToken);
+    
+    console.log('🔐 [JWT] Getting current user...');
+    const accessToken = this.getAccessTokenFromCookies();
+    console.log('🍪 [JWT] Access token from cookies:', {
+      hasToken: !!accessToken,
+      tokenLength: accessToken?.length,
+      tokenStart: accessToken?.substring(0, 20) + '...'
+    });
+    
+    if (!accessToken) {
+      console.log('❌ [JWT] No access token found in cookies');
+      return null;
+    }
+    
+    const user = this.verifyAccessToken(accessToken);
+    console.log('✅ [JWT] Token verification result:', {
+      hasUser: !!user,
+      userEmail: user?.email,
+      userId: user?.userId
+    });
+    
+    return user;
   }
 
   /**
-   * Checks if current user is authenticated
+   * Checks if current user is authenticated (server-only)
    * @returns boolean - Whether user is authenticated
    */
   static isAuthenticated(): boolean {
+    if (typeof window !== 'undefined') {
+      console.warn('JWTManager.isAuthenticated() should not be called on the client side. Use JWTClientManager instead.');
+      return false;
+    }
     return this.getCurrentUser() !== null;
   }
 
   /**
-   * Checks if current user has required role
+   * Checks if current user has required role (server-only)
    * @param requiredRole - Role to check for
    * @returns boolean - Whether user has the required role
    */
   static hasRole(requiredRole: string): boolean {
+    if (typeof window !== 'undefined') {
+      console.warn('JWTManager.hasRole() should not be called on the client side. Use JWTClientManager instead.');
+      return false;
+    }
     const user = this.getCurrentUser();
     return user ? user.role === requiredRole : false;
   }
 
   /**
-   * Checks if current user has email verified
+   * Checks if current user has email verified (server-only)
    * @returns boolean - Whether user's email is verified
    */
   static isEmailVerified(): boolean {
+    if (typeof window !== 'undefined') {
+      console.warn('JWTManager.isEmailVerified() should not be called on the client side. Use JWTClientManager instead.');
+      return false;
+    }
     const user = this.getCurrentUser();
     return user ? user.isEmailVerified : false;
   }
@@ -382,43 +416,40 @@ export class JWTManager {
   }
 
   /**
-   * Blacklist a token (for logout or security purposes)
+   * Blacklist a token (for logout or security purposes) - server-only
    * @param token - Token to blacklist
    */
   static blacklistToken(token: string): void {
     try {
-      // In a real implementation, this would be stored in Redis or database
-      // For now, we'll use a simple in-memory approach (not suitable for production)
+      // This is a server-only operation in production
+      // For client-side token blacklisting, use JWTClientManager
       if (typeof window !== 'undefined') {
-        const blacklist = JSON.parse(localStorage.getItem(this.TOKEN_BLACKLIST_KEY) || '[]');
-        blacklist.push({
-          token: token.substring(0, 20), // Store only part of token for security
-          timestamp: Date.now(),
-        });
-
-        // Keep only recent entries (last 24 hours)
-        const oneDayAgo = Date.now() - 24 * 60 * 60 * 1000;
-        const filteredBlacklist = blacklist.filter((entry: any) => entry.timestamp > oneDayAgo);
-
-        localStorage.setItem(this.TOKEN_BLACKLIST_KEY, JSON.stringify(filteredBlacklist));
+        console.warn('JWTManager.blacklistToken() should not be called on the client side. Use JWTClientManager instead.');
+        return;
       }
+      
+      // In a real implementation, this would be stored in Redis or database
+      // This is a placeholder for server-side blacklisting
+      console.log('Server-side token blacklisting not implemented yet');
     } catch (error) {
       console.error('Failed to blacklist token:', error);
     }
   }
 
   /**
-   * Check if token is blacklisted
+   * Check if token is blacklisted - server-only
    * @param token - Token to check
    * @returns boolean - Whether token is blacklisted
    */
   static isTokenBlacklisted(token: string): boolean {
     try {
       if (typeof window !== 'undefined') {
-        const blacklist = JSON.parse(localStorage.getItem(this.TOKEN_BLACKLIST_KEY) || '[]');
-        const tokenPrefix = token.substring(0, 20);
-        return blacklist.some((entry: any) => entry.token === tokenPrefix);
+        console.warn('JWTManager.isTokenBlacklisted() should not be called on the client side. Use JWTClientManager instead.');
+        return false;
       }
+      
+      // In a real implementation, this would check Redis or database
+      // This is a placeholder for server-side blacklist checking
       return false;
     } catch (error) {
       console.error('Failed to check token blacklist:', error);
@@ -427,58 +458,20 @@ export class JWTManager {
   }
 
   /**
-   * Rate limiting for token operations
+   * Rate limiting for token operations - server-only
    * @param identifier - Unique identifier (e.g., IP address, user ID)
    * @returns boolean - Whether operation is allowed
    */
   static checkRateLimit(identifier: string): boolean {
     try {
       if (typeof window !== 'undefined') {
-        const rateLimitData = JSON.parse(localStorage.getItem(this.RATE_LIMIT_KEY) || '{}');
-        const now = Date.now();
-        const userLimit = rateLimitData[identifier];
-
-        if (!userLimit) {
-          // First attempt
-          rateLimitData[identifier] = {
-            attempts: 1,
-            firstAttempt: now,
-            blockedUntil: null,
-          };
-          localStorage.setItem(this.RATE_LIMIT_KEY, JSON.stringify(rateLimitData));
-          return true;
-        }
-
-        // Check if user is currently blocked
-        if (userLimit.blockedUntil && now < userLimit.blockedUntil) {
-          return false;
-        }
-
-        // Reset if window has passed
-        if (now - userLimit.firstAttempt > this.RATE_LIMIT_WINDOW_MS) {
-          rateLimitData[identifier] = {
-            attempts: 1,
-            firstAttempt: now,
-            blockedUntil: null,
-          };
-          localStorage.setItem(this.RATE_LIMIT_KEY, JSON.stringify(rateLimitData));
-          return true;
-        }
-
-        // Increment attempts
-        userLimit.attempts += 1;
-
-        // Block if exceeded max attempts
-        if (userLimit.attempts > this.RATE_LIMIT_MAX_ATTEMPTS) {
-          userLimit.blockedUntil = now + this.RATE_LIMIT_BLOCK_DURATION_MS;
-          localStorage.setItem(this.RATE_LIMIT_KEY, JSON.stringify(rateLimitData));
-          return false;
-        }
-
-        localStorage.setItem(this.RATE_LIMIT_KEY, JSON.stringify(rateLimitData));
+        console.warn('JWTManager.checkRateLimit() should not be called on the client side. Use JWTClientManager instead.');
         return true;
       }
-      return true; // Allow if localStorage not available
+      
+      // In a real implementation, this would use Redis or database for server-side rate limiting
+      // This is a placeholder for server-side rate limiting
+      return true;
     } catch (error) {
       console.error('Rate limit check failed:', error);
       return true; // Allow on error to prevent blocking legitimate users
@@ -486,16 +479,19 @@ export class JWTManager {
   }
 
   /**
-   * Clear rate limit for identifier
+   * Clear rate limit for identifier - server-only
    * @param identifier - Unique identifier to clear
    */
   static clearRateLimit(identifier: string): void {
     try {
       if (typeof window !== 'undefined') {
-        const rateLimitData = JSON.parse(localStorage.getItem(this.RATE_LIMIT_KEY) || '{}');
-        delete rateLimitData[identifier];
-        localStorage.setItem(this.RATE_LIMIT_KEY, JSON.stringify(rateLimitData));
+        console.warn('JWTManager.clearRateLimit() should not be called on the client side. Use JWTClientManager instead.');
+        return;
       }
+      
+      // In a real implementation, this would clear Redis or database entries
+      // This is a placeholder for server-side rate limit clearing
+      console.log('Server-side rate limit clearing not implemented yet');
     } catch (error) {
       console.error('Failed to clear rate limit:', error);
     }
@@ -550,35 +546,18 @@ export class JWTManager {
   }
 
   /**
-   * Clean up expired tokens and rate limit data
+   * Clean up expired tokens and rate limit data - server-only
    */
   static cleanup(): void {
     try {
       if (typeof window !== 'undefined') {
-        // Clean up blacklist
-        const blacklist = JSON.parse(localStorage.getItem(this.TOKEN_BLACKLIST_KEY) || '[]');
-        const oneDayAgo = Date.now() - 24 * 60 * 60 * 1000;
-        const filteredBlacklist = blacklist.filter((entry: any) => entry.timestamp > oneDayAgo);
-        localStorage.setItem(this.TOKEN_BLACKLIST_KEY, JSON.stringify(filteredBlacklist));
-
-        // Clean up rate limit data
-        const rateLimitData = JSON.parse(localStorage.getItem(this.RATE_LIMIT_KEY) || '{}');
-        const now = Date.now();
-        const cleanedRateLimit: any = {};
-
-        Object.keys(rateLimitData).forEach(key => {
-          const data = rateLimitData[key];
-          // Keep if not expired and not old
-          if (
-            (!data.blockedUntil || now < data.blockedUntil) &&
-            (now - data.firstAttempt < this.RATE_LIMIT_WINDOW_MS * 2)
-          ) {
-            cleanedRateLimit[key] = data;
-          }
-        });
-
-        localStorage.setItem(this.RATE_LIMIT_KEY, JSON.stringify(cleanedRateLimit));
+        console.warn('JWTManager.cleanup() should not be called on the client side. Use JWTClientManager instead.');
+        return;
       }
+      
+      // In a real implementation, this would clean up Redis or database entries
+      // This is a placeholder for server-side cleanup
+      console.log('Server-side cleanup not implemented yet');
     } catch (error) {
       console.error('Cleanup failed:', error);
     }

@@ -1,183 +1,327 @@
+import { DatabaseOptimization } from './database-optimization';
+import { OptimizedSubscriptionService } from '../services/OptimizedSubscriptionService';
+import { SubscriptionCache } from '../cache/subscription-cache';
+import RedisClient from '../cache/redis-client';
+import { connectToDatabase } from '../database/mongoose-connection';
+
 /**
- * System Startup Utility
- * Initializes system-wide services and scheduled tasks
+ * System startup utilities for performance optimization
  */
-
-import { cronScheduler } from './cron-scheduler';
-import { connectDB } from '../database/mongoose-connection';
-
-export interface StartupConfig {
-  enableCronJobs: boolean;
-  cronJobSchedule?: string;
-  logLevel: 'debug' | 'info' | 'warn' | 'error';
-}
-
 export class SystemStartup {
-  private static initialized = false;
-  private static config: StartupConfig = {
-    enableCronJobs: true,
-    cronJobSchedule: '0 0 * * *', // Daily at midnight
-    logLevel: 'info'
-  };
 
   /**
-   * Initialize system services
+   * Initialize system on startup
    */
-  static async initialize(config?: Partial<StartupConfig>): Promise<void> {
-    if (this.initialized) {
-      console.warn('System already initialized');
-      return;
-    }
-
-    // Update configuration
-    if (config) {
-      this.config = { ...this.config, ...config };
-    }
-
-    console.log('Initializing system services...', this.config);
+  static async initialize(): Promise<void> {
+    console.log('🚀 Initializing subscription system...');
 
     try {
-      // Initialize database connection
+      // Connect to database
       await this.initializeDatabase();
 
-      // Initialize cron scheduler
-      if (this.config.enableCronJobs) {
-        await this.initializeCronScheduler();
-      }
+      // Initialize cache
+      await this.initializeCache();
 
-      // Initialize other services
-      await this.initializeOtherServices();
+      // Optimize database
+      await this.optimizeDatabase();
 
-      this.initialized = true;
-      console.log('System services initialized successfully');
+      // Warm up cache
+      await this.warmUpCache();
 
+      console.log('✅ Subscription system initialized successfully');
     } catch (error) {
-      console.error('Failed to initialize system services:', error);
+      console.error('❌ Failed to initialize subscription system:', error);
       throw error;
     }
   }
 
   /**
-   * Initialize database connection
+   * Initbase connection and optimization
    */
   private static async initializeDatabase(): Promise<void> {
     try {
-      await connectDB();
-      console.log('Database connection initialized');
+      console.log('🔌 Connecting to database...');
+      await connectToDatabase();
+
+      // Optimize connection pool
+      DatabaseOptimization.optimizeConnectionPool();
+
+      // Enable query caching
+      DatabaseOptimization.enableQueryCaching();
+
+      console.log('✅ Database initialized');
     } catch (error) {
-      console.error('Database initialization failed:', error);
+      console.error('❌ Database initialization failed:', error);
       throw error;
     }
   }
 
   /**
-   * Initialize cron scheduler
+   * Initialize cache system
    */
-  private static async initializeCronScheduler(): Promise<void> {
+  private static async initializeCache(): Promise<void> {
     try {
-      // Configure recurring payment job
-      if (this.config.cronJobSchedule) {
-        cronScheduler.updateJobSchedule('recurring-payments', this.config.cronJobSchedule);
+      console.log('🗄️ Initializing cache system...');
+
+      // Test Redis connection
+      const isConnected = await RedisClient.testConnection();
+
+      if (isConnected) {
+        console.log('✅ Cache system connected');
+      } else {
+        console.warn('⚠️ Cache system not available - running without cache');
+      }
+    } catch (error) {
+      console.warn('⚠️ Cache initialization failed - running without cache:', error.message);
+      // Don't throw error - system can run without cache
+    }
+  }
+
+  /**
+   * Optimize database indexes and queries
+   */
+  private static async optimizeDatabase(): Promise<void> {
+    try {
+      console.log('⚡ Optimizing database...');
+
+      // Create optimized indexes
+      await DatabaseOptimization.createOptimizedIndexes();
+
+      console.log('✅ Database optimized');
+    } catch (error) {
+      console.warn('⚠️ Database optimization failed:', error.message);
+      // Don't throw error - system can run without optimization
+    }
+  }
+
+  /**
+   * Warm up cache with frequently accessed data
+   */
+  private static async warmUpCache(): Promise<void> {
+    try {
+      console.log('🔥 Warming up cache...');
+
+      // Check if cache is available
+      if (!RedisClient.isRedisConnected()) {
+        console.log('⚠️ Cache not available - skipping cache warm-up');
+        return;
       }
 
-      // Start the scheduler
-      cronScheduler.start();
+      // Warm up subscription cache
+      await SubscriptionCache.warmUpCache();
 
-      console.log('Cron scheduler initialized');
+      // Preload frequently accessed data
+      await OptimizedSubscriptionService.preloadFrequentData();
+
+      console.log('✅ Cache warmed up');
     } catch (error) {
-      console.error('Cron scheduler initialization failed:', error);
-      throw error;
+      console.warn('⚠️ Cache warm-up failed:', error.message);
+      // Don't throw error - system can run without cache
     }
   }
 
   /**
-   * Initialize other services
+   * Perform health checks
    */
-  private static async initializeOtherServices(): Promise<void> {
-    // Add other service initializations here
-    // For example: notification system, cache, etc.
-    console.log('Other services initialized');
-  }
+  static async performHealthChecks(): Promise<any> {
+    console.log('🏥 Performing health checks...');
 
-  /**
-   * Shutdown system services
-   */
-  static async shutdown(): Promise<void> {
-    if (!this.initialized) {
-      console.warn('System not initialized');
-      return;
-    }
-
-    console.log('Shutting down system services...');
+    const results = {
+      database: { healthy: false, error: null },
+      cache: { healthy: false, error: null },
+      overall: { healthy: false }
+    };
 
     try {
-      // Stop cron scheduler
-      cronScheduler.stop();
-
-      // Close database connections
-      // Note: Mongoose connections are typically handled by the framework
-
-      this.initialized = false;
-      console.log('System services shut down successfully');
-
+      // Database health check
+      const dbHealth = await DatabaseOptimization.performHealthCheck();
+      results.database.healthy = dbHealth.isConnected;
+      if (!dbHealth.isConnected) {
+        results.database.error = dbHealth.error;
+      }
     } catch (error) {
-      console.error('Error during system shutdown:', error);
-      throw error;
+      results.database.error = error.message;
     }
+
+    try {
+      // Cache health check
+      results.cache.healthy = await RedisClient.testConnection();
+    } catch (error) {
+      results.cache.error = error.message;
+    }
+
+    // Overall health
+    results.overall.healthy = results.database.healthy;
+
+    if (results.overall.healthy) {
+      console.log('✅ Health checks passed');
+    } else {
+      console.warn('⚠️ Health checks failed:', results);
+    }
+
+    return results;
+  }
+
+  /**
+   * Graceful shutdown
+   */
+  static async shutdown(): Promise<void> {
+    console.log('🛑 Shutting down subscription system...');
+
+    try {
+      // Close Redis connection
+      await RedisClient.disconnect();
+
+      // Close database connection
+      const mongoose = await import('mongoose');
+      await mongoose.connection.close();
+
+      console.log('✅ Subscription system shut down gracefully');
+    } catch (error) {
+      console.error('❌ Error during shutdown:', error);
+    }
+  }
+
+  /**
+   * Setup periodic maintenance tasks
+   */
+  static setupMaintenanceTasks(): void {
+    console.log('🔧 Setting up maintenance tasks...');
+
+    // Cache cleanup every hour
+    setInterval(async () => {
+      try {
+        console.log('🧹 Running cache maintenance...');
+
+        // Get cache stats
+        const stats = await SubscriptionCache.getCacheStats();
+        console.log('📊 Cache stats:', stats);
+
+        // Clear expired entries (Redis handles this automatically, but we can log it)
+        console.log('✅ Cache maintenance completed');
+      } catch (error) {
+        console.error('❌ Cache maintenance failed:', error);
+      }
+    }, 60 * 60 * 1000); // 1 hour
+
+    // Database health check every 30 minutes
+    setInterval(async () => {
+      try {
+        console.log('🏥 Running database health check...');
+
+        const health = await DatabaseOptimization.performHealthCheck();
+        if (!health.isConnected) {
+          console.error('❌ Database health check failed:', health.error);
+        } else {
+          console.log('✅ Database health check passed');
+        }
+      } catch (error) {
+        console.error('❌ Database health check failed:', error);
+      }
+    }, 30 * 60 * 1000); // 30 minutes
+
+    // Performance metrics collection every 15 minutes
+    setInterval(async () => {
+      try {
+        console.log('📊 Collecting performance metrics...');
+
+        const metrics = await DatabaseOptimization.getPerformanceMetrics();
+        if (metrics) {
+          // Log key metrics
+          console.log('📊 Performance metrics:', {
+            connections: metrics.server?.connections,
+            memory: metrics.server?.memory?.resident,
+            collections: metrics.database?.collections,
+            objects: metrics.database?.objects
+          });
+        }
+      } catch (error) {
+        console.error('❌ Performance metrics collection failed:', error);
+      }
+    }, 15 * 60 * 1000); // 15 minutes
+
+    console.log('✅ Maintenance tasks set up');
   }
 
   /**
    * Get system status
    */
-  static getStatus(): {
-    initialized: boolean;
-    config: StartupConfig;
-    cronScheduler: any;
-  } {
-    return {
-      initialized: this.initialized,
-      config: this.config,
-      cronScheduler: cronScheduler.getStats()
-    };
+  static async getSystemStatus(): Promise<any> {
+    try {
+      const [healthChecks, cacheStats, dbMetrics] = await Promise.all([
+        this.performHealthChecks(),
+        SubscriptionCache.getCacheStats().catch(() => null),
+        DatabaseOptimization.getPerformanceMetrics().catch(() => null)
+      ]);
+
+      return {
+        healthy: healthChecks.overall.healthy,
+        components: {
+          database: healthChecks.database,
+          cache: healthChecks.cache
+        },
+        metrics: {
+          cache: cacheStats,
+          database: dbMetrics
+        },
+        timestamp: new Date()
+      };
+    } catch (error) {
+      return {
+        healthy: false,
+        error: error.message,
+        timestamp: new Date()
+      };
+    }
   }
 
   /**
-   * Check if system is initialized
+   * Initialize system with error handling
    */
-  static isInitialized(): boolean {
-    return this.initialized;
-  }
+  static async safeInitialize(): Promise<boolean> {
+    try {
+      await this.initialize();
+      return true;
+    } catch (error) {
+      console.error('❌ System initialization failed:', error);
 
-  /**
-   * Update configuration
-   */
-  static updateConfig(newConfig: Partial<StartupConfig>): void {
-    this.config = { ...this.config, ...newConfig };
-
-    // Apply configuration changes
-    if (this.initialized) {
-      if (newConfig.cronJobSchedule) {
-        cronScheduler.updateJobSchedule('recurring-payments', newConfig.cronJobSchedule);
-      }
-
-      if (newConfig.enableCronJobs !== undefined) {
-        cronScheduler.setJobEnabled('recurring-payments', newConfig.enableCronJobs);
+      // Try to initialize with minimal requirements
+      try {
+        console.log('🔄 Attempting minimal initialization...');
+        await connectToDatabase();
+        console.log('✅ Minimal initialization successful');
+        return true;
+      } catch (minimalError) {
+        console.error('❌ Minimal initialization failed:', minimalError);
+        return false;
       }
     }
-
-    console.log('System configuration updated:', this.config);
   }
 }
 
-// Auto-initialize in production
-if (process.env.NODE_ENV === 'production' && !process.env.DISABLE_AUTO_INIT) {
-  SystemStartup.initialize({
-    enableCronJobs: process.env.ENABLE_CRON_JOBS !== 'false',
-    cronJobSchedule: process.env.RECURRING_PAYMENT_CRON_SCHEDULE || '0 0 * * *',
-    logLevel: (process.env.LOG_LEVEL as any) || 'info'
-  }).catch(error => {
-    console.error('Auto-initialization failed:', error);
+// Handle process signals for graceful shutdown
+if (typeof process !== 'undefined') {
+  process.on('SIGTERM', async () => {
+    console.log('📡 Received SIGTERM signal');
+    await SystemStartup.shutdown();
+    process.exit(0);
+  });
+
+  process.on('SIGINT', async () => {
+    console.log('📡 Received SIGINT signal');
+    await SystemStartup.shutdown();
+    process.exit(0);
+  });
+
+  process.on('uncaughtException', async (error) => {
+    console.error('💥 Uncaught exception:', error);
+    await SystemStartup.shutdown();
+    process.exit(1);
+  });
+
+  process.on('unhandledRejection', async (reason, promise) => {
+    console.error('💥 Unhandled rejection at:', promise, 'reason:', reason);
+    await SystemStartup.shutdown();
+    process.exit(1);
   });
 }
-
-export default SystemStartup;
