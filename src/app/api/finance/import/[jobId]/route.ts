@@ -36,7 +36,7 @@ export async function GET(
     }
 
     // Get job status
-    const jobStatus = FinanceImportService.getJobStatus(jobId);
+    const jobStatus = await FinanceImportService.getJobStatus(jobId);
 
     if (!jobStatus) {
       return NextResponse.json({
@@ -111,7 +111,7 @@ export async function DELETE(
     }
 
     // Get job status first to check ownership
-    const jobStatus = FinanceImportService.getJobStatus(jobId);
+    const jobStatus = await FinanceImportService.getJobStatus(jobId);
 
     if (!jobStatus) {
       return NextResponse.json({
@@ -135,7 +135,7 @@ export async function DELETE(
     }
 
     // Cancel the job
-    const cancelled = FinanceImportService.cancelJob(jobId);
+    const cancelled = await FinanceImportService.cancelJob(jobId);
 
     if (!cancelled) {
       return NextResponse.json({

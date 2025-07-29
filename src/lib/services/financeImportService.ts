@@ -5,6 +5,7 @@ import Expense from '@/lib/database/models/Expense';
 import IncomeCategory from '@/lib/database/models/IncomeCategory';
 import ExpenseCategory from '@/lib/database/models/ExpenseCategory';
 import Vendor from '@/lib/database/models/Vendor';
+import ImportJob from '@/lib/database/models/ImportJob';
 
 export interface ParsedFinanceData {
   headers: string[];
@@ -77,8 +78,7 @@ interface ImportOptions {
   dateFormat?: string;
 }
 
-// In-memory store for import jobs (in production, use Redis or database)
-const importJobs = new Map<string, ImportJobResult>();
+// Import jobs are now persisted in MongoDB using the ImportJob model
 
 export class FinanceImportService {
   /**
@@ -443,7 +443,7 @@ export class FinanceImportService {
   }
 
   /**
-   * Start import job
+   * Start import job with MongoDB persistence
    */
   static async startImportJob(
     data: any[],
@@ -454,13 +454,18 @@ export class FinanceImportService {
   ): Promise<string> {
     const jobId = `import_${type}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
-    const job: ImportJobResult = {
+    // Create job in database
+    const job = new ImportJob({
       jobId,
       status: 'pending',
+      type,
       totalRows: data.length,
       processedRows: 0,
       successfulRows: 0,
       failedRows: 0,
+      progress: {
+        percentage: 0
+      },
       results: {
         created: 0,
         updated: 0,
@@ -469,21 +474,35 @@ export class FinanceImportService {
       },
       errors: [],
       warnings: [],
-      createdAt: new Date(),
-      userId
-    };
+      userId,
+      mapping,
+      options
+    });
 
-    importJobs.set(jobId, job);
+    await job.save();
+    console.log(`📝 [Job Management] Created import job ${jobId} in database`);
 
     // Start processing asynchronously
     this.processImportJob(jobId, data, mapping, type, userId, options)
-      .catch(error => {
+      .catch(async error => {
         console.error(`Import job ${jobId} failed:`, error);
-        const job = importJobs.get(jobId);
-        if (job) {
-          job.status = 'failed';
-          job.completedAt = new Date();
-          importJobs.set(jobId, job);
+        try {
+          await ImportJob.findOneAndUpdate(
+            { jobId },
+            { 
+              status: 'failed',
+              completedAt: new Date(),
+              $push: {
+                errors: {
+                  row: 0,
+                  field: 'general',
+                  message: error instanceof Error ? error.message : 'Unknown error'
+                }
+              }
+            }
+          );
+        } catch (updateError) {
+          console.error(`Failed to update job ${jobId} status:`, updateError);
         }
       });
 
@@ -491,7 +510,7 @@ export class FinanceImportService {
   }
 
   /**
-   * Process import job
+   * Process import job with database persistence
    */
   private static async processImportJob(
     jobId: string,
@@ -501,17 +520,39 @@ export class FinanceImportService {
     userId: string,
     options: ImportOptions
   ): Promise<void> {
-    const job = importJobs.get(jobId);
-    if (!job) throw new Error('Job not found');
+    const job = await ImportJob.findOne({ jobId });
+    if (!job) throw new Error('Job not found in database');
 
     job.status = 'processing';
-    importJobs.set(jobId, job);
+    await job.save();
 
     const categoryCache = new Map<string, any>();
     const vendorCache = new Map<string, any>();
     
+    // Pre-cache all existing categories and vendors to avoid database queries during processing
+    console.log(`🔄 [Import Performance] Pre-caching categories and vendors for user ${userId}`);
+    const preCacheStartTime = Date.now();
+    
+    const CategoryModel = type === 'income' ? IncomeCategory : ExpenseCategory;
+    const existingCategories = await CategoryModel.find({ userId }).lean();
+    existingCategories.forEach(category => {
+      const cacheKey = `${type}_${category.name.toLowerCase()}`;
+      categoryCache.set(cacheKey, category._id.toString());
+    });
+    
+    if (type === 'expense') {
+      const existingVendors = await Vendor.find({ userId }).lean();
+      existingVendors.forEach(vendor => {
+        vendorCache.set(vendor.name.toLowerCase(), vendor._id.toString());
+      });
+      console.log(`📝 [Import Performance] Pre-cached ${existingVendors.length} vendors`);
+    }
+    
+    const preCacheTime = Date.now() - preCacheStartTime;
+    console.log(`✅ [Import Performance] Pre-caching completed in ${preCacheTime}ms (${existingCategories.length} categories, ${vendorCache.size} vendors)`);
+    
     // Performance optimization: Process in batches
-    const BATCH_SIZE = 10;
+    const BATCH_SIZE = 100;
     const batches = [];
     
     console.log(`🚀 [Import Performance] Starting batch processing for ${data.length} rows with batch size ${BATCH_SIZE}`);
@@ -609,8 +650,12 @@ export class FinanceImportService {
       processedCount += batch.length;
       job.processedRows = processedCount;
       
-      // Update job progress every batch instead of every row
-      importJobs.set(jobId, job);
+      // Update job progress every 5 batches to reduce overhead
+      if (batchIndex % 5 === 0 || batchIndex === batches.length - 1) {
+        job.progress.percentage = Math.round((job.processedRows / job.totalRows) * 100);
+        await job.save();
+        console.log(`📊 [Progress Update] Batch ${batchIndex + 1}/${batches.length} - ${job.processedRows}/${job.totalRows} rows processed`);
+      }
       
       const batchTime = Date.now() - batchStartTime;
       console.log(`✅ [Import Performance] Batch ${batchIndex + 1} completed in ${batchTime}ms (${successfulRecords.length} success, ${failedRecords.length} failed)`);
@@ -621,7 +666,8 @@ export class FinanceImportService {
 
     job.status = 'completed';
     job.completedAt = new Date();
-    importJobs.set(jobId, job);
+    job.progress.percentage = 100;
+    await job.save();
   }
 
   /**
@@ -699,7 +745,7 @@ export class FinanceImportService {
   }
 
   /**
-   * Resolve category (create if needed)
+   * Resolve category (create if needed) - optimized with pre-caching
    */
   private static async resolveCategory(
     categoryName: string,
@@ -709,44 +755,40 @@ export class FinanceImportService {
     cache: Map<string, any>
   ): Promise<string | null> {
     const resolveStartTime = Date.now();
-    const cacheKey = `${type}_${categoryName}`;
+    const cacheKey = `${type}_${categoryName.toLowerCase()}`;
 
+    // Check pre-cached categories first
     if (cache.has(cacheKey)) {
       return cache.get(cacheKey);
     }
 
-    const CategoryModel = type === 'income' ? IncomeCategory : ExpenseCategory;
-
-    // Try to find existing category
-    let category = await CategoryModel.findOne({
-      name: { $regex: new RegExp(`^${categoryName}$`, 'i') },
-      userId
-    });
-
-    if (!category && options.createCategories) {
-      // Create new category
-      category = new CategoryModel({
+    // If not in cache and createCategories is enabled, create new category
+    if (options.createCategories) {
+      const CategoryModel = type === 'income' ? IncomeCategory : ExpenseCategory;
+      
+      const category = new CategoryModel({
         name: categoryName,
         description: `Auto-created during import`,
         isDefault: false,
         userId
       });
       await category.save();
+      
+      const categoryId = category._id.toString();
+      cache.set(cacheKey, categoryId);
+      
+      const resolveTime = Date.now() - resolveStartTime;
+      console.log(`📝 [Performance] Created new category "${categoryName}" in ${resolveTime}ms`);
+      
+      return categoryId;
     }
 
-    const categoryId = category?._id.toString() || null;
-    cache.set(cacheKey, categoryId);
-
-    const resolveTime = Date.now() - resolveStartTime;
-    if (resolveTime > 200) { // Log slow category resolution (>200ms)
-      console.warn(`⚠️ [Performance] Slow category resolution: ${resolveTime}ms for "${categoryName}"`);
-    }
-
-    return categoryId;
+    // Category not found and creation disabled
+    return null;
   }
 
   /**
-   * Resolve vendor (create if needed)
+   * Resolve vendor (create if needed) - optimized with pre-caching
    */
   private static async resolveVendor(
     vendorName: string,
@@ -755,20 +797,16 @@ export class FinanceImportService {
     cache: Map<string, any>
   ): Promise<string | null> {
     const resolveStartTime = Date.now();
+    const cacheKey = vendorName.toLowerCase();
     
-    if (cache.has(vendorName)) {
-      return cache.get(vendorName);
+    // Check pre-cached vendors first
+    if (cache.has(cacheKey)) {
+      return cache.get(cacheKey);
     }
 
-    // Try to find existing vendor
-    let vendor = await Vendor.findOne({
-      name: { $regex: new RegExp(`^${vendorName}$`, 'i') },
-      userId
-    });
-
-    if (!vendor && options.createVendors) {
-      // Create new vendor
-      vendor = new Vendor({
+    // If not in cache and createVendors is enabled, create new vendor
+    if (options.createVendors) {
+      const vendor = new Vendor({
         name: vendorName,
         email: '',
         phone: '',
@@ -776,17 +814,18 @@ export class FinanceImportService {
         userId
       });
       await vendor.save();
+      
+      const vendorId = vendor._id.toString();
+      cache.set(cacheKey, vendorId);
+      
+      const resolveTime = Date.now() - resolveStartTime;
+      console.log(`📝 [Performance] Created new vendor "${vendorName}" in ${resolveTime}ms`);
+      
+      return vendorId;
     }
 
-    const vendorId = vendor?._id.toString() || null;
-    cache.set(vendorName, vendorId);
-
-    const resolveTime = Date.now() - resolveStartTime;
-    if (resolveTime > 200) { // Log slow vendor resolution (>200ms)
-      console.warn(`⚠️ [Performance] Slow vendor resolution: ${resolveTime}ms for "${vendorName}"`);
-    }
-
-    return vendorId;
+    // Vendor not found and creation disabled
+    return null;
   }
 
   /**
@@ -806,7 +845,7 @@ export class FinanceImportService {
   }
 
   /**
-   * Create multiple income records using bulk operations
+   * Create multiple income records using bulk operations with improved error handling
    */
   private static async createIncomeRecordsBulk(dataArray: any[], userId: string): Promise<void> {
     if (dataArray.length === 0) return;
@@ -822,15 +861,38 @@ export class FinanceImportService {
       
       const bulkTime = Date.now() - startTime;
       console.log(`✅ [Bulk Operation] Income bulk insert completed in ${bulkTime}ms (${result.insertedCount} inserted)`);
-    } catch (error) {
+      
+      // Handle partial failures in unordered bulk insert
+      if (result.insertedCount < dataArray.length) {
+        const failedCount = dataArray.length - result.insertedCount;
+        console.warn(`⚠️ [Bulk Operation] ${failedCount} income records failed during bulk insert`);
+      }
+    } catch (error: any) {
       const bulkTime = Date.now() - startTime;
+      
+      // Handle MongoDB bulk write errors
+      if (error.name === 'BulkWriteError' && error.result) {
+        const insertedCount = error.result.insertedCount || 0;
+        const failedCount = dataArray.length - insertedCount;
+        
+        console.warn(`⚠️ [Bulk Operation] Income bulk insert partially completed in ${bulkTime}ms (${insertedCount} inserted, ${failedCount} failed)`);
+        
+        // Log specific errors if available
+        if (error.writeErrors && error.writeErrors.length > 0) {
+          console.error(`❌ [Bulk Operation] First few write errors:`, error.writeErrors.slice(0, 3));
+        }
+        
+        // Don't throw error for partial success in unordered operations
+        return;
+      }
+      
       console.error(`❌ [Bulk Operation] Income bulk insert failed after ${bulkTime}ms:`, error);
       throw error;
     }
   }
 
   /**
-   * Create multiple expense records using bulk operations
+   * Create multiple expense records using bulk operations with improved error handling
    */
   private static async createExpenseRecordsBulk(dataArray: any[], userId: string): Promise<void> {
     if (dataArray.length === 0) return;
@@ -846,77 +908,110 @@ export class FinanceImportService {
       
       const bulkTime = Date.now() - startTime;
       console.log(`✅ [Bulk Operation] Expense bulk insert completed in ${bulkTime}ms (${result.insertedCount} inserted)`);
-    } catch (error) {
+      
+      // Handle partial failures in unordered bulk insert
+      if (result.insertedCount < dataArray.length) {
+        const failedCount = dataArray.length - result.insertedCount;
+        console.warn(`⚠️ [Bulk Operation] ${failedCount} expense records failed during bulk insert`);
+      }
+    } catch (error: any) {
       const bulkTime = Date.now() - startTime;
+      
+      // Handle MongoDB bulk write errors
+      if (error.name === 'BulkWriteError' && error.result) {
+        const insertedCount = error.result.insertedCount || 0;
+        const failedCount = dataArray.length - insertedCount;
+        
+        console.warn(`⚠️ [Bulk Operation] Expense bulk insert partially completed in ${bulkTime}ms (${insertedCount} inserted, ${failedCount} failed)`);
+        
+        // Log specific errors if available
+        if (error.writeErrors && error.writeErrors.length > 0) {
+          console.error(`❌ [Bulk Operation] First few write errors:`, error.writeErrors.slice(0, 3));
+        }
+        
+        // Don't throw error for partial success in unordered operations
+        return;
+      }
+      
       console.error(`❌ [Bulk Operation] Expense bulk insert failed after ${bulkTime}ms:`, error);
       throw error;
     }
   }
 
   /**
-   * Get import job status
+   * Get import job status from database
    */
-  static getImportJob(jobId: string): ImportJobResult | null {
-    return importJobs.get(jobId) || null;
-  }
-
-  /**
-   * Get user's import jobs
-   */
-  static getUserImportJobs(userId: string): ImportJobResult[] {
-    return Array.from(importJobs.values()).filter(job => job.userId === userId);
-  }
-
-  /**
-   * Get job status
-   */
-  static getJobStatus(jobId: string): ImportJobResult | null {
-    return importJobs.get(jobId) || null;
-  }
-
-  /**
-   * Cancel import job
-   */
-  static cancelJob(jobId: string): boolean {
-    const job = importJobs.get(jobId);
-    if (!job) return false;
-
-    // Can only cancel pending or processing jobs
-    if (job.status === 'pending' || job.status === 'processing') {
-      job.status = 'failed';
-      job.completedAt = new Date();
-      importJobs.set(jobId, job);
-      return true;
+  static async getImportJob(jobId: string): Promise<ImportJobResult | null> {
+    try {
+      const job = await ImportJob.findOne({ jobId }).lean();
+      return job as ImportJobResult | null;
+    } catch (error) {
+      console.error(`Failed to get import job ${jobId}:`, error);
+      return null;
     }
-
-    return false;
   }
 
   /**
-   * Get all jobs for a user
+   * Get user's import jobs from database
    */
-  static getUserJobs(userId: string): ImportJobResult[] {
-    const userJobs: ImportJobResult[] = [];
-
-    for (const job of importJobs.values()) {
-      if (job.userId === userId) {
-        userJobs.push(job);
-      }
+  static async getUserImportJobs(userId: string, limit = 10): Promise<ImportJobResult[]> {
+    try {
+      const jobs = await ImportJob.findUserJobs(userId, limit);
+      return jobs as ImportJobResult[];
+    } catch (error) {
+      console.error(`Failed to get user import jobs for ${userId}:`, error);
+      return [];
     }
-
-    return userJobs.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
   }
 
   /**
-   * Clean up old import jobs (call this periodically)
+   * Get job status from database
    */
-  static cleanupOldJobs(maxAgeHours: number = 24): void {
-    const cutoffTime = new Date(Date.now() - maxAgeHours * 60 * 60 * 1000);
+  static async getJobStatus(jobId: string): Promise<ImportJobResult | null> {
+    return this.getImportJob(jobId);
+  }
 
-    for (const [jobId, job] of importJobs) {
-      if (job.createdAt < cutoffTime) {
-        importJobs.delete(jobId);
-      }
+  /**
+   * Cancel import job in database
+   */
+  static async cancelJob(jobId: string): Promise<boolean> {
+    try {
+      const result = await ImportJob.findOneAndUpdate(
+        { 
+          jobId,
+          status: { $in: ['pending', 'processing'] }
+        },
+        { 
+          status: 'failed',
+          completedAt: new Date()
+        }
+      );
+      
+      return result !== null;
+    } catch (error) {
+      console.error(`Failed to cancel import job ${jobId}:`, error);
+      return false;
+    }
+  }
+
+  /**
+   * Get all jobs for a user from database
+   */
+  static async getUserJobs(userId: string, limit = 20): Promise<ImportJobResult[]> {
+    return this.getUserImportJobs(userId, limit);
+  }
+
+  /**
+   * Clean up old import jobs from database
+   */
+  static async cleanupOldJobs(maxAgeHours: number = 24): Promise<number> {
+    try {
+      const result = await ImportJob.cleanupOldJobs(maxAgeHours);
+      console.log(`🧹 [Cleanup] Removed ${result.deletedCount} old import jobs`);
+      return result.deletedCount || 0;
+    } catch (error) {
+      console.error('Failed to cleanup old import jobs:', error);
+      return 0;
     }
   }
 }
