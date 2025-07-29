@@ -12,6 +12,7 @@ import { useSelector } from "@/store/hooks";
 import { AppState } from "@/store/store";
 import { useDashboardLoading } from "@/hooks/useDashboardLoading";
 import { useAuthContext } from "@/app/context/AuthContext";
+import { InvoiceProvider } from "@/app/context/InvoiceContext";
 import { ProtectedRoute } from "@/app/components/shared/ProtectedRoute";
 import { AuthLoading } from "@/app/components/shared/AuthLoading";
 import { ErrorBoundary } from "@/app/components/shared/ErrorBoundary";
@@ -73,7 +74,8 @@ export default function RootLayout({
         fallback={authLoadingFallback}
         showFallback={true}
       >
-        <MainWrapper className={customizer.activeMode === 'dark' ? 'darkbg mainwrapper' : 'mainwrapper'}>
+        <InvoiceProvider>
+          <MainWrapper className={customizer.activeMode === 'dark' ? 'darkbg mainwrapper' : 'mainwrapper'}>
           <title>BOAMI</title>
           {/* ------------------------------------------- */}
           {/* Sidebar */}
@@ -135,6 +137,7 @@ export default function RootLayout({
             <Customizer />
           </PageWrapper>
         </MainWrapper>
+        </InvoiceProvider>
       </ProtectedRoute>
     </ErrorBoundary>
   );

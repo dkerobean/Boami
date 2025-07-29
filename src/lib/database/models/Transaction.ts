@@ -65,27 +65,23 @@ const transactionSchema = new Schema<ITransactionDocument, ITransactionModel>({
   userId: {
     type: Schema.Types.ObjectId,
     ref: 'User',
-    required: [true, 'User ID is required'],
-    index: true
+    required: [true, 'User ID is required']
   },
   subscriptionId: {
     type: Schema.Types.ObjectId,
-    ref: 'Subscription',
-    index: true
+    ref: 'Subscription'
   },
   flutterwaveTransactionId: {
     type: String,
     required: [true, 'Flutterwave transaction ID is required'],
     unique: true,
-    trim: true,
-    index: true
+    trim: true
   },
   flutterwaveReference: {
     type: String,
     required: [true, 'Flutterwave reference is required'],
     unique: true,
-    trim: true,
-    index: true
+    trim: true
   },
   amount: {
     type: Number,
@@ -107,8 +103,7 @@ const transactionSchema = new Schema<ITransactionDocument, ITransactionModel>({
       values: ['pending', 'successful', 'failed', 'cancelled', 'refunded'],
       message: 'Status must be one of: pending, successful, failed, cancelled, refunded'
     },
-    default: 'pending',
-    index: true
+    default: 'pending'
   },
   type: {
     type: String,
@@ -116,8 +111,7 @@ const transactionSchema = new Schema<ITransactionDocument, ITransactionModel>({
       values: ['subscription', 'upgrade', 'downgrade', 'renewal', 'refund'],
       message: 'Type must be one of: subscription, upgrade, downgrade, renewal, refund'
     },
-    required: [true, 'Transaction type is required'],
-    index: true
+    required: [true, 'Transaction type is required']
   },
   description: {
     type: String,
@@ -142,8 +136,7 @@ const transactionSchema = new Schema<ITransactionDocument, ITransactionModel>({
     default: {}
   },
   processedAt: {
-    type: Date,
-    index: true
+    type: Date
   }
 }, {
   timestamps: true,
@@ -335,3 +328,4 @@ const Transaction = (mongoose.models.Transaction || mongoose.model<ITransactionD
 
 export default Transaction;
 export { Transaction };
+export type { ITransaction, ITransactionDocument, ITransactionModel };

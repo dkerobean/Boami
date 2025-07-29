@@ -82,8 +82,7 @@ const inventoryLogSchema = new Schema<IInventoryLogDocument, IInventoryLogModel>
     type: String,
     required: [true, 'SKU is required'],
     trim: true,
-    uppercase: true,
-    index: true
+    uppercase: true
   },
   
   type: {
@@ -109,18 +108,15 @@ const inventoryLogSchema = new Schema<IInventoryLogDocument, IInventoryLogModel>
   
   orderId: {
     type: String,
-    index: true,
     sparse: true
   },
   importJobId: {
     type: String,
-    index: true,
     sparse: true
   },
   userId: {
     type: String,
-    required: [true, 'User ID is required'],
-    index: true
+    required: [true, 'User ID is required']
   },
   reason: {
     type: String,

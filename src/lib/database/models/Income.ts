@@ -74,13 +74,11 @@ const incomeSchema = new Schema<IIncomeDocument, IIncomeModel>({
   },
   categoryId: {
     type: String,
-    required: [true, 'Category ID is required'],
-    index: true
+    required: [true, 'Category ID is required']
   },
   saleId: {
     type: String,
-    default: null,
-    index: true
+    default: null
   },
   isRecurring: {
     type: Boolean,
@@ -88,13 +86,11 @@ const incomeSchema = new Schema<IIncomeDocument, IIncomeModel>({
   },
   recurringPaymentId: {
     type: String,
-    default: null,
-    index: true
+    default: null
   },
   userId: {
     type: String,
-    required: [true, 'User ID is required'],
-    index: true
+    required: [true, 'User ID is required']
   }
 }, {
   timestamps: true,

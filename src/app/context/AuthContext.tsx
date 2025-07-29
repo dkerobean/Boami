@@ -337,6 +337,25 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   // Initialize authentication on mount
   useEffect(() => {
+    // Development mode bypass when SKIP_AUTH is enabled
+    if (process.env.NODE_ENV === 'development' && process.env.NEXT_PUBLIC_SKIP_AUTH === 'true') {
+      const mockUser: UserData = {
+        _id: 'dev-user-123',
+        email: 'dev@example.com',
+        firstName: 'Dev',
+        lastName: 'User',
+        role: 'user',
+        isActive: true,
+        isEmailVerified: true,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+      
+      dispatch({ type: 'SET_USER', payload: mockUser });
+      dispatch({ type: 'SET_LAST_REFRESH', payload: new Date() });
+      return;
+    }
+    
     fetchUser();
   }, [fetchUser]);
 

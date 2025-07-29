@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { useSession } from 'next-auth/react';
+import { useAuthContext } from '@/app/context/AuthContext';
 import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -42,7 +42,7 @@ import {
 
 export default function AdminAnalyticsPage() {
   const router = useRouter();
-  const { data: session, status } = useSession();
+  const { user, isLoading } = useAuthContext();
 
   // State
   const [loading, setLoading] = useState(true);
@@ -59,19 +59,19 @@ export default function AdminAnalyticsPage() {
 
   // Check authentication
   useEffect(() => {
-    if (status === 'unauthenticated') {
+    if (!isLoading && !user) {
       router.push('/login?callbackUrl=/admin/analytics');
-    } else if (status === 'authenticated' && session?.user?.role !== 'admin') {
+    } else if (!isLoading && user && user.role?.name !== 'admin') {
       router.push('/dashboard');
     }
-  }, [status, session, router]);
+  }, [isLoading, user, router]);
 
   // Fetch data
   useEffect(() => {
-    if (status === 'authenticated' && session?.user?.role === 'admin') {
+    if (!isLoading && user && user.role?.name === 'admin') {
       fetchAnalyticsData();
     }
-  }, [status, session, dateRange]);
+  }, [isLoading, user, dateRange]);
 
   const fetchAnalyticsData = async () => {
     try {
@@ -79,21 +79,9 @@ export default function AdminAnalyticsPage() {
       setError(null);
 
       const [subscriptionRes, paymentRes, healthRes] = await Promise.all([
-        fetch(`/api/admin/analytics/subscription-metrics?dateRange=${dateRange}&includeChurn=true&includeTrends=true`, {
-          headers: {
-            'Authorization': `Bearer ${session?.accessToken}`
-          }
-        }),
-        fetch(`/api/admin/analytics/payment-metrics?dateRange=${dateRange}`, {
-          headers: {
-            'Authorization': `Bearer ${session?.accessToken}`
-          }
-        }),
-        fetch('/api/admin/system/health', {
-          headers: {
-            'Authorization': `Bearer ${session?.accessToken}`
-          }
-        })
+        fetch(`/api/admin/analytics/subscription-metrics?dateRange=${dateRange}&includeChurn=true&includeTrends=true`),
+        fetch(`/api/admin/analytics/payment-metrics?dateRange=${dateRange}`),
+        fetch('/api/admin/system/health')
       ]);
 
       if (!subscriptionRes.ok || !paymentRes.ok || !healthRes.ok) {
@@ -136,8 +124,7 @@ export default function AdminAnalyticsPage() {
       const response = await fetch(endpoint, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session?.accessToken}`
+          'Content-Type': 'application/json'
         },
         body: JSON.stringify({
           dateRange: parseInt(dateRange),
@@ -200,7 +187,7 @@ export default function AdminAnalyticsPage() {
     return null;
   };
 
-  if (status === 'loading') {
+  if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <Spinner size="lg" />

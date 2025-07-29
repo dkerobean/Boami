@@ -231,7 +231,7 @@ export class RedirectValidator {
    * Get default redirect URL for authenticated users
    */
   static getDefaultRedirect(): string {
-    return '/dashboards/modern';
+    return '/dashboards/ecommerce';
   }
 
   /**

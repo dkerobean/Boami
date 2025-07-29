@@ -33,10 +33,13 @@ import {
   IconTrash,
   IconFilter,
   IconSearch,
-  IconCurrencyDollar
+  IconCurrencyDollar,
+  IconFileImport,
+  IconDownload
 } from '@tabler/icons-react';
 import { format } from 'date-fns';
 import IncomeForm from './IncomeForm';
+import FinanceImportDialog from '../import/FinanceImportDialog';
 
 interface Income {
   _id: string;
@@ -69,6 +72,7 @@ const IncomeList: React.FC = () => {
   const [editingIncome, setEditingIncome] = useState<Income | null>(null);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [incomeToDelete, setIncomeToDelete] = useState<Income | null>(null);
+  const [openImport, setOpenImport] = useState(false);
 
   // Filter states
   const [searchTerm, setSearchTerm] = useState('');
@@ -155,6 +159,33 @@ const IncomeList: React.FC = () => {
     fetchIncomes();
   };
 
+  const handleImportSuccess = () => {
+    setOpenImport(false);
+    fetchIncomes(); // Refresh the income list after successful import
+  };
+
+  const handleDownloadTemplate = async () => {
+    try {
+      const response = await fetch('/api/finance/templates/income?format=csv&instructions=true');
+      
+      if (response.ok) {
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        
+        link.href = url;
+        link.download = 'income_import_template.csv';
+        document.body.appendChild(link);
+        link.click();
+        
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(url);
+      }
+    } catch (error) {
+      console.error('Failed to download template:', error);
+    }
+  };
+
   const filteredIncomes = incomes.filter(income => {
     const matchesSearch = income.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          income.categoryId.name.toLowerCase().includes(searchTerm.toLowerCase());
@@ -189,13 +220,33 @@ const IncomeList: React.FC = () => {
             <Typography variant="h5" component="h2">
               Income Management
             </Typography>
-            <Button
-              variant="contained"
-              startIcon={<IconPlus />}
-              onClick={handleCreateIncome}
-            >
-              Add Income
-            </Button>
+            <Box display="flex" gap={2}>
+              <Tooltip title="Download CSV template for importing income data">
+                <Button
+                  variant="text"
+                  size="small"
+                  startIcon={<IconDownload />}
+                  onClick={handleDownloadTemplate}
+                  sx={{ minWidth: 'auto' }}
+                >
+                  Template
+                </Button>
+              </Tooltip>
+              <Button
+                variant="outlined"
+                startIcon={<IconFileImport />}
+                onClick={() => setOpenImport(true)}
+              >
+                Import Income
+              </Button>
+              <Button
+                variant="contained"
+                startIcon={<IconPlus />}
+                onClick={handleCreateIncome}
+              >
+                Add Income
+              </Button>
+            </Box>
           </Box>
 
           {/* Filters */}
@@ -385,6 +436,14 @@ const IncomeList: React.FC = () => {
           </Button>
         </DialogActions>
       </Dialog>
+
+      {/* Import Dialog */}
+      <FinanceImportDialog
+        open={openImport}
+        onClose={() => setOpenImport(false)}
+        type="income"
+        onSuccess={handleImportSuccess}
+      />
     </Box>
   );
 };

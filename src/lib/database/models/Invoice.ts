@@ -19,23 +19,23 @@ export interface IInvoiceItem {
  */
 export interface IInvoice {
   invoiceNumber: string;
-  
+
   // Billing details
   billFrom: string;
   billFromEmail: string;
   billFromAddress?: string;
   billFromPhone?: number;
   billFromFax?: number;
-  
+
   billTo: string;
   billToEmail: string;
   billToAddress?: string;
   billToPhone?: number;
   billToFax?: number;
-  
+
   // Invoice items
   orders: IInvoiceItem[];
-  
+
   // Dates and financial details
   orderDate: Date;
   dueDate?: Date;
@@ -45,13 +45,13 @@ export interface IInvoice {
   discount?: number;
   discountType?: 'percentage' | 'fixed';
   grandTotal: number;
-  
+
   // Status and metadata
   status: 'Draft' | 'Pending' | 'Sent' | 'Paid' | 'Overdue' | 'Cancelled';
   completed: boolean;
   notes?: string;
   terms?: string;
-  
+
   // User and audit fields
   userId: string;
   createdAt: Date;
@@ -91,8 +91,7 @@ export interface IInvoiceModel extends Model<IInvoiceDocument> {
 const invoiceItemSchema = new Schema<IInvoiceItem>({
   productId: {
     type: String,
-    ref: 'Product',
-    index: true
+    ref: 'Product'
   },
   itemName: {
     type: String,
@@ -140,7 +139,7 @@ const invoiceSchema = new Schema<IInvoiceDocument, IInvoiceModel>({
     uppercase: true,
     sparse: true // Allow multiple null values during creation
   },
-  
+
   // Billing From details
   billFrom: {
     type: String,
@@ -164,7 +163,7 @@ const invoiceSchema = new Schema<IInvoiceDocument, IInvoiceModel>({
   billFromFax: {
     type: Number
   },
-  
+
   // Billing To details
   billTo: {
     type: String,
@@ -188,7 +187,7 @@ const invoiceSchema = new Schema<IInvoiceDocument, IInvoiceModel>({
   billToFax: {
     type: Number
   },
-  
+
   // Invoice items
   orders: {
     type: [invoiceItemSchema],
@@ -200,7 +199,7 @@ const invoiceSchema = new Schema<IInvoiceDocument, IInvoiceModel>({
       message: 'Invoice must contain at least one item'
     }
   },
-  
+
   // Dates
   orderDate: {
     type: Date,
@@ -217,7 +216,7 @@ const invoiceSchema = new Schema<IInvoiceDocument, IInvoiceModel>({
       message: 'Due date must be after order date'
     }
   },
-  
+
   // Financial details
   totalCost: {
     type: Number,
@@ -251,13 +250,12 @@ const invoiceSchema = new Schema<IInvoiceDocument, IInvoiceModel>({
     required: [true, 'Grand total is required'],
     min: [0, 'Grand total must be positive']
   },
-  
+
   // Status and metadata
   status: {
     type: String,
     enum: ['Draft', 'Pending', 'Sent', 'Paid', 'Overdue', 'Cancelled'],
-    default: 'Draft',
-    index: true
+    default: 'Draft'
   },
   completed: {
     type: Boolean,
@@ -271,12 +269,11 @@ const invoiceSchema = new Schema<IInvoiceDocument, IInvoiceModel>({
     type: String,
     trim: true
   },
-  
+
   // User and audit fields
   userId: {
     type: String,
-    required: [true, 'User ID is required'],
-    index: true
+    required: [true, 'User ID is required']
   },
   createdBy: {
     type: String,
@@ -288,7 +285,7 @@ const invoiceSchema = new Schema<IInvoiceDocument, IInvoiceModel>({
   }
 }, {
   timestamps: true,
-  toJSON: { 
+  toJSON: {
     transform: function(doc, ret) {
       delete (ret as any).__v;
       return ret;
@@ -312,17 +309,17 @@ invoiceSchema.pre('save', async function(next) {
   if (!this.invoiceNumber) {
     this.invoiceNumber = await (this.constructor as IInvoiceModel).getNextInvoiceNumber();
   }
-  
+
   // Calculate totals
   this.totalCost = this.calculateSubtotal();
   this.vat = this.calculateVat();
   this.grandTotal = this.calculateGrandTotal();
-  
+
   // Check if invoice is overdue
   if (this.dueDate && this.dueDate < new Date() && this.status === 'Sent') {
     this.status = 'Overdue';
   }
-  
+
   next();
 });
 
@@ -341,7 +338,7 @@ invoiceSchema.methods.calculateSubtotal = function(): number {
 invoiceSchema.methods.calculateVat = function(): number {
   const subtotal = this.calculateSubtotal();
   let discountAmount = 0;
-  
+
   if (this.discount > 0) {
     if (this.discountType === 'percentage') {
       discountAmount = subtotal * (this.discount / 100);
@@ -349,7 +346,7 @@ invoiceSchema.methods.calculateVat = function(): number {
       discountAmount = this.discount;
     }
   }
-  
+
   const discountedSubtotal = subtotal - discountAmount;
   return discountedSubtotal * (this.vatRate / 100);
 };
@@ -361,7 +358,7 @@ invoiceSchema.methods.calculateGrandTotal = function(): number {
   const subtotal = this.calculateSubtotal();
   const vat = this.calculateVat();
   let discountAmount = 0;
-  
+
   if (this.discount > 0) {
     if (this.discountType === 'percentage') {
       discountAmount = subtotal * (this.discount / 100);
@@ -369,7 +366,7 @@ invoiceSchema.methods.calculateGrandTotal = function(): number {
       discountAmount = this.discount;
     }
   }
-  
+
   return subtotal + vat - discountAmount;
 };
 
@@ -462,23 +459,23 @@ invoiceSchema.statics.getNextInvoiceNumber = async function(): Promise<string> {
   const year = today.getFullYear();
   const month = String(today.getMonth() + 1).padStart(2, '0');
   const prefix = `INV-${year}${month}`;
-  
+
   // Find the latest invoice number for this month
   const latestInvoice = await this.findOne({
     invoiceNumber: { $regex: `^${prefix}` }
   }).sort({ invoiceNumber: -1 });
-  
+
   let nextNumber = 1;
   if (latestInvoice) {
     const lastNumber = parseInt(latestInvoice.invoiceNumber.split('-')[2]);
     nextNumber = lastNumber + 1;
   }
-  
+
   return `${prefix}-${nextNumber.toString().padStart(3, '0')}`;
 };
 
 // Prevent model re-compilation during development
-const Invoice = (mongoose.models.Invoice || 
+const Invoice = (mongoose.models.Invoice ||
   mongoose.model<IInvoiceDocument, IInvoiceModel>('Invoice', invoiceSchema)) as IInvoiceModel;
 
 export default Invoice;

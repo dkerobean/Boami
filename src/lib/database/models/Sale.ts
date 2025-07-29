@@ -46,8 +46,7 @@ export interface ISaleModel extends Model<ISaleDocument> {
 const saleSchema = new Schema<ISaleDocument, ISaleModel>({
   productId: {
     type: String,
-    required: [true, 'Product ID is required'],
-    index: true
+    required: [true, 'Product ID is required']
   },
   quantity: {
     type: Number,
@@ -94,8 +93,7 @@ const saleSchema = new Schema<ISaleDocument, ISaleModel>({
   },
   userId: {
     type: String,
-    required: [true, 'User ID is required'],
-    index: true
+    required: [true, 'User ID is required']
   }
 }, {
   timestamps: true,

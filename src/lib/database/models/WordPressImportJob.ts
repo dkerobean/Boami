@@ -8,7 +8,7 @@ export interface IWordPressImportJob {
   connectionId: string; // Reference to WordPressConnection
   jobId: string; // Unique job identifier
   status: 'pending' | 'processing' | 'completed' | 'failed' | 'cancelled';
-  
+
   // Progress tracking
   progress: {
     total: number;
@@ -20,7 +20,7 @@ export interface IWordPressImportJob {
     currentStep: string;
     percentage: number;
   };
-  
+
   // Import configuration
   filters: {
     categories?: string[];
@@ -32,7 +32,7 @@ export interface IWordPressImportJob {
     updateExisting: boolean;
     pageSize: number;
   };
-  
+
   // Results and logging
   results: {
     newProducts: string[]; // Product IDs created
@@ -45,7 +45,7 @@ export interface IWordPressImportJob {
       error: string;
     }[];
   };
-  
+
   // Error tracking
   importErrors: {
     timestamp: Date;
@@ -54,20 +54,20 @@ export interface IWordPressImportJob {
     productId?: number;
     context?: any;
   }[];
-  
+
   // Timing information
   startedAt: Date;
   completedAt?: Date;
   estimatedTimeRemaining?: number;
   averageProcessingTime?: number;
-  
+
   // Metadata
   triggeredBy: 'manual' | 'auto' | 'schedule';
   userId: string; // User who triggered the import
   notes?: string;
   retryCount: number;
   maxRetries: number;
-  
+
   // Audit fields
   createdAt: Date;
   updatedAt: Date;
@@ -110,16 +110,14 @@ const wordPressImportJobSchema = new Schema<IWordPressImportJobDocument, IWordPr
   jobId: {
     type: String,
     required: [true, 'Job ID is required'],
-    unique: true,
-    index: true
+    unique: true
   },
   status: {
     type: String,
     enum: ['pending', 'processing', 'completed', 'failed', 'cancelled'],
-    default: 'pending',
-    index: true
+    default: 'pending'
   },
-  
+
   progress: {
     total: {
       type: Number,
@@ -162,7 +160,7 @@ const wordPressImportJobSchema = new Schema<IWordPressImportJobDocument, IWordPr
       max: [100, 'Percentage cannot exceed 100']
     }
   },
-  
+
   filters: {
     categories: [String],
     status: [String],
@@ -187,7 +185,7 @@ const wordPressImportJobSchema = new Schema<IWordPressImportJobDocument, IWordPr
       max: [100, 'Page size cannot exceed 100']
     }
   },
-  
+
   results: {
     newProducts: [{
       type: String
@@ -214,7 +212,7 @@ const wordPressImportJobSchema = new Schema<IWordPressImportJobDocument, IWordPr
       }
     }]
   },
-  
+
   importErrors: [{
     timestamp: {
       type: Date,
@@ -232,16 +230,15 @@ const wordPressImportJobSchema = new Schema<IWordPressImportJobDocument, IWordPr
     productId: Number,
     context: Schema.Types.Mixed
   }],
-  
+
   startedAt: {
     type: Date,
-    default: Date.now,
-    index: true
+    default: Date.now
   },
   completedAt: Date,
   estimatedTimeRemaining: Number,
   averageProcessingTime: Number,
-  
+
   triggeredBy: {
     type: String,
     enum: ['manual', 'auto', 'schedule'],
@@ -249,8 +246,7 @@ const wordPressImportJobSchema = new Schema<IWordPressImportJobDocument, IWordPr
   },
   userId: {
     type: String,
-    required: [true, 'User ID is required'],
-    index: true
+    required: [true, 'User ID is required']
   },
   notes: String,
   retryCount: {
@@ -265,7 +261,7 @@ const wordPressImportJobSchema = new Schema<IWordPressImportJobDocument, IWordPr
   }
 }, {
   timestamps: true,
-  toJSON: { 
+  toJSON: {
     transform: function(doc, ret) {
       delete (ret as any).__v;
       return ret;
@@ -292,7 +288,7 @@ wordPressImportJobSchema.pre('save', function(next) {
  */
 wordPressImportJobSchema.methods.updateProgress = async function(update: Partial<IWordPressImportJob['progress']>): Promise<void> {
   Object.assign(this.progress, update);
-  
+
   // Calculate estimated time remaining
   if (this.progress.processed > 0 && this.progress.total > 0) {
     const elapsedTime = this.getElapsedTime();
@@ -301,7 +297,7 @@ wordPressImportJobSchema.methods.updateProgress = async function(update: Partial
     this.estimatedTimeRemaining = remainingItems * averageTime;
     this.averageProcessingTime = averageTime;
   }
-  
+
   await this.save();
 };
 
@@ -313,7 +309,7 @@ wordPressImportJobSchema.methods.addError = async function(error: { level: 'warn
     ...error,
     timestamp: new Date()
   });
-  
+
   // Auto-fail job if too many critical errors
   const criticalErrors = this.importErrors.filter((e: any) => e.level === 'critical').length;
   if (criticalErrors >= 5) {
@@ -343,7 +339,7 @@ wordPressImportJobSchema.methods.markFailed = async function(error: string): Pro
   this.completedAt = new Date();
   this.progress.currentStep = 'Failed';
   this.estimatedTimeRemaining = 0;
-  
+
   await this.addError({
     level: 'critical',
     message: error
@@ -387,8 +383,8 @@ wordPressImportJobSchema.methods.calculateProgress = function(): void {
  * Static method to find active jobs
  */
 wordPressImportJobSchema.statics.findActiveJobs = function() {
-  return this.find({ 
-    status: { $in: ['pending', 'processing'] } 
+  return this.find({
+    status: { $in: ['pending', 'processing'] }
   }).sort({ startedAt: -1 });
 };
 
@@ -412,7 +408,7 @@ wordPressImportJobSchema.statics.findRecentJobs = function(limit: number = 20) {
  * Static method to find failed jobs that can be retried
  */
 wordPressImportJobSchema.statics.findFailedJobs = function() {
-  return this.find({ 
+  return this.find({
     status: 'failed',
     $expr: { $lt: ['$retryCount', '$maxRetries'] }
   }).sort({ startedAt: -1 });
@@ -423,7 +419,7 @@ wordPressImportJobSchema.statics.findFailedJobs = function() {
  */
 wordPressImportJobSchema.statics.createJob = function(data: Partial<IWordPressImportJob>) {
   const jobId = `wp-import-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-  
+
   return this.create({
     ...data,
     jobId,
@@ -432,7 +428,7 @@ wordPressImportJobSchema.statics.createJob = function(data: Partial<IWordPressIm
 };
 
 // Prevent model re-compilation during development
-const WordPressImportJob = (mongoose.models.WordPressImportJob || 
+const WordPressImportJob = (mongoose.models.WordPressImportJob ||
   mongoose.model<IWordPressImportJobDocument, IWordPressImportJobModel>('WordPressImportJob', wordPressImportJobSchema)) as IWordPressImportJobModel;
 
 export default WordPressImportJob;

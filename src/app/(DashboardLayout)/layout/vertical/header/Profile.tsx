@@ -11,12 +11,13 @@ import {
   CircularProgress,
   Chip,
 } from '@mui/material';
-import { IconMail, IconCrown, IconTrendingUp } from '@tabler/icons-react';
+import { IconMail, IconCrown, IconTrendingUp, IconUsers, IconShield } from '@tabler/icons-react';
 import { Stack } from '@mui/system';
 import Image from 'next/image';
 import { useAuthContext } from '@/app/context/AuthContext';
 import { useSubscription } from '@/app/context/SubscriptionContext';
 import { AuthLoading } from '@/app/components/shared/AuthLoading';
+import { usePermission } from '@/lib/hooks/usePermissions';
 
 const profile: any[] = [
   {
@@ -50,6 +51,10 @@ const Profile = () => {
   const [anchorEl2, setAnchorEl2] = useState(null);
   const { user, isLoading, logout, isAuthenticated } = useAuthContext();
   const { subscription, isSubscriptionActive } = useSubscription();
+
+  // Check permissions for user management features
+  const { hasPermission: canManageUsers } = usePermission('users', 'read');
+  const { hasPermission: canManageRoles } = usePermission('roles', 'read');
 
   const handleClick2 = (event: any) => {
     setAnchorEl2(event.currentTarget);
@@ -202,6 +207,102 @@ const Profile = () => {
             </Box>
           </Box>
         ))}
+
+        {/* User Management Section */}
+        {(canManageUsers.hasPermission || canManageRoles.hasPermission) && (
+          <>
+            <Divider sx={{ my: 1 }} />
+            <Typography variant="subtitle2" color="textSecondary" sx={{ px: 0, py: 1, fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+              Administration
+            </Typography>
+
+            {canManageUsers.hasPermission && (
+              <Box sx={{ py: 2, px: 0 }} className="hover-text-primary">
+                <Link href="/admin/user-management">
+                  <Stack direction="row" spacing={2}>
+                    <Box
+                      width="45px"
+                      height="45px"
+                      bgcolor="primary.light"
+                      display="flex"
+                      alignItems="center"
+                      justifyContent="center" flexShrink="0"
+                    >
+                      <IconUsers size={24} />
+                    </Box>
+                    <Box>
+                      <Typography
+                        variant="subtitle2"
+                        fontWeight={600}
+                        color="textPrimary"
+                        className="text-hover"
+                        noWrap
+                        sx={{
+                          width: '240px',
+                        }}
+                      >
+                        Manage Users
+                      </Typography>
+                      <Typography
+                        color="textSecondary"
+                        variant="subtitle2"
+                        sx={{
+                          width: '240px',
+                        }}
+                        noWrap
+                      >
+                        Invite and manage team members
+                      </Typography>
+                    </Box>
+                  </Stack>
+                </Link>
+              </Box>
+            )}
+
+            {canManageRoles.hasPermission && (
+              <Box sx={{ py: 2, px: 0 }} className="hover-text-primary">
+                <Link href="/admin/role-management">
+                  <Stack direction="row" spacing={2}>
+                    <Box
+                      width="45px"
+                      height="45px"
+                      bgcolor="primary.light"
+                      display="flex"
+                      alignItems="center"
+                      justifyContent="center" flexShrink="0"
+                    >
+                      <IconShield size={24} />
+                    </Box>
+                    <Box>
+                      <Typography
+                        variant="subtitle2"
+                        fontWeight={600}
+                        color="textPrimary"
+                        className="text-hover"
+                        noWrap
+                        sx={{
+                          width: '240px',
+                        }}
+                      >
+                        Manage Roles
+                      </Typography>
+                      <Typography
+                        color="textSecondary"
+                        variant="subtitle2"
+                        sx={{
+                          width: '240px',
+                        }}
+                        noWrap
+                      >
+                        Configure roles and permissions
+                      </Typography>
+                    </Box>
+                  </Stack>
+                </Link>
+              </Box>
+            )}
+          </>
+        )}
         <Box mt={2}>
           {/* Dynamic Subscription Section */}
           {isSubscriptionActive && subscription ? (

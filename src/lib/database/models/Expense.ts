@@ -76,13 +76,11 @@ const expenseSchema = new Schema<IExpenseDocument, IExpenseModel>({
   },
   categoryId: {
     type: String,
-    default: null,
-    index: true
+    default: null
   },
   vendorId: {
     type: String,
-    default: null,
-    index: true
+    default: null
   },
   isRecurring: {
     type: Boolean,
@@ -90,13 +88,11 @@ const expenseSchema = new Schema<IExpenseDocument, IExpenseModel>({
   },
   recurringPaymentId: {
     type: String,
-    default: null,
-    index: true
+    default: null
   },
   userId: {
     type: String,
-    required: [true, 'User ID is required'],
-    index: true
+    required: [true, 'User ID is required']
   }
 }, {
   timestamps: true,

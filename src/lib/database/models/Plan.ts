@@ -118,8 +118,6 @@ const planSchema = new Schema<IPlanDocument, IPlanModel>({
 
 // Indexes for better query performance
 planSchema.index({ isActive: 1, sortOrder: 1 });
-planSchema.index({ name: 1 });
-planSchema.index({ flutterwavePlanId: 1 });
 
 /**
  * Instance method to check if plan has a specific feature
@@ -197,3 +195,4 @@ const Plan = (mongoose.models.Plan || mongoose.model<IPlanDocument, IPlanModel>(
 
 export default Plan;
 export { Plan };
+export type { IPlan, IPlanDocument, IPlanModel };

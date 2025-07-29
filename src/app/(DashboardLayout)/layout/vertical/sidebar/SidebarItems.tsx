@@ -9,6 +9,7 @@ import NavCollapse from './NavCollapse';
 import NavGroup from './NavGroup/NavGroup';
 import { AppState } from '@/store/store'
 import { toggleMobileSidebar } from '@/store/customizer/CustomizerSlice';
+import PermissionNavItem from '@/app/components/navigation/PermissionNavItem';
 
 
 const SidebarItems = () => {
@@ -45,7 +46,7 @@ const SidebarItems = () => {
             // {/********If Sub No Menu**********/}
           } else {
             return (
-              <NavItem item={item} key={item.id} pathDirect={pathDirect} hideMenu={hideMenu} onClick={() => dispatch(toggleMobileSidebar())} />
+              <PermissionNavItem item={item} key={item.id} pathDirect={pathDirect} hideMenu={hideMenu} onClick={() => dispatch(toggleMobileSidebar())} />
             );
           }
         })}

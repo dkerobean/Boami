@@ -194,7 +194,7 @@ const wordPressConnectionSchema = new Schema<IWordPressConnectionDocument, IWord
   updatedBy: String
 }, {
   timestamps: true,
-  toJSON: { 
+  toJSON: {
     transform: function(doc, ret) {
       delete (ret as any).__v;
       delete (ret as any).consumerKey;
@@ -205,7 +205,6 @@ const wordPressConnectionSchema = new Schema<IWordPressConnectionDocument, IWord
 });
 
 // Indexes for better query performance
-wordPressConnectionSchema.index({ siteUrl: 1 });
 wordPressConnectionSchema.index({ isActive: 1, 'syncSettings.autoSync': 1 });
 wordPressConnectionSchema.index({ 'testResult.success': 1, isActive: 1 });
 wordPressConnectionSchema.index({ createdBy: 1 });
@@ -216,31 +215,31 @@ wordPressConnectionSchema.index({ 'syncSettings.lastAutoSync': 1 });
  */
 wordPressConnectionSchema.methods.testConnection = async function(): Promise<{ success: boolean; message: string; responseTime?: number }> {
   const startTime = Date.now();
-  
+
   try {
     // This would typically make an actual API call to WordPress/WooCommerce
     // For now, we'll simulate the test
     const testUrl = this.getApiUrl('products');
-    
+
     // TODO: Implement actual HTTP request to test the connection
     // const response = await fetch(testUrl, {
     //   headers: {
     //     'Authorization': `Basic ${Buffer.from(`${this.consumerKey}:${this.consumerSecret}`).toString('base64')}`
     //   }
     // });
-    
+
     const responseTime = Date.now() - startTime;
-    
+
     // Simulated success for now
     const result = {
       success: true,
       message: 'Connection successful',
       responseTime
     };
-    
+
     await this.updateTestResult(result);
     return result;
-    
+
   } catch (error) {
     const responseTime = Date.now() - startTime;
     const result = {
@@ -248,7 +247,7 @@ wordPressConnectionSchema.methods.testConnection = async function(): Promise<{ s
       message: error instanceof Error ? error.message : 'Connection failed',
       responseTime
     };
-    
+
     await this.updateTestResult(result);
     return result;
   }
@@ -285,11 +284,11 @@ wordPressConnectionSchema.methods.updateSyncStats = async function(stats: { impo
   this.importStats.totalSynced += stats.synced;
   this.importStats.totalErrors += stats.errors;
   this.lastSyncDate = new Date();
-  
+
   if (this.syncSettings.autoSync) {
     this.syncSettings.lastAutoSync = new Date();
   }
-  
+
   await this.save();
 };
 
@@ -297,7 +296,7 @@ wordPressConnectionSchema.methods.updateSyncStats = async function(stats: { impo
  * Instance method to check if connection is ready for sync
  */
 wordPressConnectionSchema.methods.isReadyForSync = function(): boolean {
-  return this.isActive && 
+  return this.isActive &&
          this.testResult?.success === true &&
          (this.lastTestDate && (Date.now() - this.lastTestDate.getTime()) < 24 * 60 * 60 * 1000); // Tested within 24 hours
 };
@@ -323,7 +322,7 @@ wordPressConnectionSchema.statics.findByUrl = function(siteUrl: string) {
  */
 wordPressConnectionSchema.statics.findReadyForAutoSync = function() {
   const now = new Date();
-  
+
   return this.find({
     isActive: true,
     'syncSettings.autoSync': true,
@@ -340,7 +339,7 @@ wordPressConnectionSchema.statics.findReadyForAutoSync = function() {
 };
 
 // Prevent model re-compilation during development
-const WordPressConnection = (mongoose.models.WordPressConnection || 
+const WordPressConnection = (mongoose.models.WordPressConnection ||
   mongoose.model<IWordPressConnectionDocument, IWordPressConnectionModel>('WordPressConnection', wordPressConnectionSchema)) as IWordPressConnectionModel;
 
 export default WordPressConnection;

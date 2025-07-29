@@ -4,6 +4,7 @@ import { PasswordManager } from '@/lib/auth/password';
 import { JWTManager } from '@/lib/auth/jwt';
 import { connectToDatabase } from '@/lib/database/mongoose-connection';
 import { User } from '@/lib/database/models/User';
+import { Role } from '@/lib/database/models/Role';
 import * as yup from 'yup';
 
 /**
@@ -87,6 +88,18 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Check if role was properly populated
+    if (!user.role) {
+      console.error(`User ${email} has no role assigned`);
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'User account configuration error. Please contact support.'
+        },
+        { status: 500 }
+      );
+    }
+
     // Verify password
     const isPasswordValid = await user.comparePassword(password);
     if (!isPasswordValid) {
@@ -117,11 +130,22 @@ export async function POST(request: NextRequest) {
     user.updatedAt = new Date();
     await user.save();
 
+    // Ensure role is populated and get role name
+    let roleName = 'user'; // Default fallback
+    
+    if (typeof user.role === 'object' && user.role !== null && 'name' in user.role) {
+      roleName = (user.role as any).name;
+    } else {
+      console.warn(`Role not properly populated for user ${email}, using default 'user' role`);
+    }
+    
+    console.log(`User ${email} logging in with role: ${roleName}`);
+
     // Generate JWT tokens
     const tokens = JWTManager.generateTokens({
       userId: user._id?.toString() || '',
       email: user.email,
-      role: user.role,
+      role: roleName,
       isEmailVerified: user.isEmailVerified
     });
 

@@ -22,7 +22,7 @@ export interface IProduct {
   featured: boolean;
   virtual: boolean;
   downloadable: boolean;
-  
+
   // Inventory management
   stock: boolean;
   qty: number;
@@ -30,7 +30,7 @@ export interface IProduct {
   manageStock: boolean;
   backordersAllowed: boolean;
   lowStockThreshold?: number;
-  
+
   // Physical properties
   weight?: number;
   dimensions?: {
@@ -38,31 +38,31 @@ export interface IProduct {
     width: string;
     height: string;
   };
-  
+
   // Media and presentation
   photo: string;
   gallery?: string[];
   colors: string[];
   tags: string[];
-  
+
   // Ratings and reviews
   rating: number;
   averageRating?: number;
   ratingCount?: number;
   reviewsAllowed: boolean;
-  
+
   // Relations
   related: boolean;
   relatedIds?: string[];
   upsellIds?: string[];
   crossSellIds?: string[];
   variations?: string[]; // References to ProductVariation documents
-  
+
   // SEO and metadata
   slug?: string;
   metaTitle?: string;
   metaDescription?: string;
-  
+
   // WordPress/WooCommerce integration
   wordpress?: {
     id: number;
@@ -75,7 +75,7 @@ export interface IProduct {
     dateModified: Date;
     totalSales: number;
   };
-  
+
   // Audit fields
   createdAt: Date;
   updatedAt: Date;
@@ -150,8 +150,7 @@ const productSchema = new Schema<IProductDocument, IProductModel>({
     unique: true,
     sparse: true, // Allow null/undefined values
     trim: true,
-    uppercase: true,
-    index: true
+    uppercase: true
   },
   category: [{
     type: String,
@@ -193,7 +192,7 @@ const productSchema = new Schema<IProductDocument, IProductModel>({
     type: Boolean,
     default: false
   },
-  
+
   // Inventory fields
   stock: {
     type: Boolean,
@@ -222,7 +221,7 @@ const productSchema = new Schema<IProductDocument, IProductModel>({
     default: 5,
     min: [0, 'Low stock threshold cannot be negative']
   },
-  
+
   // Physical properties
   weight: {
     type: Number,
@@ -233,7 +232,7 @@ const productSchema = new Schema<IProductDocument, IProductModel>({
     width: { type: String, default: '' },
     height: { type: String, default: '' }
   },
-  
+
   // Media
   photo: {
     type: String,
@@ -250,7 +249,7 @@ const productSchema = new Schema<IProductDocument, IProductModel>({
     type: String,
     trim: true
   }],
-  
+
   // Ratings
   rating: {
     type: Number,
@@ -273,7 +272,7 @@ const productSchema = new Schema<IProductDocument, IProductModel>({
     type: Boolean,
     default: true
   },
-  
+
   // Relations
   related: {
     type: Boolean,
@@ -292,15 +291,14 @@ const productSchema = new Schema<IProductDocument, IProductModel>({
     type: Schema.Types.ObjectId,
     ref: 'ProductVariation'
   }],
-  
+
   // SEO
   slug: {
     type: String,
     unique: true,
     sparse: true,
     trim: true,
-    lowercase: true,
-    index: true
+    lowercase: true
   },
   metaTitle: {
     type: String,
@@ -312,14 +310,13 @@ const productSchema = new Schema<IProductDocument, IProductModel>({
     trim: true,
     maxlength: [160, 'Meta description cannot exceed 160 characters']
   },
-  
+
   // WordPress integration
   wordpress: {
     id: {
       type: Number,
       unique: true,
-      sparse: true,
-      index: true
+      sparse: true
     },
     sourceUrl: String,
     slug: String,
@@ -337,13 +334,13 @@ const productSchema = new Schema<IProductDocument, IProductModel>({
       default: 0
     }
   },
-  
+
   // Audit fields
   createdBy: String,
   updatedBy: String
 }, {
   timestamps: true,
-  toJSON: { 
+  toJSON: {
     transform: function(doc, ret) {
       delete (ret as any).__v;
       return ret;
@@ -370,14 +367,14 @@ productSchema.pre('save', function(next) {
       .replace(/[^a-z0-9]+/g, '-')
       .replace(/^-+|-+$/g, '');
   }
-  
+
   // Update sales price based on discount
   if (this.discount > 0 && this.regularPrice) {
     this.salesPrice = this.regularPrice * (1 - this.discount / 100);
   } else {
     this.salesPrice = this.price;
   }
-  
+
   // Update stock status based on quantity
   if (this.manageStock) {
     if (this.qty <= 0) {
@@ -388,7 +385,7 @@ productSchema.pre('save', function(next) {
       this.stock = true;
     }
   }
-  
+
   next();
 });
 
@@ -479,9 +476,9 @@ productSchema.statics.findWordPressProducts = function() {
  * Static method to find out of stock products
  */
 productSchema.statics.findOutOfStock = function() {
-  return this.find({ 
+  return this.find({
     stockStatus: 'outofstock',
-    status: 'publish' 
+    status: 'publish'
   }).sort({ updatedAt: -1 });
 };
 
@@ -500,13 +497,13 @@ productSchema.statics.findLowStock = function() {
  * Static method to find products pending sync
  */
 productSchema.statics.findPendingSync = function() {
-  return this.find({ 
-    'wordpress.syncStatus': 'pending' 
+  return this.find({
+    'wordpress.syncStatus': 'pending'
   }).sort({ 'wordpress.lastSync': 1 });
 };
 
 // Prevent model re-compilation during development
-const Product = (mongoose.models.Product || 
+const Product = (mongoose.models.Product ||
   mongoose.model<IProductDocument, IProductModel>('Product', productSchema)) as IProductModel;
 
 export default Product;

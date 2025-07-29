@@ -1,5 +1,6 @@
 'use client'
 import React, { createContext, useContext, useEffect, useState } from 'react';
+import { usePathname } from 'next/navigation';
 import { InvoiceList, order } from '@/app/(DashboardLayout)/types/apps/invoice';
 import axios from '@/utils/axios';
 import toast from 'react-hot-toast';
@@ -22,9 +23,31 @@ export const InvoiceProvider: React.FC<{ children: React.ReactNode }> = ({ child
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const { user, isAuthenticated } = useAuthContext();
+    const pathname = usePathname();
+
+    // Helper function to determine if invoices should be loaded based on current route
+    const shouldLoadInvoices = () => {
+        // Don't load on auth pages
+        if (pathname?.startsWith('/auth') || pathname?.startsWith('/login')) {
+            return false;
+        }
+        
+        // Don't load on landing pages
+        if (pathname?.startsWith('/landingpage') || pathname === '/') {
+            return false;
+        }
+        
+        // Only load when authenticated and on dashboard/invoice-related pages
+        return isAuthenticated && user && pathname?.startsWith('/dashboards');
+    };
 
     // Function to fetch all invoices
     const fetchInvoices = async () => {
+        // Don't fetch if we're not in the right context
+        if (!shouldLoadInvoices()) {
+            return;
+        }
+
         try {
             setLoading(true);
             setError(null);
@@ -33,17 +56,37 @@ export const InvoiceProvider: React.FC<{ children: React.ReactNode }> = ({ child
             if (response.data.success) {
                 setInvoices(response.data.data);
             } else {
-                setError(response.data.message || 'Failed to fetch invoices');
-                toast.error('Failed to fetch invoices');
+                const errorMessage = response.data.message || 'Failed to fetch invoices';
+                setError(errorMessage);
+                
+                // Only show error toast if we're on dashboard pages where users expect invoice data
+                if (pathname?.includes('invoice') || pathname?.includes('finance')) {
+                    toast.error(errorMessage);
+                }
             }
         } catch (error: any) {
-            // Don't show error toast for authentication errors (401)
-            if (error.response?.status !== 401) {
-                const errorMessage = error.response?.data?.message || 'Error fetching invoices';
-                setError(errorMessage);
-                toast.error(errorMessage);
-            } else {
+            const errorMessage = error.response?.data?.message || error.message || 'Error fetching invoices';
+            
+            // Handle different error types
+            if (error.response?.status === 401) {
+                // Authentication error - don't show toast, just set error state
                 setError('Authentication required');
+                return;
+            } else if (error.response?.status >= 500) {
+                // Server error
+                setError('Server error - please try again later');
+            } else if (error.response?.status === 404) {
+                // Not found - might be normal for new users
+                setError(null);
+                setInvoices([]);
+                return;
+            } else {
+                setError(errorMessage);
+            }
+            
+            // Only show error toast if we're on pages where users expect invoice data
+            if (pathname?.includes('invoice') || pathname?.includes('finance')) {
+                toast.error(errorMessage);
             }
         } finally {
             setLoading(false);
@@ -51,11 +94,11 @@ export const InvoiceProvider: React.FC<{ children: React.ReactNode }> = ({ child
     };
 
     useEffect(() => {
-        // Only fetch invoices if user is authenticated
-        if (isAuthenticated && user) {
+        // Only fetch invoices if we should load them based on route and auth status
+        if (shouldLoadInvoices()) {
             fetchInvoices();
         }
-    }, [isAuthenticated, user]);
+    }, [isAuthenticated, user, pathname]);
 
     // Function to delete an invoice
     const deleteInvoice = async (id: string) => {

@@ -43,7 +43,15 @@ export async function POST(
     const body = await request.json();
     console.log('Restock request body:', body);
     
-    const validatedData = restockSchema.parse(body);
+    const validation = restockSchema.safeParse(body);
+    if (!validation.success) {
+      return NextResponse.json({
+        success: false,
+        error: 'Invalid request data',
+        details: validation.error.errors
+      }, { status: 400 });
+    }
+    const validatedData = validation.data;
 
     // Connect to MongoDB database
     await connectDB();

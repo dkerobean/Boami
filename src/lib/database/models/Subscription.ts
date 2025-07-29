@@ -54,14 +54,12 @@ const subscriptionSchema = new Schema<ISubscriptionDocument, ISubscriptionModel>
   userId: {
     type: Schema.Types.ObjectId,
     ref: 'User',
-    required: [true, 'User ID is required'],
-    index: true
+    required: [true, 'User ID is required']
   },
   planId: {
     type: Schema.Types.ObjectId,
     ref: 'Plan',
-    required: [true, 'Plan ID is required'],
-    index: true
+    required: [true, 'Plan ID is required']
   },
   flutterwaveSubscriptionId: {
     type: String,
@@ -75,8 +73,7 @@ const subscriptionSchema = new Schema<ISubscriptionDocument, ISubscriptionModel>
       values: ['active', 'cancelled', 'expired', 'pending', 'past_due'],
       message: 'Status must be one of: active, cancelled, expired, pending, past_due'
     },
-    default: 'pending',
-    index: true
+    default: 'pending'
   },
   currentPeriodStart: {
     type: Date,
@@ -84,8 +81,7 @@ const subscriptionSchema = new Schema<ISubscriptionDocument, ISubscriptionModel>
   },
   currentPeriodEnd: {
     type: Date,
-    required: [true, 'Current period end is required'],
-    index: true
+    required: [true, 'Current period end is required']
   },
   cancelAtPeriodEnd: {
     type: Boolean,
@@ -108,7 +104,6 @@ const subscriptionSchema = new Schema<ISubscriptionDocument, ISubscriptionModel>
 // Compound indexes for better query performance
 subscriptionSchema.index({ userId: 1, status: 1 });
 subscriptionSchema.index({ status: 1, currentPeriodEnd: 1 });
-subscriptionSchema.index({ flutterwaveSubscriptionId: 1 });
 
 // Ensure one active subscription per user
 subscriptionSchema.index(
@@ -270,3 +265,4 @@ const Subscription = (mongoose.models.Subscription || mongoose.model<ISubscripti
 
 export default Subscription;
 export { Subscription };
+export type { ISubscription, ISubscriptionDocument, ISubscriptionModel };

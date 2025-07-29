@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { useSession } from 'next-auth/react';
+import { useAuthContext } from '@/app/context/AuthContext';
 import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -47,7 +47,7 @@ interface OperationResult {
 
 export default function AdminDataPage() {
   const router = useRouter();
-  const { data: session, status } = useSession();
+  const { user, isLoading } = useAuthContext();
 
   // State
   const [loading, setLoading] = useState(true);
@@ -61,30 +61,26 @@ export default function AdminDataPage() {
 
   // Check authentication
   useEffect(() => {
-    if (status === 'unauthenticated') {
+    if (!isLoading && !user) {
       router.push('/login?callbackUrl=/admin/data');
-    } else if (status === 'authenticated' && session?.user?.role !== 'admin') {
+    } else if (!isLoading && user && user.role?.name !== 'admin') {
       router.push('/dashboard');
     }
-  }, [status, session, router]);
+  }, [isLoading, user, router]);
 
   // Fetch available operations
   useEffect(() => {
-    if (status === 'authenticated' && session?.user?.role === 'admin') {
+    if (!isLoading && user && user.role?.name === 'admin') {
       fetchOperations();
     }
-  }, [status, session]);
+  }, [isLoading, user]);
 
   const fetchOperations = async () => {
     try {
       setLoading(true);
       setError(null);
 
-      const response = await fetch('/api/admin/data/migration', {
-        headers: {
-          'Authorization': `Bearer ${session?.accessToken}`
-        }
-      });
+      const response = await fetch('/api/admin/data/migration');
 
       if (!response.ok) {
         throw new Error('Failed to fetch operations');
@@ -128,8 +124,7 @@ export default function AdminDataPage() {
       const response = await fetch('/api/admin/data/migration', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session?.accessToken}`
+          'Content-Type': 'application/json'
         },
         body: JSON.stringify({
           operation: selectedOperation.id,
@@ -316,7 +311,7 @@ ectValue placeholder={`Select ${key}`} />
     }
   };
 
-  if (status === 'loading') {
+  if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <Spinner size="lg" />

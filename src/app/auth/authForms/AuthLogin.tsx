@@ -67,7 +67,7 @@ const AuthLogin = ({ title, subtitle, subtext }: loginType) => {
 
         // Check for returnUrl parameter or use default dashboard
         const urlParams = new URLSearchParams(window.location.search);
-        const returnUrl = urlParams.get('returnUrl') || '/dashboards/modern';
+        const returnUrl = urlParams.get('returnUrl') || '/dashboards/ecommerce';
 
         console.log('Redirecting to:', returnUrl);
 

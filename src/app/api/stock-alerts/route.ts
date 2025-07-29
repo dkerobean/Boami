@@ -42,7 +42,15 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const queryParams = Object.fromEntries(searchParams);
     
-    const validatedQuery = querySchema.parse(queryParams);
+    const queryValidation = querySchema.safeParse(queryParams);
+    if (!queryValidation.success) {
+      return NextResponse.json({
+        success: false,
+        error: 'Invalid query parameters',
+        details: queryValidation.error.errors
+      }, { status: 400 });
+    }
+    const validatedQuery = queryValidation.data;
     
     // Use StockAlertsService to get real data
     const result = await StockAlertsService.getStockAlerts({
@@ -88,7 +96,15 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const validatedData = createStockAlertSchema.parse(body);
+    const dataValidation = createStockAlertSchema.safeParse(body);
+    if (!dataValidation.success) {
+      return NextResponse.json({
+        success: false,
+        error: 'Invalid request data',
+        details: dataValidation.error.errors
+      }, { status: 400 });
+    }
+    const validatedData = dataValidation.data;
     
     // In a real implementation, you would:
     // 1. Validate the product exists
@@ -149,7 +165,15 @@ export async function PUT(request: NextRequest) {
       }, { status: 400 });
     }
     
-    const validatedUpdateData = updateStockAlertSchema.parse(updateData);
+    const updateValidation = updateStockAlertSchema.safeParse(updateData);
+    if (!updateValidation.success) {
+      return NextResponse.json({
+        success: false,
+        error: 'Invalid update data',
+        details: updateValidation.error.errors
+      }, { status: 400 });
+    }
+    const validatedUpdateData = updateValidation.data;
     
     // Update alerts using StockAlertsService
     const success = await StockAlertsService.updateAlertStatus(

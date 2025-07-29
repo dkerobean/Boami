@@ -224,7 +224,7 @@ const developmentConfig: AuthConfig = {
       'mailto:',
       'tel:',
     ],
-    defaultRedirect: '/dashboards/modern',
+    defaultRedirect: '/dashboards/ecommerce',
     loginRedirect: '/auth/auth1/login',
     logoutRedirect: '/landingpage',
   },

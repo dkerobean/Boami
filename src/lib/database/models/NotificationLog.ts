@@ -33,13 +33,11 @@ export interface INotificationLogModel extends Model<INotificationLogDocument> {
 const notificationLogSchema = new Schema<INotificationLogDocument, INotificationLogModel>({
   userId: {
     type: String,
-    required: true,
-    index: true
+    required: true
   },
   notificationId: {
     type: String,
-    required: true,
-    index: true
+    required: true
   },
   type: {
     type: String,
@@ -59,14 +57,12 @@ const notificationLogSchema = new Schema<INotificationLogDocument, INotification
       'system_maintenance',
       'security_alert',
       'feature_announcement'
-    ],
-    index: true
+    ]
   },
   status: {
     type: String,
     enum: ['sent', 'failed', 'bounced', 'opened', 'clicked'],
-    required: true,
-    index: true
+    required: true
   },
   email: {
     type: String,
@@ -80,8 +76,7 @@ const notificationLogSchema = new Schema<INotificationLogDocument, INotification
   },
   sentAt: {
     type: Date,
-    required: true,
-    index: true
+    required: true
   },
   openedAt: {
     type: Date,

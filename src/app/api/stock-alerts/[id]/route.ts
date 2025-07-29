@@ -75,7 +75,15 @@ export async function PUT(
     }
     
     const body = await request.json();
-    const validatedData = updateStockAlertSchema.parse(body);
+    const validation = updateStockAlertSchema.safeParse(body);
+    if (!validation.success) {
+      return NextResponse.json({
+        success: false,
+        error: 'Invalid request data',
+        details: validation.error.errors
+      }, { status: 400 });
+    }
+    const validatedData = validation.data;
     
     // Update alert using StockAlertsService
     const success = await StockAlertsService.updateAlertStatus(

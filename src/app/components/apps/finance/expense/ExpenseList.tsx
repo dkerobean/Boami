@@ -44,12 +44,15 @@ import {
   IconFilter,
   IconRefresh,
   IconFileExport,
-  IconCalendar
+  IconCalendar,
+  IconFileImport,
+  IconDownload
 } from '@tabler/icons-react';
 
 import DashboardCard from '@/app/components/shared/DashboardCard';
 import BlankCard from '@/app/components/shared/BlankCard';
 import ExpenseForm from './ExpenseForm';
+import FinanceImportDialog from '../import/FinanceImportDialog';
 
 // Define expense data type
 interface ExpenseData {
@@ -173,6 +176,9 @@ const ExpenseList = () => {
   // State for expense form dialog
   const [openForm, setOpenForm] = useState<boolean>(false);
   const [currentExpense, setCurrentExpense] = useState<ExpenseData | null>(null);
+
+  // State for import dialog
+  const [openImport, setOpenImport] = useState<boolean>(false);
 
   // State for delete confirmation dialog
   const [deleteDialogOpen, setDeleteDialogOpen] = useState<boolean>(false);
@@ -307,6 +313,35 @@ const ExpenseList = () => {
     loadExpenseData(); // Reload data after form submission
   };
 
+  // Handle import success
+  const handleImportSuccess = () => {
+    setOpenImport(false);
+    loadExpenseData(); // Reload data after successful import
+  };
+
+  // Handle template download
+  const handleDownloadTemplate = async () => {
+    try {
+      const response = await fetch('/api/finance/templates/expense?format=csv&instructions=true');
+      
+      if (response.ok) {
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        
+        link.href = url;
+        link.download = 'expense_import_template.csv';
+        document.body.appendChild(link);
+        link.click();
+        
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(url);
+      }
+    } catch (error) {
+      console.error('Failed to download template:', error);
+    }
+  };
+
   // Format currency
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-US', {
@@ -391,6 +426,27 @@ const ExpenseList = () => {
                 </IconButton>
               </Tooltip>
 
+              <Tooltip title="Download CSV template for importing expense data">
+                <Button
+                  variant="text"
+                  size="small"
+                  startIcon={<IconDownload size={20} />}
+                  onClick={handleDownloadTemplate}
+                  sx={{ minWidth: 'auto', mr: 1 }}
+                >
+                  Template
+                </Button>
+              </Tooltip>
+
+              <Button
+                variant="outlined"
+                startIcon={<IconFileImport size={20} />}
+                onClick={() => setOpenImport(true)}
+                sx={{ mr: 2 }}
+              >
+                Import Expenses
+              </Button>
+              
               <Button
                 variant="contained"
                 startIcon={<IconPlus size={20} />}
@@ -586,6 +642,14 @@ const ExpenseList = () => {
           </Button>
         </DialogActions>
       </Dialog>
+
+      {/* Import Dialog */}
+      <FinanceImportDialog
+        open={openImport}
+        onClose={() => setOpenImport(false)}
+        type="expense"
+        onSuccess={handleImportSuccess}
+      />
     </>
   );
 };

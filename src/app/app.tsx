@@ -10,7 +10,6 @@ import { AppState } from "@/store/store";
 import { LoadingProvider } from "@/app/components/shared/loading";
 import { AuthProvider } from "@/app/context/AuthContext";
 import { SubscriptionProvider } from "@/app/context/SubscriptionContext";
-import { InvoiceProvider } from "@/app/context/InvoiceContext";
 import "@/utils/i18n";
 import "@/app/api/index";
 
@@ -39,11 +38,9 @@ const MyApp = ({ children }: { children: React.ReactNode }) => {
                         <CssBaseline />
                         <AuthProvider>
                             <SubscriptionProvider>
-                                <InvoiceProvider>
-                                    <LoadingProvider config={loadingConfig}>
-                                        {children}
-                                    </LoadingProvider>
-                                </InvoiceProvider>
+                                <LoadingProvider config={loadingConfig}>
+                                    {children}
+                                </LoadingProvider>
                             </SubscriptionProvider>
                         </AuthProvider>
                     </RTL>

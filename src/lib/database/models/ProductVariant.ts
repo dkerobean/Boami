@@ -226,7 +226,7 @@ const productVariantSchema = new Schema<IProductVariantDocument, IProductVariant
 
 // Indexes for better query performance
 productVariantSchema.index({ productId: 1, attributes: 1 });
-productVariantSchema.index({ sku: 1 });
+// Note: sku index is automatically created by unique: true in schema definition
 productVariantSchema.index({ 'inventory.quantity': 1 });
 productVariantSchema.index({ productId: 1, isDefault: -1 });
 productVariantSchema.index({ status: 1, 'inventory.quantity': 1 });

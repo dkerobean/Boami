@@ -12,7 +12,10 @@ export interface IUser {
   lastName: string;
   name: string; // Full name computed field
   designation?: string; // Job title/role designation
-  role: 'admin' | 'user' | 'manager';
+  role: Types.ObjectId; // Reference to Role document
+  status: 'active' | 'pending' | 'disabled';
+  invitedBy?: Types.ObjectId; // Reference to User who invited this user
+  invitedAt?: Date;
   isActive: boolean;
   isEmailVerified: boolean;
   emailVerifiedAt?: Date;
@@ -58,6 +61,9 @@ export interface IUserDocument extends IUser, Document {
   getSubscription(): Promise<any>;
   hasActiveSubscription(): Promise<boolean>;
   hasFeatureAccess(feature: string): Promise<boolean>;
+  getRole(): Promise<any>;
+  hasPermission(resource: string, action: string): Promise<boolean>;
+  getUserPermissions(): Promise<any[]>;
 }
 
 /**
@@ -68,6 +74,9 @@ export interface IUserModel extends Model<IUserDocument> {
   findActiveUsers(): Promise<IUserDocument[]>;
   findVerifiedUsers(): Promise<IUserDocument[]>;
   findUnverifiedUsers(): Promise<IUserDocument[]>;
+  findByRole(roleId: Types.ObjectId): Promise<IUserDocument[]>;
+  findByStatus(status: 'active' | 'pending' | 'disabled'): Promise<IUserDocument[]>;
+  createFromInvitation(email: string, roleId: Types.ObjectId, invitedBy: Types.ObjectId): Promise<IUserDocument>;
 }
 
 /**
@@ -105,12 +114,26 @@ const userSchema = new Schema<IUserDocument, IUserModel>({
     maxlength: [50, 'Last name cannot exceed 50 characters']
   },
   role: {
+    type: Schema.Types.ObjectId,
+    ref: 'Role',
+    required: [true, 'Role is required']
+  },
+  status: {
     type: String,
     enum: {
-      values: ['admin', 'user', 'manager'],
-      message: 'Role must be admin, user, or manager'
+      values: ['active', 'pending', 'disabled'],
+      message: 'Status must be active, pending, or disabled'
     },
-    default: 'user'
+    default: 'pending'
+  },
+  invitedBy: {
+    type: Schema.Types.ObjectId,
+    ref: 'User',
+    default: null
+  },
+  invitedAt: {
+    type: Date,
+    default: null
   },
   isActive: {
     type: Boolean,
@@ -256,10 +279,13 @@ userSchema.virtual('name').get(function() {
 
 // Indexes for better query performance
 userSchema.index({ role: 1 });
+userSchema.index({ status: 1 });
 userSchema.index({ isActive: 1 });
 userSchema.index({ isEmailVerified: 1 });
 userSchema.index({ createdAt: -1 });
 userSchema.index({ email: 1, isEmailVerified: 1 });
+userSchema.index({ invitedBy: 1 });
+userSchema.index({ status: 1, role: 1 });
 
 /**
  * Pre-save middleware to hash passwords
@@ -318,7 +344,9 @@ userSchema.methods.markEmailAsVerified = async function(): Promise<void> {
  * @returns Promise<IUserDocument | null> - User document or null
  */
 userSchema.statics.findByEmail = function(email: string) {
-  return this.findOne({ email: email.toLowerCase() }).select('+password');
+  return this.findOne({ email: email.toLowerCase() })
+    .select('+password')
+    .populate('role', 'name');
 };
 
 /**
@@ -343,6 +371,52 @@ userSchema.statics.findVerifiedUsers = function() {
  */
 userSchema.statics.findUnverifiedUsers = function() {
   return this.find({ isEmailVerified: false, isActive: true }).sort({ createdAt: -1 });
+};
+
+/**
+ * Static method to find users by role
+ * @param roleId - Role ObjectId
+ * @returns Promise<IUserDocument[]> - Array of users with the specified role
+ */
+userSchema.statics.findByRole = function(roleId: Types.ObjectId) {
+  return this.find({ role: roleId }).populate('role').sort({ createdAt: -1 });
+};
+
+/**
+ * Static method to find users by status
+ * @param status - User status
+ * @returns Promise<IUserDocument[]> - Array of users with the specified status
+ */
+userSchema.statics.findByStatus = function(status: 'active' | 'pending' | 'disabled') {
+  return this.find({ status }).populate('role').sort({ createdAt: -1 });
+};
+
+/**
+ * Static method to create user from invitation
+ * @param email - User's email
+ * @param roleId - Role ObjectId
+ * @param invitedBy - ObjectId of user who sent invitation
+ * @returns Promise<IUserDocument> - Created user document
+ */
+userSchema.statics.createFromInvitation = async function(
+  email: string,
+  roleId: Types.ObjectId,
+  invitedBy: Types.ObjectId
+): Promise<IUserDocument> {
+  const user = new this({
+    email: email.toLowerCase(),
+    role: roleId,
+    status: 'pending',
+    invitedBy,
+    invitedAt: new Date(),
+    isActive: true,
+    isEmailVerified: false,
+    firstName: '',
+    lastName: '',
+    password: '' // Will be set during invitation acceptance
+  });
+
+  return await user.save();
 };
 
 /**
@@ -379,8 +453,44 @@ userSchema.methods.hasFeatureAccess = async function(feature: string): Promise<b
   return plan?.hasFeature(feature) || false;
 };
 
+/**
+ * Instance method to get user's role
+ * @returns Promise<any> - User's role document
+ */
+userSchema.methods.getRole = async function(): Promise<any> {
+  const Role = mongoose.model('Role');
+  return await Role.findById(this.role).populate('permissions');
+};
+
+/**
+ * Instance method to check if user has specific permission
+ * @param resource - Resource name (e.g., 'users', 'products')
+ * @param action - Action name (e.g., 'create', 'read', 'update', 'delete')
+ * @returns Promise<boolean> - Whether user has the permission
+ */
+userSchema.methods.hasPermission = async function(resource: string, action: string): Promise<boolean> {
+  if (this.status !== 'active') return false;
+
+  const role = await this.getRole();
+  if (!role) return false;
+
+  return await role.hasPermission(resource, action);
+};
+
+/**
+ * Instance method to get all user permissions
+ * @returns Promise<any[]> - Array of user's permissions
+ */
+userSchema.methods.getUserPermissions = async function(): Promise<any[]> {
+  const role = await this.getRole();
+  if (!role) return [];
+
+  return await role.getPermissions();
+};
+
 // Prevent model re-compilation during development
 const User = (mongoose.models.User || mongoose.model<IUserDocument, IUserModel>('User', userSchema)) as IUserModel;
 
 export default User;
 export { User };
+export type { IUser, IUserDocument, IUserModel };

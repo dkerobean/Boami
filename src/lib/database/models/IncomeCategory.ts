@@ -53,8 +53,7 @@ const incomeCategorySchema = new Schema<IIncomeCategoryDocument, IIncomeCategory
   },
   userId: {
     type: String,
-    required: [true, 'User ID is required'],
-    index: true
+    required: [true, 'User ID is required']
   }
 }, {
   timestamps: true,

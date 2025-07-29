@@ -81,6 +81,8 @@ import {
   IconTag,
   IconRepeat,
   IconChartPie,
+  IconUsers,
+  IconShield,
 } from "@tabler/icons-react";
 
 const Menuitems: MenuitemsType[] = [
@@ -156,7 +158,7 @@ const Menuitems: MenuitemsType[] = [
     ],
   },
 
-  
+
 
 
   {
@@ -266,6 +268,31 @@ const Menuitems: MenuitemsType[] = [
 
   {
     navlabel: true,
+    subheader: "Administration",
+  },
+  {
+    id: uniqueId(),
+    title: "User Management",
+    icon: IconUsers,
+    href: "/admin/user-management",
+    permissionRequired: {
+      resource: "users",
+      action: "read"
+    }
+  },
+  {
+    id: uniqueId(),
+    title: "Role Management",
+    icon: IconShield,
+    href: "/admin/role-management",
+    permissionRequired: {
+      resource: "roles",
+      action: "read"
+    }
+  },
+
+  {
+    navlabel: true,
     subheader: "Pages",
   },
   {
@@ -330,7 +357,7 @@ const Menuitems: MenuitemsType[] = [
       },
     ],
   },
-  
+
 ];
 
 export default Menuitems;
