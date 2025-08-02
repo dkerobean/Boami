@@ -26,8 +26,15 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Get user's subscription
-    const subscription = await Subscription.findByUserId(new Types.ObjectId(userId));
+    // Handle development mock user ID vs real ObjectId
+    let subscription;
+    if (userId === 'dev-user-123' || !Types.ObjectId.isValid(userId)) {
+      // For development or invalid ObjectIds, return null (no subscription)
+      subscription = null;
+    } else {
+      // Get user's subscription for valid ObjectId
+      subscription = await Subscription.findByUserId(new Types.ObjectId(userId));
+    }
 
     if (!subscription) {
       return NextResponse.json({
@@ -115,8 +122,20 @@ export async function PUT(request: NextRequest) {
       );
     }
 
-    // Get user's current subscription
-    const subscription = await Subscription.findByUserId(new Types.ObjectId(userId));
+    // Handle development mock user ID vs real ObjectId
+    let subscription;
+    if (userId === 'dev-user-123' || !Types.ObjectId.isValid(userId)) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Cannot update subscription for development user'
+        },
+        { status: 400 }
+      );
+    }
+
+    // Get user's current subscription for valid ObjectId
+    subscription = await Subscription.findByUserId(new Types.ObjectId(userId));
 
     if (!subscription) {
       return NextResponse.json(

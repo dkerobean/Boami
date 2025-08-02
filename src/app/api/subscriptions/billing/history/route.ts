@@ -29,6 +29,33 @@ export async function GET(request: NextRequest) {
       );
     }
 
+    // Handle development mock user ID vs real ObjectId
+    if (userId === 'dev-user-123' || !Types.ObjectId.isValid(userId)) {
+      // For development or invalid ObjectIds, return empty history
+      return NextResponse.json({
+        success: true,
+        data: {
+          transactions: [],
+          pagination: {
+            currentPage: 1,
+            totalPages: 0,
+            totalCount: 0,
+            hasNextPage: false,
+            hasPreviousPage: false
+          },
+          summary: {
+            totalTransactions: 0,
+            successfulTransactions: 0,
+            failedTransactions: 0,
+            totalSpent: 0,
+            formattedTotalSpent: formatCurrency(0, 'NGN'),
+            averageTransaction: 0,
+            formattedAverageTransaction: formatCurrency(0, 'NGN')
+          }
+        }
+      });
+    }
+
     // Build query filters
     const filters: any = { userId: new Types.ObjectId(userId) };
     if (status) filters.status = status;

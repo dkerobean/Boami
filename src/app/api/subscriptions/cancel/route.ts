@@ -26,6 +26,17 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Handle development mock user ID vs real ObjectId
+    if (userId === 'dev-user-123' || !Types.ObjectId.isValid(userId)) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Cannot cancel subscription for development user'
+        },
+        { status: 400 }
+      );
+    }
+
     // Get user's subscription
     const subscription = await Subscription.findByUserId(new Types.ObjectId(userId));
 
@@ -135,6 +146,17 @@ export async function GET(request: NextRequest) {
           error: 'User ID is required'
         },
         { status: 401 }
+      );
+    }
+
+    // Handle development mock user ID vs real ObjectId
+    if (userId === 'dev-user-123' || !Types.ObjectId.isValid(userId)) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'No subscription found for development user'
+        },
+        { status: 404 }
       );
     }
 
