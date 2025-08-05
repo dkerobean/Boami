@@ -107,7 +107,9 @@ export default function UserListTable({
 
       if (!response.ok) {
         throw new Error('Failed to fetch users');
-    const data = await response.json();
+      }
+      
+      const data = await response.json();
       setUsers(data.users);
       setTotalPages(data.pagination.totalPages);
       setTotalCount(data.pagination.totalCount);

@@ -46,7 +46,7 @@ export class NotificationDatabaseOperations {
   }
 
   async markEventAsProcessed(id: string): Promise<INotificationEventDocument | null> {
-    return await NotificationEvent.findByIdAndUpdate(id,
+    return await NotificationEvent.findByIdAndUpdate(id, {
       processed: true,
       processedAt: new Date()
     }, { new: true });

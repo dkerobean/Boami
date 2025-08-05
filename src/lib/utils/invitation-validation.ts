@@ -101,7 +101,9 @@ export class InvitationValidator {
         if (!userExistsCheck.isValid) {
           return userExistsCheck;
         }
-  // Step 8: Check for warnings
+      }
+      
+      // Step 8: Check for warnings
       const warnings = this.getValidationWarnings(invitation);
 
       return {

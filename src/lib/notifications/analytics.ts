@@ -82,7 +82,8 @@ export class NotificationAnalytics {
         return acc;
       }, {});
 
-      const totalSent = statusCounts.sent ||onst totalFailed = statusCounts.failed || 0;
+      const totalSent = statusCounts.sent || 0;
+      const totalFailed = statusCounts.failed || 0;
       const totalBounced = statusCounts.bounced || 0;
       const total = result.total || 0;
 
