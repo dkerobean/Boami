@@ -479,7 +479,7 @@ const SubscriptionManagement: React.FC<SubscriptionManagementProps> = ({ userId 
                   )}
 
                   <List dense>
-                    {plan.features.map((feature, index) => (
+                    {(plan.features || []).map((feature, index) => (
                       <ListItem key={index} sx={{ px: 0 }}>
                         <ListItemIcon sx={{ minWidth: 32 }}>
                           <IconCheck size={16} color="#10b981" />

@@ -1,6 +1,7 @@
 import mongoose from 'mongoose';
 import Permission from '../models/Permission';
 import Role from '../models/Role';
+import SystemConfig from '../models/SystemConfig';
 
 /**
  * Default permissions for the system
@@ -172,13 +173,25 @@ export async function seedRoles(): Promise<void> {
 
 /**
  * Main seeder function to initialize RBAC system
+ * Only runs if RBAC hasn't been seeded before
  */
 export async function seedRBAC(): Promise<void> {
   try {
+    // Check if RBAC is already seeded
+    const isSeeded = await SystemConfig.isRBACSeeded();
+    
+    if (isSeeded) {
+      console.log('RBAC system already initialized, skipping seeding');
+      return;
+    }
+
     console.log('Starting RBAC seeding...');
 
     await seedPermissions();
     await seedRoles();
+
+    // Mark RBAC as seeded
+    await SystemConfig.markRBACSeeded();
 
     console.log('RBAC seeding completed successfully');
   } catch (error) {

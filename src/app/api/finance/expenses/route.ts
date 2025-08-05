@@ -3,7 +3,7 @@ import { connectDB } from '@/lib/database/mongoose-connection';
 import Expense from '@/lib/database/models/Expense';
 import ExpenseCategory from '@/lib/database/models/ExpenseCategory';
 import Vendor from '@/lib/database/models/Vendor';
-import { authenticateRequest } from '@/lib/auth/api-auth';
+import { authenticateApiRequest, createApiResponse } from '@/lib/auth/nextauth-middleware';
 import { ensureDefaultCategories } from '@/lib/database/seeders/default-categories';
 
 /**
@@ -13,8 +13,8 @@ import { ensureDefaultCategories } from '@/lib/database/seeders/default-categori
 export async function GET(request: NextRequest) {
   try {
     // Verify authentication
-    const authResult = await authenticateRequest(request);
-    if (!authResult.success || !authResult.userId) {
+    const authResult = await authenticateApiRequest(request);
+    if (!authResult.success || !authResult.user) {
       return NextResponse.json(
         { success: false, error: authResult.error || { code: 'UNAUTHORIZED', message: 'Authentication required' } },
         { status: 401 }
@@ -24,7 +24,7 @@ export async function GET(request: NextRequest) {
     await connectDB();
 
     // Ensure default categories exist for this user
-    await ensureDefaultCategories(authResult.userId);
+    await ensureDefaultCategories(authResult.user.id);
 
     // Parse query parameters
     const { searchParams } = new URL(request.url);
@@ -37,7 +37,7 @@ export async function GET(request: NextRequest) {
     const isRecurring = searchParams.get('isRecurring');
 
     // Build query
-    const query: any = { userId: authResult.userId };
+    const query: any = { userId: authResult.user.id };
 
     if (categoryId) {
       query.categoryId = categoryId;
@@ -95,7 +95,7 @@ export async function GET(request: NextRequest) {
     }));
 
     // Calculate totals
-    const totalAmount = await Expense.getTotalByUser(authResult.userId);
+    const totalAmount = await Expense.getTotalByUser(authResult.user.id);
 
     return NextResponse.json({
       success: true,
@@ -130,8 +130,8 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     // Verify authentication
-    const authResult = await authenticateRequest(request);
-    if (!authResult.success || !authResult.userId) {
+    const authResult = await authenticateApiRequest(request);
+    if (!authResult.success || !authResult.user) {
       return NextResponse.json(
         { success: false, error: authResult.error || { code: 'UNAUTHORIZED', message: 'Authentication required' } },
         { status: 401 }
@@ -173,7 +173,7 @@ export async function POST(request: NextRequest) {
     if (categoryId) {
       category = await ExpenseCategory.findOne({
         _id: categoryId,
-        userId: authResult.userId
+        userId: authResult.user.id
       });
 
       if (!category) {
@@ -189,7 +189,7 @@ export async function POST(request: NextRequest) {
     if (vendorId) {
       vendor = await Vendor.findOne({
         _id: vendorId,
-        userId: authResult.userId
+        userId: authResult.user.id
       });
 
       if (!vendor) {
@@ -209,7 +209,7 @@ export async function POST(request: NextRequest) {
       vendorId: vendorId || null,
       isRecurring: Boolean(isRecurring),
       recurringPaymentId: recurringPaymentId || null,
-      userId: authResult.userId
+      userId: authResult.user.id
     };
 
     const expense = new Expense(expenseData);

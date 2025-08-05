@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { connectDB } from '@/lib/database/mongoose-connection';
 import IncomeCategory from '@/lib/database/models/IncomeCategory';
-import { authenticateRequest } from '@/lib/auth/api-auth';
+import { authenticateApiRequest, createApiResponse } from '@/lib/auth/nextauth-middleware';
 import { ensureDefaultCategories } from '@/lib/database/seeders/default-categories';
 
 /**
@@ -11,8 +11,8 @@ import { ensureDefaultCategories } from '@/lib/database/seeders/default-categori
 export async function GET(request: NextRequest) {
   try {
     // Verify authentication
-    const authResult = await authenticateRequest(request);
-    if (!authResult.success || !authResult.userId) {
+    const authResult = await authenticateApiRequest(request);
+    if (!authResult.success || !authResult.user) {
       return NextResponse.json(
         { success: false, error: authResult.error || { code: 'UNAUTHORIZED', message: 'Authentication required' } },
         { status: 401 }
@@ -22,14 +22,14 @@ export async function GET(request: NextRequest) {
     await connectDB();
 
     // Ensure default categories exist for this user
-    await ensureDefaultCategories(authResult.userId);
+    await ensureDefaultCategories(authResult.user.id);
 
     // Parse query parameters
     const { searchParams } = new URL(request.url);
     const includeDefaults = searchParams.get('includeDefaults') !== 'false'; // Default to true
     const search = searchParams.get('search');
 
-    let query: any = { userId: authResult.userId };
+    let query: any = { userId: authResult.user.id };
 
     // Add search filter if provided
     if (search) {
@@ -73,8 +73,8 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     // Verify authentication
-    const authResult = await authenticateRequest(request);
-    if (!authResult.success || !authResult.userId) {
+    const authResult = await authenticateApiRequest(request);
+    if (!authResult.success || !authResult.user) {
       return NextResponse.json(
         { success: false, error: authResult.error || { code: 'UNAUTHORIZED', message: 'Authentication required' } },
         { status: 401 }
@@ -96,7 +96,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Check for duplicate category name
-    const existingCategory = await IncomeCategory.findByNameAndUser(name.trim(), authResult.userId);
+    const existingCategory = await IncomeCategory.findByNameAndUser(name.trim(), authResult.user.id);
     if (existingCategory) {
       return NextResponse.json(
         { success: false, error: { code: 'DUPLICATE_ERROR', message: 'Category name already exists' } },
@@ -108,7 +108,7 @@ export async function POST(request: NextRequest) {
     const categoryData = {
       name: name.trim(),
       description: description?.trim() || null,
-      userId: authResult.userId,
+      userId: authResult.user.id,
       isDefault: false
     };
 

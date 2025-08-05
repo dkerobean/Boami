@@ -101,8 +101,86 @@ export function PricingPage({
     }
   };
 
-  const handleSelectPlan = (planId: string) => {
-    setSelectedPlan(planId);
+  const handleSelectPlan = async (planId: string) => {
+    const selectedPlanData = plans.find(p => p.id === planId);
+    
+    // Handle Free plan - no payment needed
+    if (selectedPlanData?.name === 'Free') {
+      try {
+        setSelectedPlan(planId);
+        
+        // For free plan, just create subscription without payment
+        const response = await fetch('/api/subscriptions/subscribe', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            userId: user?.userId,
+            planId,
+            paymentMethod: 'free',
+            customerData: {
+              email: user?.email || '',
+              name: user?.name || `${user?.firstName || ''} ${user?.lastName || ''}`.trim(),
+              phone_number: user?.phone || ''
+            }
+          }),
+        });
+
+        if (response.ok) {
+          window.location.href = '/subscription/success?plan=free';
+        } else {
+          throw new Error('Failed to subscribe to free plan');
+        }
+      } catch (error) {
+        console.error('Free plan subscription error:', error);
+        alert('Failed to subscribe to free plan. Please try again.');
+        setSelectedPlan(null);
+      }
+      return;
+    }
+
+    // Handle paid plans - redirect to payment
+    try {
+      setSelectedPlan(planId);
+      
+      if (!user?.userId) {
+        // Redirect to login if user not authenticated
+        window.location.href = '/auth/auth1/login?redirect=/subscription/plans';
+        return;
+      }
+
+      const response = await fetch('/api/subscriptions/subscribe', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          userId: user.userId,
+          planId,
+          paymentMethod: billingPeriod,
+          customerData: {
+            email: user.email || '',
+            name: user.name || `${user.firstName || ''} ${user.lastName || ''}`.trim(),
+            phone_number: user.phone || ''
+          }
+        }),
+      });
+
+      const data = await response.json();
+
+      if (data.success && data.data.paymentLink) {
+        // Redirect to Flutterwave payment page
+        window.location.href = data.data.paymentLink;
+      } else {
+        throw new Error(data.error || 'Failed to create subscription');
+      }
+    } catch (error) {
+      console.error('Subscription error:', error);
+      alert('Failed to process subscription. Please try again.');
+      setSelectedPlan(null);
+    }
+
     if (onSelectPlan) {
       onSelectPlan(planId, billingPeriod);
     }
@@ -279,7 +357,9 @@ export function PricingPage({
                       Processing...
                     </>
                   ) : (
-                    `Choose ${plan.name}`
+                    plan.name === 'Free' ? 'Start Free' : 
+                    plan.name === 'Professional' ? 'Start Free Trial' :
+                    'Get Enterprise'
                   )}
                 </Button>
 

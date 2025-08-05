@@ -1,42 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/app/api/auth/[...nextauth]/route';
+import { connectDB } from '@/lib/database/mongoose-connection';
 import { Permission } from '@/lib/database/models';
-import { PermissionService } from '@/lib/services/permission.service';
 
 /**
- * Get all permissions
  * GET /api/permissions
+ * Get permissions with optional grouping
  */
 export async function GET(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    await connectDB();
 
-    // Check permission
-    const hasPermission = await PermissionService.checkPermission(
-      session.user.id,
-      'roles',
-      'read'
-    );
-
-    if (!hasPermission) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-    }
-
-    const { searchParams } = new URL(request.url);
-    const resource = searchParams.get('resource');
+    const searchParams = request.nextUrl.searchParams;
     const groupByResource = searchParams.get('groupByResource') === 'true';
 
-    let query = Permission.find();
-
-    if (resource) {
-      query = query.where('resource', resource);
-    }
-
-    const permissions = await query.sort({ resource: 1, action: 1 });
+    const permissions = await Permission.find().sort({ resource: 1, action: 1 });
 
     if (groupByResource) {
       // Group permissions by resource
@@ -48,6 +25,7 @@ export async function GET(request: NextRequest) {
         acc[resource].push({
           id: permission._id,
           name: permission.name,
+          resource: permission.resource,
           action: permission.action,
           description: permission.description
         });
@@ -55,24 +33,32 @@ export async function GET(request: NextRequest) {
       }, {} as Record<string, any[]>);
 
       return NextResponse.json({
+        success: true,
         permissions: groupedPermissions
       });
-    }
-
-    return NextResponse.json({
-      permissions: permissions.map(permission => ({
+    } else {
+      // Return flat list
+      const formattedPermissions = permissions.map(permission => ({
         id: permission._id,
         name: permission.name,
         resource: permission.resource,
         action: permission.action,
-        description: permission.description,
-        createdAt: permission.createdAt
-      }))
-    });
-  } catch (error) {
-    console.error('Error fetching permissions:', error);
+        description: permission.description
+      }));
+
+      return NextResponse.json({
+        success: true,
+        permissions: formattedPermissions
+      });
+    }
+
+  } catch (error: any) {
+    console.error('Get permissions error:', error);
     return NextResponse.json(
-      { error: 'Internal server error' },
+      {
+        success: false,
+        error: 'Failed to fetch permissions'
+      },
       { status: 500 }
     );
   }

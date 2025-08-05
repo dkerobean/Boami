@@ -7,7 +7,7 @@ import IncomeCategory from '@/lib/database/models/IncomeCategory';
 import ExpenseCategory from '@/lib/database/models/ExpenseCategory';
 import RecurringPayment from '@/lib/database/models/RecurringPayment';
 import Product from '@/lib/database/models/Product';
-import { authenticateRequest } from '@/lib/auth/api-auth';
+import { authenticateApiRequest, createApiResponse } from '@/lib/auth/nextauth-middleware';
 
 /**
  * GET /api/finance/dashboard
@@ -15,16 +15,21 @@ import { authenticateRequest } from '@/lib/auth/api-auth';
  */
 export async function GET(request: NextRequest) {
   try {
+    console.log('💰 Finance dashboard API called');
+
     // Verify authentication
-    const authResult = await authenticateRequest(request);
-    if (!authResult.success || !authResult.userId) {
-      return NextResponse.json(
-        { success: false, error: authResult.error || { code: 'UNAUTHORIZED', message: 'Authentication required' } },
-        { status: 401 }
-      );
+    const authResult = await authenticateApiRequest(request);
+    if (!authResult.success || !authResult.user) {
+      console.log('❌ Authentication failed:', authResult.error);
+      const { response, status } = createApiResponse(false, null, authResult.error, 401);
+      return NextResponse.json(response, { status });
     }
 
+    console.log('✅ User authenticated:', authResult.user.email);
+
     await connectDB();
+
+    const userId = authResult.user.id;
 
     // Parse query parameters
     const { searchParams } = new URL(request.url);
@@ -59,17 +64,17 @@ export async function GET(request: NextRequest) {
     // Get current period data
     const [currentIncomes, currentExpenses, currentSales] = await Promise.all([
       Income.find({
-        userId: authResult.userId,
+        userId: userId,
         date: { $gte: startDate, $lte: endDate }
       }).populate('categoryId').lean(),
-      
+
       Expense.find({
-        userId: authResult.userId,
+        userId: userId,
         date: { $gte: startDate, $lte: endDate }
       }).populate('categoryId').populate('vendorId').lean(),
-      
+
       Sale.find({
-        userId: authResult.userId,
+        userId: userId,
         date: { $gte: startDate, $lte: endDate }
       }).populate('productId').lean()
     ]);
@@ -77,17 +82,17 @@ export async function GET(request: NextRequest) {
     // Get previous period data for comparison
     const [previousIncomes, previousExpenses, previousSales] = await Promise.all([
       Income.find({
-        userId: authResult.userId,
+        userId: userId,
         date: { $gte: previousStartDate, $lt: previousEndDate }
       }).lean(),
-      
+
       Expense.find({
-        userId: authResult.userId,
+        userId: userId,
         date: { $gte: previousStartDate, $lt: previousEndDate }
       }).lean(),
-      
+
       Sale.find({
-        userId: authResult.userId,
+        userId: userId,
         date: { $gte: previousStartDate, $lt: previousEndDate }
       }).lean()
     ]);
@@ -161,7 +166,7 @@ export async function GET(request: NextRequest) {
 
     // Get upcoming recurring payments
     const upcomingPayments = await RecurringPayment.find({
-      userId: authResult.userId,
+      userId: userId,
       isActive: true,
       nextPaymentDate: { $gte: now, $lte: new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000) } // Next 30 days
     }).populate('categoryId').populate('vendorId').lean();
@@ -193,19 +198,19 @@ export async function GET(request: NextRequest) {
     for (let i = 5; i >= 0; i--) {
       const monthStart = new Date(now.getFullYear(), now.getMonth() - i, 1);
       const monthEnd = new Date(now.getFullYear(), now.getMonth() - i + 1, 0);
-      
+
       const monthIncomes = await Income.find({
-        userId: authResult.userId,
+        userId: userId,
         date: { $gte: monthStart, $lte: monthEnd }
       }).lean();
-      
+
       const monthExpenses = await Expense.find({
-        userId: authResult.userId,
+        userId: userId,
         date: { $gte: monthStart, $lte: monthEnd }
       }).lean();
-      
+
       const monthSales = await Sale.find({
-        userId: authResult.userId,
+        userId: userId,
         date: { $gte: monthStart, $lte: monthEnd }
       }).lean();
 

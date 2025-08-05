@@ -1,23 +1,23 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { EcommerceDashboardService } from '@/lib/services/ecommerce-dashboard';
-import { authenticateRequest } from '@/lib/auth/api-auth';
+import { authenticateApiRequest, createApiResponse } from '@/lib/auth/nextauth-middleware';
 
 export async function GET(request: NextRequest) {
   try {
+    console.log('📊 Dashboard stats API called');
+
     // Authenticate the request
-    const authResult = await authenticateRequest(request);
-    if (!authResult.success) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: authResult.error?.message || 'Authentication required'
-        },
-        { status: 401 }
-      );
+    const authResult = await authenticateApiRequest(request);
+    if (!authResult.success || !authResult.user) {
+      console.log('❌ Authentication failed:', authResult.error);
+      const { response, status } = createApiResponse(false, null, authResult.error, 401);
+      return NextResponse.json(response, { status });
     }
 
+    console.log('✅ User authenticated:', authResult.user.email);
+
     // Get dashboard statistics
-    const stats = await EcommerceDashboardService.getDashboardStats();
+    const stats = await EcommerceDashboardService.getDashboardStats(authResult.user.id || authResult.user.userId);
 
     return NextResponse.json({
       success: true,

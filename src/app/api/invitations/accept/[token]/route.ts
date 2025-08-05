@@ -80,14 +80,10 @@ export async function POST(
       );
     }
 
-    // Hash the password
-    const saltRounds = 12;
-    const hashedPassword = await bcrypt.hash(body.password, saltRounds);
-
-    // Create the user
+    // Create the user (password will be hashed by User model's pre-save middleware)
     const newUser = new User({
       email: invitation.email,
-      password: hashedPassword,
+      password: body.password,
       firstName: body.firstName.trim(),
       lastName: body.lastName.trim(),
       name: `${body.firstName.trim()} ${body.lastName.trim()}`,

@@ -14,33 +14,53 @@ export async function GET(request: NextRequest) {
     const plans = await Plan.findActivePlans();
 
     // Transform plans for client consumption
-    const transformedPlans = plans.map(plan => ({
-      id: plan._id,
-      name: plan.name,
-      description: plan.description,
-      price: {
-        monthly: plan.price.monthly,
-        annual: plan.price.annual,
-        currency: plan.currency
-      },
-      features: plan.features,
-      sortOrder: plan.sortOrder,
-      pricing: {
-        monthly: {
-          amount: plan.price.monthly,
-          period: 'month',
+    const transformedPlans = plans.map(plan => {
+      // Transform features object to array of enabled feature descriptions
+      const featuresArray = plan.features ? 
+        Object.entries(plan.features)
+          .filter(([_, config]) => config.enabled)
+          .map(([_, config]) => config.description)
+        : [];
+
+      return {
+        id: plan._id,
+        name: plan.name,
+        description: plan.description,
+        price: {
+          monthly: plan.price.monthly,
+          annual: plan.price.annual,
           currency: plan.currency
         },
-        annual: {
-          amount: plan.price.annual,
-          period: 'year',
-          currency: plan.currency,
-          discount: plan.getAnnualDiscount(),
-          monthlyEquivalent: Math.round(plan.price.annual / 12)
+        features: featuresArray,
+        limits: {
+          projects: plan.features?.projects?.limit || -1,
+          storage: plan.features?.storage?.limit || -1,
+          apiCalls: plan.features?.apiCalls?.limit || -1
+        },
+        isActive: plan.isActive,
+        sortOrder: plan.sortOrder,
+        popular: plan.sortOrder === 2, // Mark middle plan as popular
+        trialDays: plan.price.monthly === 0 ? 0 : 14, // Free plan has no trial, others have 14 days
+        savings: {
+          annual: plan.getAnnualDiscount(),
+          monthsFreeBenefit: Math.floor((plan.price.monthly * 12 - plan.price.annual) / plan.price.monthly)
+        },
+        pricing: {
+          monthly: {
+            amount: plan.price.monthly,
+            period: 'month',
+            currency: plan.currency
+          },
+          annual: {
+            amount: plan.price.annual,
+            period: 'year',
+            currency: plan.currency,
+            discount: plan.getAnnualDiscount(),
+            monthlyEquivalent: Math.round(plan.price.annual / 12)
+          }
         }
-      },
-      popular: plan.sortOrder === 2 // Mark middle plan as popular
-    }));
+      };
+    });
 
     return NextResponse.json({
       success: true,

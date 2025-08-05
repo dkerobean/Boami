@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { connectDB } from '@/lib/database/mongoose-connection';
 import KanbanBoard from '@/lib/database/models/KanbanBoard';
 import KanbanTask from '@/lib/database/models/KanbanTask';
-import { authenticateRequest } from '@/lib/auth/api-auth';
+import { authenticateApiRequest, createApiResponse } from '@/lib/auth/nextauth-middleware';
 
 /**
  * GET /api/productivity/kanban/boards
@@ -11,8 +11,8 @@ import { authenticateRequest } from '@/lib/auth/api-auth';
 export async function GET(request: NextRequest) {
   try {
     // Verify authentication
-    const authResult = await authenticateRequest(request);
-    if (!authResult.success || !authResult.userId) {
+    const authResult = await authenticateApiRequest(request);
+    if (!authResult.success || !authResult.user) {
       return NextResponse.json(
         { success: false, error: authResult.error || { code: 'UNAUTHORIZED', message: 'Authentication required' } },
         { status: 401 }
@@ -33,7 +33,7 @@ export async function GET(request: NextRequest) {
 
     if (search) {
       // Use text search
-      boards = await KanbanBoard.searchBoards(search, authResult.userId);
+      boards = await KanbanBoard.searchBoards(search, authResult.user.id);
       total = boards.length;
 
       // Apply pagination to search results
@@ -43,12 +43,12 @@ export async function GET(request: NextRequest) {
       // Regular query with pagination
       const skip = (page - 1) * limit;
       [boards, total] = await Promise.all([
-        KanbanBoard.find({ userId: authResult.userId })
+        KanbanBoard.find({ userId: authResult.user.id })
           .sort({ createdAt: -1 })
           .skip(skip)
           .limit(limit)
           .lean(),
-        KanbanBoard.countDocuments({ userId: authResult.userId })
+        KanbanBoard.countDocuments({ userId: authResult.user.id })
       ]);
     }
 
@@ -56,7 +56,7 @@ export async function GET(request: NextRequest) {
     if (includeTasks && boards.length > 0) {
       const boardIds = boards.map(board => board._id.toString());
       const tasks = await KanbanTask.find({
-        userId: authResult.userId,
+        userId: authResult.user.id,
         boardId: { $in: boardIds }
       }).sort({ columnId: 1, order: 1 }).lean();
 
@@ -88,8 +88,8 @@ export async function GET(request: NextRequest) {
     }
 
     // Get summary statistics
-    const totalBoards = await KanbanBoard.getTotalByUser(authResult.userId);
-    const totalTasks = await KanbanTask.getTotalByUser(authResult.userId);
+    const totalBoards = await KanbanBoard.getTotalByUser(authResult.user.id);
+    const totalTasks = await KanbanTask.getTotalByUser(authResult.user.id);
 
     return NextResponse.json({
       success: true,
@@ -125,8 +125,8 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     // Verify authentication
-    const authResult = await authenticateRequest(request);
-    if (!authResult.success || !authResult.userId) {
+    const authResult = await authenticateApiRequest(request);
+    if (!authResult.success || !authResult.user) {
       return NextResponse.json(
         { success: false, error: authResult.error || { code: 'UNAUTHORIZED', message: 'Authentication required' } },
         { status: 401 }
@@ -158,7 +158,7 @@ export async function POST(request: NextRequest) {
     // Check if user wants default board or custom columns
     if (useDefaults || !columns) {
       // Create board with default columns
-      const board = await KanbanBoard.createDefaultBoard(authResult.userId, name.trim());
+      const board = await KanbanBoard.createDefaultBoard(authResult.user.id, name.trim());
 
       if (description) {
         board.description = description.trim();
@@ -198,7 +198,7 @@ export async function POST(request: NextRequest) {
         name: name.trim(),
         description: description?.trim() || null,
         columns: processedColumns,
-        userId: authResult.userId
+        userId: authResult.user.id
       };
 
       const board = new KanbanBoard(boardData);

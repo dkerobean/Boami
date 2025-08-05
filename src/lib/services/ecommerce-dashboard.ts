@@ -61,7 +61,7 @@ export class EcommerceDashboardService {
   /**
    * Get dashboard overview statistics
    */
-  static async getDashboardStats(): Promise<DashboardStats> {
+  static async getDashboardStats(userId: string): Promise<DashboardStats> {
     try {
       await connectDB();
       const db = mongoose.connection.db;
@@ -76,8 +76,8 @@ export class EcommerceDashboardService {
 
       // Total Revenue from sales
       const totalRevenueResult = await db.collection('sales').aggregate([
-        { $match: { status: 'completed' } },
-        { $group: { _id: null, total: { $sum: '$total' } } }
+        { $match: { userId, status: 'completed' } },
+        { $group: { _id: null, total: { $sum: '$totalAmount' } } }
       ]).toArray();
       const totalRevenue = totalRevenueResult[0]?.total || 0;
 
@@ -85,16 +85,18 @@ export class EcommerceDashboardService {
       const currentMonthRevenue = await db.collection('sales').aggregate([
         { 
           $match: { 
+            userId,
             createdAt: { $gte: currentMonth },
             status: 'completed'
           } 
         },
-        { $group: { _id: null, total: { $sum: '$total' } } }
+        { $group: { _id: null, total: { $sum: '$totalAmount' } } }
       ]).toArray();
 
       const lastMonthRevenue = await db.collection('sales').aggregate([
         { 
           $match: {
+            userId,
             createdAt: {
               $gte: lastMonth,
               $lt: currentMonth
@@ -102,22 +104,24 @@ export class EcommerceDashboardService {
             status: 'completed'
           }
         },
-        { $group: { _id: null, total: { $sum: '$total' } } }
+        { $group: { _id: null, total: { $sum: '$totalAmount' } } }
       ]).toArray();
 
       const currentRev = currentMonthRevenue[0]?.total || 0;
       const lastRev = lastMonthRevenue[0]?.total || 1;
       const revenueGrowth = ((currentRev - lastRev) / lastRev) * 100;
 
-      // Total Products
-      const totalProducts = await db.collection('products').countDocuments();
+      // Total Products (user-specific)
+      const totalProducts = await db.collection('products').countDocuments({ userId });
 
       // Products growth (new products this month vs last month)
       const currentMonthProducts = await db.collection('products').countDocuments({
+        userId,
         createdAt: { $gte: currentMonth }
       });
 
       const lastMonthProducts = await db.collection('products').countDocuments({
+        userId,
         createdAt: { $gte: lastMonth, $lt: currentMonth }
       });
 
@@ -142,14 +146,16 @@ export class EcommerceDashboardService {
         : currentMonthCustomers > 0 ? 100 : 0;
 
       // Total Orders (using sales collection or financial transactions)
-      const totalOrders = await db.collection('sales').countDocuments();
+      const totalOrders = await db.collection('sales').countDocuments({ userId });
 
       // Orders growth
       const currentMonthOrders = await db.collection('sales').countDocuments({
+        userId,
         createdAt: { $gte: currentMonth }
       });
 
       const lastMonthOrders = await db.collection('sales').countDocuments({
+        userId,
         createdAt: { $gte: lastMonth, $lt: currentMonth }
       });
 
@@ -161,11 +167,12 @@ export class EcommerceDashboardService {
       const averageOrderValue = totalOrders > 0 ? totalRevenue / totalOrders : 0;
       
       // Order status counts
-      const pendingOrders = await db.collection('sales').countDocuments({ status: 'pending' });
-      const completedOrders = await db.collection('sales').countDocuments({ status: 'completed' });
+      const pendingOrders = await db.collection('sales').countDocuments({ userId, status: 'pending' });
+      const completedOrders = await db.collection('sales').countDocuments({ userId, status: 'completed' });
       
       // Total expenses
       const totalExpensesResult = await db.collection('expenses').aggregate([
+        { $match: { userId } },
         { $group: { _id: null, total: { $sum: '$amount' } } }
       ]).toArray();
       const totalExpenses = totalExpensesResult[0]?.total || 0;
@@ -175,6 +182,7 @@ export class EcommerceDashboardService {
       
       // Low stock products (stock <= lowStockThreshold or qty <= 5)
       const lowStockProducts = await db.collection('products').countDocuments({
+        userId,
         $or: [
           { qty: { $lte: 5 } },
           { $expr: { $lte: ['$qty', '$lowStockThreshold'] } }
@@ -222,7 +230,7 @@ export class EcommerceDashboardService {
   /**
    * Get sales data for charts (last 30 days)
    */
-  static async getSalesData(): Promise<SalesData[]> {
+  static async getSalesData(userId: string): Promise<SalesData[]> {
     try {
       await connectDB();
       const db = mongoose.connection.db;
@@ -234,6 +242,7 @@ export class EcommerceDashboardService {
       const salesData = await db.collection('sales').aggregate([
         {
           $match: {
+            userId,
             createdAt: { $gte: thirtyDaysAgo }
           }
         },
@@ -245,7 +254,7 @@ export class EcommerceDashboardService {
                 date: "$createdAt"
               }
             },
-            revenue: { $sum: '$total' },
+            revenue: { $sum: '$totalAmount' },
             orders: { $sum: 1 }
           }
         },
@@ -290,17 +299,21 @@ export class EcommerceDashboardService {
   /**
    * Get top performing products
    */
-  static async getProductPerformance(): Promise<ProductPerformance[]> {
+  static async getProductPerformance(userId: string): Promise<ProductPerformance[]> {
     try {
       await connectDB();
       const db = mongoose.connection.db;
 
       const products = await db.collection('products').aggregate([
         {
+          $match: { userId }
+        },
+        {
           $lookup: {
             from: 'sales',
             let: { productId: { $toString: '$_id' } },
             pipeline: [
+              { $match: { userId } },
               { $unwind: '$products' },
               { $match: { $expr: { $eq: ['$products.productId', '$$productId'] } } },
               {
@@ -363,13 +376,16 @@ export class EcommerceDashboardService {
   /**
    * Get recent transactions
    */
-  static async getRecentTransactions(): Promise<RecentTransaction[]> {
+  static async getRecentTransactions(userId: string): Promise<RecentTransaction[]> {
     try {
       await connectDB();
       const db = mongoose.connection.db;
 
       // Get recent sales as transactions
       const transactions = await db.collection('sales').aggregate([
+        {
+          $match: { userId }
+        },
         {
           $sort: { createdAt: -1 }
         },
@@ -380,7 +396,7 @@ export class EcommerceDashboardService {
           $project: {
             customerName: 1,
             customerEmail: 1,
-            amount: '$total',
+            amount: '$totalAmount',
             status: 1,
             date: '$createdAt',
             products: {
@@ -414,7 +430,7 @@ export class EcommerceDashboardService {
   /**
    * Get payment gateway statistics
    */
-  static async getPaymentGatewayStats(): Promise<PaymentGatewayStats[]> {
+  static async getPaymentGatewayStats(userId: string): Promise<PaymentGatewayStats[]> {
     try {
       await connectDB();
       const db = mongoose.connection.db;
@@ -422,12 +438,12 @@ export class EcommerceDashboardService {
       // Get payment method statistics from sales
       const paymentStats = await db.collection('sales').aggregate([
         {
-          $match: { status: 'completed' }
+          $match: { userId, status: 'completed' }
         },
         {
           $group: {
             _id: '$paymentMethod',
-            totalAmount: { $sum: '$total' },
+            totalAmount: { $sum: '$totalAmount' },
             transactionCount: { $sum: 1 }
           }
         },

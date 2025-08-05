@@ -5,6 +5,12 @@ const AccessibilityEnhancements: React.FC = () => {
   const theme = useTheme();
 
   useEffect(() => {
+    // Check if we're in browser environment
+    if (typeof window === 'undefined' || typeof document === 'undefined') return;
+
+    const elementsToCleanup: Element[] = [];
+    const eventListenersToCleanup: Array<{ element: Element; event: string; handler: EventListener }> = [];
+
     // Skip link for keyboard navigation
     const skipLink = document.createElement('a');
     skipLink.href = '#main-content';
@@ -21,14 +27,29 @@ const AccessibilityEnhancements: React.FC = () => {
       z-index: 9999;
       transition: top 0.3s;
     `;
-    skipLink.addEventListener('focus', () => {
+    
+    const handleSkipLinkFocus = () => {
       skipLink.style.top = '6px';
-    });
-    skipLink.addEventListener('blur', () => {
+    };
+    
+    const handleSkipLinkBlur = () => {
       skipLink.style.top = '-40px';
-    });
+    };
 
-    document.body.insertBefore(skipLink, document.body.firstChild);
+    skipLink.addEventListener('focus', handleSkipLinkFocus);
+    skipLink.addEventListener('blur', handleSkipLinkBlur);
+    
+    eventListenersToCleanup.push(
+      { element: skipLink, event: 'focus', handler: handleSkipLinkFocus },
+      { element: skipLink, event: 'blur', handler: handleSkipLinkBlur }
+    );
+
+    try {
+      document.body.insertBefore(skipLink, document.body.firstChild);
+      elementsToCleanup.push(skipLink);
+    } catch (error) {
+      console.warn('Error adding skip link:', error);
+    }
 
     // Announce page changes to screen readers
     const announcePageChange = () => {
@@ -115,7 +136,7 @@ const AccessibilityEnhancements: React.FC = () => {
       document.head.appendChild(style);
 
       // Handle escape key for closing modals/dropdowns
-      document.addEventListener('keydown', (e) => {
+      const handleEscapeKey = (e: KeyboardEvent) => {
         if (e.key === 'Escape') {
           // Close any open modals or dropdowns
           const openModals = document.querySelectorAll('[role="dialog"][aria-hidden="false"]');
@@ -126,7 +147,10 @@ const AccessibilityEnhancements: React.FC = () => {
             }
           });
         }
-      });
+      };
+
+      document.addEventListener('keydown', handleEscapeKey);
+      eventListenersToCleanup.push({ element: document as any, event: 'keydown', handler: handleEscapeKey });
     };
 
     // Color contrast and readability enhancements
@@ -174,7 +198,13 @@ const AccessibilityEnhancements: React.FC = () => {
       politeRegion.setAttribute('aria-atomic', 'false');
       politeRegion.id = 'polite-live-region';
       politeRegion.className = 'sr-only';
-      document.body.appendChild(politeRegion);
+      
+      try {
+        document.body.appendChild(politeRegion);
+        elementsToCleanup.push(politeRegion);
+      } catch (error) {
+        console.warn('Error adding polite live region:', error);
+      }
 
       // Create assertive live region for urgent updates
       const assertiveRegion = document.createElement('div');
@@ -182,7 +212,13 @@ const AccessibilityEnhancements: React.FC = () => {
       assertiveRegion.setAttribute('aria-atomic', 'true');
       assertiveRegion.id = 'assertive-live-region';
       assertiveRegion.className = 'sr-only';
-      document.body.appendChild(assertiveRegion);
+      
+      try {
+        document.body.appendChild(assertiveRegion);
+        elementsToCleanup.push(assertiveRegion);
+      } catch (error) {
+        console.warn('Error adding assertive live region:', error);
+      }
     };
 
     // Initialize all accessibility enhancements
@@ -194,17 +230,35 @@ const AccessibilityEnhancements: React.FC = () => {
 
     // Cleanup function
     return () => {
-      // Remove skip link
-      const existingSkipLink = document.querySelector('a[href="#main-content"]');
-      if (existingSkipLink) {
-        existingSkipLink.remove();
-      }
+      try {
+        // Remove all created elements
+        elementsToCleanup.forEach(element => {
+          if (element && element.parentNode) {
+            element.parentNode.removeChild(element);
+          }
+        });
 
-      // Remove live regions
-      const politeRegion = document.getElementById('polite-live-region');
-      const assertiveRegion = document.getElementById('assertive-live-region');
-      if (politeRegion) politeRegion.remove();
-      if (assertiveRegion) assertiveRegion.remove();
+        // Remove all event listeners
+        eventListenersToCleanup.forEach(({ element, event, handler }) => {
+          try {
+            element.removeEventListener(event, handler);
+          } catch (error) {
+            console.warn('Error removing event listener:', error);
+          }
+        });
+
+        // Remove live regions specifically
+        const politeRegion = document.getElementById('polite-live-region');
+        const assertiveRegion = document.getElementById('assertive-live-region');
+        if (politeRegion && politeRegion.parentNode) {
+          politeRegion.parentNode.removeChild(politeRegion);
+        }
+        if (assertiveRegion && assertiveRegion.parentNode) {
+          assertiveRegion.parentNode.removeChild(assertiveRegion);
+        }
+      } catch (error) {
+        console.warn('Error during accessibility cleanup:', error);
+      }
     };
   }, [theme]);
 

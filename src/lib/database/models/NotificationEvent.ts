@@ -61,8 +61,7 @@ const notificationEventSchema = new Schema<INotificationEventDocument, INotifica
   },
   userId: {
     type: String,
-    required: true,
-    index: true
+    required: true
   },
   data: {
     type: Schema.Types.Mixed,
@@ -79,8 +78,7 @@ const notificationEventSchema = new Schema<INotificationEventDocument, INotifica
   },
   processed: {
     type: Boolean,
-    default: false,
-    index: true
+    default: false
   },
   processedAt: {
     type: Date,

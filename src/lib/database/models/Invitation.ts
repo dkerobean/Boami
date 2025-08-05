@@ -83,8 +83,7 @@ const invitationSchema = new Schema<IInvitationDocument, IInvitationModel>({
       values: ['pending', 'accepted', 'expired'],
       message: 'Status must be pending, accepted, or expired'
     },
-    default: 'pending',
-    index: true
+    default: 'pending'
   }
 }, {
   timestamps: true,

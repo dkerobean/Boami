@@ -5,6 +5,7 @@ import { VerificationCodeManager } from '@/lib/auth/verification';
 import { EmailSender } from '@/lib/email/sender';
 import { connectToDatabase } from '@/lib/database/mongoose-connection';
 import { User } from '@/lib/database/models/User';
+import { getDefaultRoleId } from '@/lib/database/seeders/rbac-seeder';
 import * as yup from 'yup';
 
 /**
@@ -97,6 +98,18 @@ export async function POST(request: NextRequest) {
     // Connect to database
     await connectToDatabase();
 
+    // Get Admin role for new users (allows them to manage other users)
+    const defaultRoleId = await getDefaultRoleId('Admin');
+    if (!defaultRoleId) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'System not properly initialized. Please contact support.'
+        },
+        { status: 500 }
+      );
+    }
+
     // Check if user already exists
     const existingUser = await User.findByEmail(email);
     if (existingUser) {
@@ -110,15 +123,13 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Hash password
-    const hashedPassword = await PasswordManager.hashPassword(password);
-
-    // Create new user
+    // Create new user (password will be hashed by User model's pre-save middleware)
     const user = new User({
       email,
-      password: hashedPassword,
+      password: password,
       firstName,
       lastName,
+      role: defaultRoleId,
       isEmailVerified: false,
       emailVerifiedAt: null,
       createdAt: new Date(),

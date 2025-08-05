@@ -46,8 +46,7 @@ const emailTemplateSchema = new Schema<IEmailTemplateDocument, IEmailTemplateMod
       'system_maintenance',
       'security_alert',
       'feature_announcement'
-    ],
-    index: true
+    ]
   },
   subject: {
     type: String,
@@ -66,8 +65,7 @@ const emailTemplateSchema = new Schema<IEmailTemplateDocument, IEmailTemplateMod
   }],
   isActive: {
     type: Boolean,
-    default: true,
-    index: true
+    default: true
   }
 }, {
   timestamps: true

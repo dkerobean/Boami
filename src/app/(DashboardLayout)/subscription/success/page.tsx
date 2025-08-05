@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useAuth } from '@/hooks/useAuth';
+import { JWTClientManager } from '@/lib/auth/jwt-client';
 import {
   Container,
   Typography,
@@ -10,68 +10,173 @@ import {
   Paper,
   Button,
   Alert,
-  CircularProgress
+  CircularProgress,
+  Chip
 } from '@mui/material';
-import { IconCheck, IconArrowRight } from '@tabler/icons-react';
-import { useSubscription } from '@/app/context/SubscriptionContext';
+import { IconCheck, IconArrowRight, IconCrown, IconX } from '@tabler/icons-react';
 
 const SubscriptionSuccessPage: React.FC = () => {
-  const { user, isAuthenticated } = useAuth();
-  const { refreshSubscription } = useSubscription();
   const router = useRouter();
   const searchParams = useSearchParams();
 
+  const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [subscription, setSubscription] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
+  const [verifying, setVerifying] = useState<boolean>(false);
 
+  // Get URL parameters
+  const txRef = searchParams.get('tx_ref');
+  const transactionId = searchParams.get('transaction_id');
+  const planType = searchParams.get('plan');
+  const status = searchParams.get('status');
   const paymentReference = searchParams.get('ref');
 
   useEffect(() => {
-    const fetchSubscriptionDetails = async () => {
-      if (!user?._id || !paymentReference) {
-        setLoading(false);
+    const currentUser = JWTClientManager.getCurrentUser();
+    setUser(currentUser);
+  }, []);
+
+  useEffect(() => {
+    if (user) {
+      handleSubscriptionVerification();
+    }
+  }, [user]);
+
+  const handleSubscriptionVerification = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      // Handle free plan activation
+      if (planType === 'free') {
+        // For free plans, just fetch the user's current subscription
+        const response = await fetch(`/api/subscriptions/user/${user.userId}`);
+        const data = await response.json();
+
+        if (data.success && data.data) {
+          setSubscription(data.data);
+        } else {
+          throw new Error('Unable to fetch subscription details');
+        }
         return;
       }
 
-      try {
-        // Refresh subscription context
-        await refreshSubscription();
+      // Handle paid plan verification
+      if (txRef || transactionId || paymentReference) {
+        setVerifying(true);
+        
+        const verifyResponse = await fetch('/api/subscriptions/verify-payment', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            txRef,
+            transactionId,
+            paymentReference,
+            userId: user.userId
+          }),
+        });
 
-        // Fetch the specific subscription details
-        const response = await fetch(`/api/subscriptions/current?userId=${user._id}`);
+        const verifyData = await verifyResponse.json();
 
-        if (response.ok) {
-          const data = await response.json();
-          if (data.success && data.data) {
-            setSubscription(data.data);
-          }
+        if (verifyData.success) {
+          setSubscription(verifyData.data.subscription);
+        } else {
+          throw new Error(verifyData.error || 'Payment verification failed');
         }
-      } catch (err) {
-        console.error('Error fetching subscription:', err);
-        setError('Failed to load subscription details');
-      } finally {
-        setLoading(false);
+      } else {
+        throw new Error('Missing transaction reference or plan information');
       }
-    };
 
-    fetchSubscriptionDetails();
-  }, [user?._id, paymentReference, refreshSubscription]);
+    } catch (err: any) {
+      console.error('Subscription verification error:', err);
+      setError(err.message);
+    } finally {
+      setLoading(false);
+      setVerifying(false);
+    }
+  };
 
   const handleGoToDashboard = () => {
-    router.push('/');
+    router.push('/dashboards/ecommerce');
   };
 
   const handleManageSubscription = () => {
     router.push('/subscription/manage');
   };
 
+  const formatCurrency = (amount: number, currency: string = 'NGN') => {
+    return new Intl.NumberFormat('en-NG', {
+      style: 'currency',
+      currency: currency
+    }).format(amount);
+  };
+
   if (loading) {
     return (
       <Container maxWidth="md" sx={{ py: 8 }}>
-        <Box display="flex" justifyContent="center" alignItems="center" minHeight="400px">
-          <CircularProgress />
+        <Box display="flex" justifyContent="center" alignItems="center" minHeight="400px" flexDirection="column">
+          <CircularProgress sx={{ mb: 3 }} />
+          <Typography variant="h6" gutterBottom>
+            {verifying ? 'Verifying your payment...' : 'Processing your subscription...'}
+          </Typography>
+          <Typography variant="body2" color="text.secondary">
+            Please wait while we confirm your subscription details.
+          </Typography>
         </Box>
+      </Container>
+    );
+  }
+
+  if (error) {
+    return (
+      <Container maxWidth="md" sx={{ py: 8 }}>
+        <Paper elevation={1} sx={{ p: 6, textAlign: 'center' }}>
+          <Box sx={{ mb: 4 }}>
+            <Box
+              sx={{
+                width: 80,
+                height: 80,
+                borderRadius: '50%',
+                backgroundColor: 'error.main',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                margin: '0 auto',
+                mb: 3
+              }}
+            >
+              <IconX size={40} color="white" />
+            </Box>
+
+            <Typography variant="h4" fontWeight={600} gutterBottom color="error">
+              Subscription Failed
+            </Typography>
+
+            <Alert severity="error" sx={{ mb: 4 }}>
+              {error}
+            </Alert>
+
+            <Box sx={{ display: 'flex', gap: 2, justifyContent: 'center', flexWrap: 'wrap' }}>
+              <Button
+                variant="contained"
+                size="large"
+                onClick={() => router.push('/subscription/plans')}
+              >
+                Try Again
+              </Button>
+              <Button
+                variant="outlined"
+                size="large"
+                onClick={handleGoToDashboard}
+              >
+                Back to Dashboard
+              </Button>
+            </Box>
+          </Box>
+        </Paper>
       </Container>
     );
   }
@@ -113,43 +218,60 @@ const SubscriptionSuccessPage: React.FC = () => {
               Subscription Details
             </Typography>
 
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2, alignItems: 'center' }}>
               <Typography variant="body2" color="text.secondary">
                 Plan:
               </Typography>
-              <Typography variant="body2" fontWeight={600}>
-                {subscription.plan?.name}
-              </Typography>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <IconCrown size={16} color="#FFD700" />
+                <Typography variant="body2" fontWeight={600}>
+                  {subscription.plan?.name || subscription.planId?.name || 'N/A'}
+                </Typography>
+              </Box>
             </Box>
 
             <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
               <Typography variant="body2" color="text.secondary">
                 Status:
               </Typography>
-              <Typography variant="body2" fontWeight={600} color="success.main">
-                Active
-              </Typography>
+              <Chip 
+                label={subscription.status || 'Active'} 
+                color="success" 
+                size="small"
+                sx={{ fontWeight: 600 }}
+              />
             </Box>
+
+            {subscription.plan?.price?.monthly > 0 && (
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
+                <Typography variant="body2" color="text.secondary">
+                  Amount:
+                </Typography>
+                <Typography variant="body2" fontWeight={600}>
+                  {formatCurrency(subscription.plan.price.monthly, subscription.plan.currency || 'NGN')}
+                </Typography>
+              </Box>
+            )}
 
             <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
               <Typography variant="body2" color="text.secondary">
-                Next Billing Date:
+                Billing Period:
               </Typography>
               <Typography variant="body2" fontWeight={600}>
-                {subscription.currentPeriodEnd ?
-                  new Date(subscription.currentPeriodEnd).toLocaleDateString() :
+                {subscription.currentPeriodStart && subscription.currentPeriodEnd ?
+                  `${new Date(subscription.currentPeriodStart).toLocaleDateString()} - ${new Date(subscription.currentPeriodEnd).toLocaleDateString()}` :
                   'N/A'
                 }
               </Typography>
             </Box>
 
-            {paymentReference && (
+            {(paymentReference || txRef) && (
               <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
                 <Typography variant="body2" color="text.secondary">
                   Reference:
                 </Typography>
                 <Typography variant="body2" fontWeight={600} sx={{ fontFamily: 'monospace' }}>
-                  {paymentReference.slice(0, 12)}...
+                  {(paymentReference || txRef)?.slice(0, 12)}...
                 </Typography>
               </Box>
             )}
@@ -164,8 +286,10 @@ const SubscriptionSuccessPage: React.FC = () => {
 
           <Alert severity="info" sx={{ mb: 3, textAlign: 'left' }}>
             <Typography variant="body2">
-              Your subscription is now active! You can now access all premium features included in your plan.
-              A confirmation email has been sent to your registered email address.
+              {subscription?.plan?.name === 'Free' || planType === 'free'
+                ? 'Your free plan has been activated successfully! You can start using all the included features right away.'
+                : 'Your subscription is now active! You can now access all premium features included in your plan. A confirmation email has been sent to your registered email address.'
+              }
             </Typography>
           </Alert>
 

@@ -69,13 +69,11 @@ const inventoryLogSchema = new Schema<IInventoryLogDocument, IInventoryLogModel>
   productId: {
     type: String,
     ref: 'Product',
-    index: true,
     sparse: true
   },
   variantId: {
     type: String,
     ref: 'ProductVariant',
-    index: true,
     sparse: true
   },
   sku: {
@@ -88,8 +86,7 @@ const inventoryLogSchema = new Schema<IInventoryLogDocument, IInventoryLogModel>
   type: {
     type: String,
     enum: ['adjustment', 'sale', 'return', 'damage', 'restock', 'reservation', 'release', 'import'],
-    required: [true, 'Type is required'],
-    index: true
+    required: [true, 'Type is required']
   },
   quantityBefore: {
     type: Number,
@@ -127,8 +124,7 @@ const inventoryLogSchema = new Schema<IInventoryLogDocument, IInventoryLogModel>
   source: {
     type: String,
     enum: ['manual', 'order', 'import', 'api', 'system', 'wordpress_sync'],
-    required: [true, 'Source is required'],
-    index: true
+    required: [true, 'Source is required']
   },
   location: {
     type: String,
@@ -138,7 +134,6 @@ const inventoryLogSchema = new Schema<IInventoryLogDocument, IInventoryLogModel>
   batchNumber: {
     type: String,
     trim: true,
-    index: true,
     sparse: true
   },
   

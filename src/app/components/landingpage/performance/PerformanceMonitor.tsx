@@ -14,6 +14,7 @@ const PerformanceMonitor = () => {
     if (typeof window === 'undefined') return;
 
     const metrics: PerformanceMetrics = {};
+    const observers: PerformanceObserver[] = [];
 
     // Measure Core Web Vitals
     const measureWebVitals = () => {
@@ -36,6 +37,7 @@ const PerformanceMonitor = () => {
             }
           });
           lcpObserver.observe({ entryTypes: ['largest-contentful-paint'] });
+          observers.push(lcpObserver);
 
           // First Input Delay (FID)
           const fidObserver = new PerformanceObserver((list) => {
@@ -54,6 +56,7 @@ const PerformanceMonitor = () => {
             });
           });
           fidObserver.observe({ entryTypes: ['first-input'] });
+          observers.push(fidObserver);
 
           // Cumulative Layout Shift (CLS)
           let clsValue = 0;
@@ -76,6 +79,7 @@ const PerformanceMonitor = () => {
             }
           });
           clsObserver.observe({ entryTypes: ['layout-shift'] });
+          observers.push(clsObserver);
 
           // First Contentful Paint (FCP)
           const fcpObserver = new PerformanceObserver((list) => {
@@ -94,6 +98,7 @@ const PerformanceMonitor = () => {
             });
           });
           fcpObserver.observe({ entryTypes: ['paint'] });
+          observers.push(fcpObserver);
 
         } catch (error) {
           console.warn('Performance monitoring not supported:', error);
@@ -151,22 +156,48 @@ const PerformanceMonitor = () => {
     measureWebVitals();
 
     // Measure page load after window loads
-    if (document.readyState === 'complete') {
+    const handleLoad = () => {
       measurePageLoad();
       measureResources();
+    };
+
+    if (document.readyState === 'complete') {
+      handleLoad();
     } else {
-      window.addEventListener('load', () => {
-        measurePageLoad();
-        measureResources();
-      });
+      window.addEventListener('load', handleLoad);
     }
 
     // Log performance metrics in development
+    let timeoutId: NodeJS.Timeout;
     if (process.env.NODE_ENV === 'development') {
-      setTimeout(() => {
+      timeoutId = setTimeout(() => {
         console.log('Performance Metrics:', metrics);
       }, 3000);
     }
+
+    // Cleanup function
+    return () => {
+      // Disconnect all performance observers
+      observers.forEach(observer => {
+        try {
+          observer.disconnect();
+        } catch (error) {
+          console.warn('Error disconnecting performance observer:', error);
+        }
+      });
+
+      // Remove event listener
+      try {
+        window.removeEventListener('load', handleLoad);
+      } catch (error) {
+        console.warn('Error removing load event listener:', error);
+      }
+
+      // Clear timeout
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
+    };
 
   }, []);
 

@@ -1,5 +1,7 @@
 "use client";
 import React, { createContext, useContext, useReducer, useEffect, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
+import { signIn, signOut, useSession } from 'next-auth/react';
 
 // Types and interfaces
 interface UserData {
@@ -12,7 +14,7 @@ interface UserData {
   company?: string;
   avatar?: string;
   profileImage?: string;
-  role: 'admin' | 'user' | 'moderator';
+  role: string;
   isActive: boolean;
   isEmailVerified: boolean;
   createdAt: Date;
@@ -126,6 +128,7 @@ interface AuthProviderProps {
 
 export function AuthProvider({ children }: AuthProviderProps) {
   const [state, dispatch] = useReducer(authReducer, initialState);
+  const router = useRouter();
 
   // Helper function to create error object
   const createError = (code: string, message: string, details?: any): AuthError => ({
@@ -135,46 +138,47 @@ export function AuthProvider({ children }: AuthProviderProps) {
     timestamp: new Date(),
   });
 
-  // Fetch user data
+  // Fetch user data using NextAuth session
   const fetchUser = useCallback(async () => {
     try {
       dispatch({ type: 'SET_LOADING', payload: true });
 
-      // Check authentication status first
-      const authResponse = await fetch('/api/auth/login', {
-        method: 'GET',
-        credentials: 'include',
-      });
+      console.log('👤 Fetching user data from NextAuth session...');
 
-      if (!authResponse.ok) {
+      // Get session data from NextAuth
+      const sessionResponse = await fetch('/api/auth/session');
+
+      if (!sessionResponse.ok) {
+        console.log('❌ No session found');
         dispatch({ type: 'SET_USER', payload: null });
         return;
       }
 
-      const authResult = await authResponse.json();
+      const session = await sessionResponse.json();
 
-      if (!authResult.success || !authResult.authenticated) {
+      if (!session?.user) {
+        console.log('❌ No user in session');
         dispatch({ type: 'SET_USER', payload: null });
         return;
       }
 
-      // Fetch full user profile
-      const userResponse = await fetch('/api/user', {
-        method: 'GET',
-        credentials: 'include',
-      });
+      console.log('✅ User found in session:', session.user.email);
 
-      if (!userResponse.ok) {
-        throw new Error(`HTTP ${userResponse.status}: ${userResponse.statusText}`);
-      }
+      // Transform NextAuth session data to match our UserData interface
+      const userData: UserData = {
+        _id: session.user.id,
+        email: session.user.email,
+        firstName: session.user.firstName,
+        lastName: session.user.lastName,
+        role: session.user.role?.name || session.user.role || 'user',
+        isActive: true,
+        isEmailVerified: session.user.isEmailVerified,
+        profileImage: session.user.profileImage,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
 
-      const userResult = await userResponse.json();
-
-      if (!userResult.success) {
-        throw new Error(userResult.message || 'Failed to fetch user data');
-      }
-
-      dispatch({ type: 'SET_USER', payload: userResult.data });
+      dispatch({ type: 'SET_USER', payload: userData });
       dispatch({ type: 'SET_LAST_REFRESH', payload: new Date() });
 
     } catch (error) {
@@ -189,47 +193,46 @@ export function AuthProvider({ children }: AuthProviderProps) {
     }
   }, []);
 
-  // Login function
+  // Login function using NextAuth
   const login = useCallback(async (credentials: LoginCredentials): Promise<AuthResult> => {
     try {
       dispatch({ type: 'SET_LOADING', payload: true });
       dispatch({ type: 'CLEAR_ERROR' });
 
-      const response = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        credentials: 'include',
-        body: JSON.stringify(credentials),
+      console.log('🔐 Attempting login with NextAuth...');
+
+      const result = await signIn('credentials', {
+        email: credentials.email,
+        password: credentials.password,
+        redirect: false,
       });
 
-      const result = await response.json();
-
-      if (!response.ok) {
-        const authError = createError(
-          'LOGIN_ERROR',
-          result.message || `HTTP ${response.status}: ${response.statusText}`,
-          result
-        );
-        dispatch({ type: 'SET_ERROR', payload: authError });
-        return { success: false, message: authError.message };
-      }
-
-      if (!result.success) {
+      if (result?.error) {
+        console.error('❌ NextAuth login error:', result.error);
         const authError = createError(
           'LOGIN_FAILED',
-          result.message || 'Login failed',
-          result
+          'Invalid email or password',
+          result.error
         );
         dispatch({ type: 'SET_ERROR', payload: authError });
         return { success: false, message: authError.message };
       }
 
-      // Fetch user data after successful login
-      await fetchUser();
+      if (result?.ok) {
+        console.log('✅ NextAuth login successful');
+        // Fetch user data after successful login
+        await fetchUser();
+        return { success: true, message: 'Login successful' };
+      }
 
-      return { success: true, message: 'Login successful', user: result.user };
+      // Fallback error
+      const authError = createError(
+        'LOGIN_FAILED',
+        'Login failed. Please try again.',
+        result
+      );
+      dispatch({ type: 'SET_ERROR', payload: authError });
+      return { success: false, message: authError.message };
 
     } catch (error) {
       console.error('Login error:', error);
@@ -243,33 +246,37 @@ export function AuthProvider({ children }: AuthProviderProps) {
     }
   }, [fetchUser]);
 
-  // Logout function
+  // Logout function using NextAuth
   const logout = useCallback(async (): Promise<void> => {
     try {
       dispatch({ type: 'SET_LOADING', payload: true });
 
-      const response = await fetch('/api/auth/logout', {
-        method: 'POST',
-        credentials: 'include',
+      console.log('🚪 Logging out with NextAuth...');
+
+      // Use NextAuth signOut
+      await signOut({
+        redirect: false // We'll handle redirect manually
       });
 
-      // Clear state regardless of response status
+      // Clear state
       dispatch({ type: 'RESET_STATE' });
 
-      if (!response.ok) {
-        console.warn('Logout request failed, but local state cleared');
-      }
+      console.log('✅ Logout successful');
 
       // Redirect to landing page
-      window.location.href = '/landingpage';
+      if (typeof window !== 'undefined') {
+        router.push('/landingpage');
+      }
 
     } catch (error) {
       console.error('Logout error:', error);
       // Still clear local state even if request fails
       dispatch({ type: 'RESET_STATE' });
-      window.location.href = '/landingpage';
+      if (typeof window !== 'undefined') {
+        router.push('/landingpage');
+      }
     }
-  }, []);
+  }, [router]);
 
   // Refresh authentication
   const refreshAuth = useCallback(async (): Promise<void> => {
@@ -350,12 +357,12 @@ export function AuthProvider({ children }: AuthProviderProps) {
         createdAt: new Date(),
         updatedAt: new Date(),
       };
-      
+
       dispatch({ type: 'SET_USER', payload: mockUser });
       dispatch({ type: 'SET_LAST_REFRESH', payload: new Date() });
       return;
     }
-    
+
     fetchUser();
   }, [fetchUser]);
 

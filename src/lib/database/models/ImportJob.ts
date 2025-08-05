@@ -48,15 +48,13 @@ const ImportJobSchema = new Schema<IImportJob>({
   jobId: { 
     type: String, 
     required: true, 
-    unique: true,
-    index: true 
+    unique: true
   },
   status: { 
     type: String, 
     required: true,
     enum: ['pending', 'processing', 'completed', 'failed'],
-    default: 'pending',
-    index: true
+    default: 'pending'
   },
   type: { 
     type: String, 
@@ -149,16 +147,14 @@ const ImportJobSchema = new Schema<IImportJob>({
   }],
   createdAt: { 
     type: Date, 
-    default: Date.now,
-    index: true 
+    default: Date.now
   },
   completedAt: { 
     type: Date 
   },
   userId: { 
     type: String, 
-    required: true,
-    index: true 
+    required: true
   },
   
   // Additional metadata

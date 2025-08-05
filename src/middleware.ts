@@ -49,10 +49,11 @@ export default withAuth(
 
 export const config = {
   matcher: [
-    '/admin/:path*',
-    '/api/users/:path*',
-    '/api/roles/:path*',
-    '/api/permissions/:path*',
-    '/api/auth/permissions/:path*'
+    // Temporarily disable middleware to test NextAuth
+    // '/admin/:path*',
+    // '/api/users/:path*',
+    // '/api/roles/:path*',
+    // '/api/permissions/:path*',
+    // '/api/auth/permissions/:path*'
   ]
 };

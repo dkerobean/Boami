@@ -125,7 +125,7 @@ export default function PermissionMatrix({
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-ssName="text-lg font-medium text-gray-900">Permission Matrix</h3>
+          <h3 className="text-lg font-medium text-gray-900">Permission Matrix</h3>
           <p className="text-sm text-gray-500">
             View and manage permissions across all roles
           </p>

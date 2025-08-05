@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { connectDB } from '@/lib/database/mongoose-connection';
 import Income from '@/lib/database/models/Income';
 import IncomeCategory from '@/lib/database/models/IncomeCategory';
-import { authenticateRequest } from '@/lib/auth/api-auth';
+import { authenticateApiRequest, createApiResponse } from '@/lib/auth/nextauth-middleware';
 
 /**
  * GET /api/finance/income
@@ -11,8 +11,8 @@ import { authenticateRequest } from '@/lib/auth/api-auth';
 export async function GET(request: NextRequest) {
   try {
     // Verify authentication
-    const authResult = await authenticateRequest(request);
-    if (!authResult.success || !authResult.userId) {
+    const authResult = await authenticateApiRequest(request);
+    if (!authResult.success || !authResult.user) {
       return NextResponse.json(
         { success: false, error: authResult.error || { code: 'UNAUTHORIZED', message: 'Authentication required' } },
         { status: 401 }
@@ -31,7 +31,7 @@ export async function GET(request: NextRequest) {
     const isRecurring = searchParams.get('isRecurring');
 
     // Build query
-    const query: any = { userId: authResult.userId };
+    const query: any = { userId: authResult.user.id };
 
     if (categoryId) {
       query.categoryId = categoryId;
@@ -76,7 +76,7 @@ export async function GET(request: NextRequest) {
     }));
 
     // Calculate totals
-    const totalAmount = await Income.getTotalByUser(authResult.userId);
+    const totalAmount = await Income.getTotalByUser(authResult.user.id);
 
     return NextResponse.json({
       success: true,
@@ -111,8 +111,8 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     // Verify authentication
-    const authResult = await authenticateRequest(request);
-    if (!authResult.success || !authResult.userId) {
+    const authResult = await authenticateApiRequest(request);
+    if (!authResult.success || !authResult.user) {
       return NextResponse.json(
         { success: false, error: authResult.error || { code: 'UNAUTHORIZED', message: 'Authentication required' } },
         { status: 401 }
@@ -144,7 +144,7 @@ export async function POST(request: NextRequest) {
     // Validate category exists and belongs to user
     const category = await IncomeCategory.findOne({
       _id: categoryId,
-      userId: authResult.userId
+      userId: authResult.user.id
     });
 
     if (!category) {
@@ -163,7 +163,7 @@ export async function POST(request: NextRequest) {
       saleId: saleId || null,
       isRecurring: Boolean(isRecurring),
       recurringPaymentId: recurringPaymentId || null,
-      userId: authResult.userId
+      userId: authResult.user.id
     };
 
     const income = new Income(incomeData);

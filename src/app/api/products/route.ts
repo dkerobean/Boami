@@ -1,23 +1,28 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { connectDB } from '@/lib/database/mongoose-connection';
 import Product from '@/lib/database/models/Product';
-import { authenticateRequest } from '@/lib/auth/api-auth';
+import { authenticateApiRequest, createApiResponse } from '@/lib/auth/nextauth-middleware';
 
 /**
  * GET /api/products - Get products for invoice creation
  */
 export async function GET(req: NextRequest) {
   try {
-    // Verify authentication
-    const authResult = await authenticateRequest(req);
-    if (!authResult.success || !authResult.userId) {
-      return NextResponse.json(
-        { success: false, error: authResult.error || { code: 'UNAUTHORIZED', message: 'Authentication required' } },
-        { status: 401 }
-      );
+    console.log('🛍️ Products API called');
+
+    // Verify authentication using unified middleware
+    const authResult = await authenticateApiRequest(req);
+    if (!authResult.success || !authResult.user) {
+      console.log('❌ Authentication failed:', authResult.error);
+      const { response, status } = createApiResponse(false, null, authResult.error, 401);
+      return NextResponse.json(response, { status });
     }
 
+    console.log('✅ User authenticated:', authResult.user.email);
+
+    console.log('🔌 Connecting to database...');
     await connectDB();
+    console.log('✅ Database connected');
 
     const { searchParams } = new URL(req.url);
     const search = searchParams.get('search') || '';
@@ -85,25 +90,30 @@ export async function GET(req: NextRequest) {
     // Get unique categories for filtering
     const categories = await Product.distinct('category', { status: 'publish' });
 
-    return NextResponse.json({
-      success: true,
-      data: {
-        products: transformedProducts,
-        pagination: {
-          page,
-          limit,
-          total,
-          pages: Math.ceil(total / limit)
-        }
+    console.log(`✅ Found ${transformedProducts.length} products`);
+
+    const responseData = {
+      products: transformedProducts,
+      pagination: {
+        page,
+        limit,
+        total,
+        pages: Math.ceil(total / limit)
       },
       categories: ['All', ...categories]
-    }, { status: 200 });
+    };
 
-  } catch (error) {
-    console.error('Products GET error:', error);
-    return NextResponse.json(
-      { success: false, error: { code: 'INTERNAL_ERROR', message: 'Failed to retrieve products' } },
-      { status: 500 }
+    const { response, status } = createApiResponse(true, responseData);
+    return NextResponse.json(response, { status });
+
+  } catch (error: any) {
+    console.error('❌ Products GET error:', error);
+    const { response, status } = createApiResponse(
+      false,
+      null,
+      { code: 'INTERNAL_ERROR', message: 'Failed to retrieve products' },
+      500
     );
+    return NextResponse.json(response, { status });
   }
 }

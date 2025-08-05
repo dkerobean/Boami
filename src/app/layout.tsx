@@ -2,6 +2,8 @@ import React from "react";
 import { Providers } from "@/store/providers";
 import MyApp from "./app";
 import "./global.css";
+import { startupInit } from "./startup";
+import NavigationLoadingIndicator from "./components/shared/loading/NavigationLoadingIndicator";
 
 
 export const metadata = {
@@ -14,9 +16,15 @@ export default function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
+  // Initialize application on startup (non-blocking)
+  if (typeof window === 'undefined') {
+    startupInit().catch(console.error);
+  }
+
   return (
     <html lang="en" suppressHydrationWarning>
       <body>
+        <NavigationLoadingIndicator />
         <Providers>
           <MyApp>{children}</MyApp>
         </Providers>

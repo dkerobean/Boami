@@ -1,5 +1,6 @@
 'use client'
-import { Box, Typography, Button, Divider, Alert, CircularProgress } from "@mui/material";
+import { Box, Typography, Button, Divider, Alert, IconButton, InputAdornment } from "@mui/material";
+import { Visibility, VisibilityOff } from "@mui/icons-material";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -11,6 +12,11 @@ import CustomFormLabel from "@/app/components/forms/theme-elements/CustomFormLab
 import { Stack } from "@mui/system";
 import { registerType } from "@/app/(DashboardLayout)/types/auth/auth";
 import AuthSocialButtons from "./AuthSocialButtons";
+import PasswordRequirements from "@/app/components/forms/PasswordRequirements";
+import { useLoadingContext } from "@/app/components/shared/loading/LoadingContext";
+import { LoadingAnimation } from "@/app/components/shared/loading/LoadingAnimation";
+import { useAuthTransition } from "@/app/components/auth/AuthTransition";
+
 
 const validationSchema = yup.object({
   firstName: yup
@@ -32,10 +38,10 @@ const validationSchema = yup.object({
   password: yup
     .string()
     .min(8, 'Password must be at least 8 characters')
+    .max(128, 'Password cannot exceed 128 characters')
     .matches(/[A-Z]/, 'Password must contain at least one uppercase letter')
     .matches(/[a-z]/, 'Password must contain at least one lowercase letter')
     .matches(/\d/, 'Password must contain at least one number')
-    .matches(/[!@#$%^&*(),.?":{}|<>]/, 'Password must contain at least one special character')
     .required('Password is required'),
 });
 
@@ -48,10 +54,21 @@ interface RegisterFormValues {
 
 const AuthRegister = ({ title, subtitle, subtext }: registerType) => {
   const router = useRouter();
-  const [isLoading, setIsLoading] = useState(false);
+  const { isLoading } = useLoadingContext();
+  const { startTransition, stopTransition } = useAuthTransition();
+  const [showPassword, setShowPassword] = useState(false);
+
+  const handleClickShowPassword = () => {
+    setShowPassword(!showPassword);
+  };
+
+  const handleMouseDownPassword = (event: React.MouseEvent<HTMLButtonElement>) => {
+    event.preventDefault();
+  };
 
   const handleSubmit = async (values: RegisterFormValues) => {
-    setIsLoading(true);
+    // Start smooth auth transition
+    startTransition('register');
     
     try {
       const response = await fetch('/api/auth/register', {
@@ -67,10 +84,13 @@ const AuthRegister = ({ title, subtitle, subtext }: registerType) => {
       if (data.success) {
         toast.success('Registration successful! Please check your email for a verification code.');
         
-        setTimeout(() => {
-          router.push(`/auth/auth1/verify-email?email=${encodeURIComponent(values.email)}`);
-        }, 1500);
+        // Navigate immediately - the auth transition will show progress
+        // Loading will persist until page loads thanks to LoadingProvider
+        router.push(`/auth/auth1/verify-email?email=${encodeURIComponent(values.email)}`);
       } else {
+        // Stop loading on error
+        stopTransition();
+        
         if (data.details && Array.isArray(data.details)) {
           data.details.forEach((error: string) => toast.error(error));
         } else {
@@ -79,9 +99,8 @@ const AuthRegister = ({ title, subtitle, subtext }: registerType) => {
       }
     } catch (error) {
       console.error('Registration error:', error);
+      stopTransition();
       toast.error('Network error. Please check your connection and try again.');
-    } finally {
-      setIsLoading(false);
     }
   };
 
@@ -182,7 +201,7 @@ const AuthRegister = ({ title, subtitle, subtext }: registerType) => {
               <CustomTextField
                 id="password"
                 name="password"
-                type="password"
+                type={showPassword ? 'text' : 'password'}
                 variant="outlined"
                 fullWidth
                 value={values.password}
@@ -191,20 +210,24 @@ const AuthRegister = ({ title, subtitle, subtext }: registerType) => {
                 error={touched.password && Boolean(errors.password)}
                 helperText={touched.password && errors.password}
                 disabled={isLoading}
+                InputProps={{
+                  endAdornment: (
+                    <InputAdornment position="end">
+                      <IconButton
+                        aria-label="toggle password visibility"
+                        onClick={handleClickShowPassword}
+                        onMouseDown={handleMouseDownPassword}
+                        edge="end"
+                        disabled={isLoading}
+                      >
+                        {showPassword ? <VisibilityOff /> : <Visibility />}
+                      </IconButton>
+                    </InputAdornment>
+                  ),
+                }}
               />
 
-              {errors.password && touched.password && (
-                <Alert severity="info" sx={{ mt: 1 }}>
-                  Password requirements:
-                  <ul style={{ margin: '8px 0', paddingLeft: '20px' }}>
-                    <li>At least 8 characters long</li>
-                    <li>One uppercase letter</li>
-                    <li>One lowercase letter</li>
-                    <li>One number</li>
-                    <li>One special character</li>
-                  </ul>
-                </Alert>
-              )}
+              <PasswordRequirements password={values.password} showStrengthMeter={true} />
             </Stack>
 
             <Button
@@ -218,8 +241,12 @@ const AuthRegister = ({ title, subtitle, subtext }: registerType) => {
             >
               {isLoading ? (
                 <>
-                  <CircularProgress size={20} sx={{ mr: 1 }} />
-                  Creating Account...
+                  <LoadingAnimation
+                    type="circular"
+                    size="small"
+                    color="inherit"
+                  />
+                  <Box sx={{ ml: 1 }}>Creating Account...</Box>
                 </>
               ) : (
                 'Sign Up'

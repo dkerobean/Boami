@@ -27,11 +27,11 @@ export async function POST(request: NextRequest) {
     }
 
     // Validate payment method
-    if (!['monthly', 'annual'].includes(paymentMethod)) {
+    if (!['monthly', 'annual', 'free'].includes(paymentMethod)) {
       return NextResponse.json(
         {
           success: false,
-          error: 'Payment method must be either "monthly" or "annual"'
+          error: 'Payment method must be either "monthly", "annual", or "free"'
         },
         { status: 400 }
       );
@@ -72,21 +72,44 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Check if this is a free plan
+    const isFree = plan.price.monthly === 0 && plan.price.annual === 0;
+
     // Create subscription using service
     const subscriptionService = new SubscriptionService();
 
     const result = await subscriptionService.createSubscription({
       userId,
       planId,
-      paymentMethod,
+      paymentMethod: isFree ? 'free' : paymentMethod,
       customerData,
       metadata: {
         source: 'api',
         userAgent: request.headers.get('user-agent'),
-        ip: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip')
+        ip: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip'),
+        isFree
       }
     });
 
+    // For free plans, return success without payment link
+    if (isFree) {
+      return NextResponse.json({
+        success: true,
+        data: {
+          subscription: {
+            id: result.subscription._id,
+            status: result.subscription.status,
+            planId: result.subscription.planId,
+            currentPeriodStart: result.subscription.currentPeriodStart,
+            currentPeriodEnd: result.subscription.currentPeriodEnd,
+            plan: result.subscription.planId
+          },
+          message: 'Free subscription activated successfully!'
+        }
+      }, { status: 201 });
+    }
+
+    // For paid plans, return payment link
     return NextResponse.json({
       success: true,
       data: {
@@ -191,7 +214,7 @@ export async function GET(request: NextRequest) {
         plans: transformedPlans,
         supportedCurrencies: Object.keys(SUPPORTED_CURRENCIES),
         paymentMethods: ['monthly', 'annual'],
-        defaultCurrency: 'NGN'
+        defaultCurrency: 'GHS'
       }
     });
 

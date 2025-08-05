@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { connectDB } from '@/lib/database/mongoose-connection';
 import Note from '@/lib/database/models/Note';
-import { authenticateRequest } from '@/lib/auth/api-auth';
+import { authenticateApiRequest, createApiResponse } from '@/lib/auth/nextauth-middleware';
 import {
   handleProductivityError,
   createSuccessResponse,
@@ -27,8 +27,8 @@ export async function GET(request: NextRequest) {
 
   try {
     // Verify authentication
-    const authResult = await authenticateRequest(request);
-    if (!authResult.success || !authResult.userId) {
+    const authResult = await authenticateApiRequest(request);
+    if (!authResult.success || !authResult.user) {
       return createErrorResponse(
         ProductivityErrorCode.UNAUTHORIZED,
         'Authentication required',
@@ -61,7 +61,7 @@ export async function GET(request: NextRequest) {
     if (search) {
       // Use cached search with performance monitoring
       const cacheKey = { search, includeDeleted, color };
-      const cached = NotesCache.get(authResult.userId, cacheKey);
+      const cached = NotesCache.get(authResult.user.id, cacheKey);
 
       if (cached) {
         // Apply pagination to cached search results
@@ -79,7 +79,7 @@ export async function GET(request: NextRequest) {
         };
       } else {
         // Execute search query
-        const searchResults = await Note.searchNotes(search, authResult.userId);
+        const searchResults = await Note.searchNotes(search, authResult.user.id);
 
         // Filter by color and deleted status if needed
         let filteredResults = searchResults;
@@ -91,7 +91,7 @@ export async function GET(request: NextRequest) {
         }
 
         // Cache the search results
-        NotesCache.set(authResult.userId, filteredResults, cacheKey);
+        NotesCache.set(authResult.user.id, filteredResults, cacheKey);
 
         // Apply pagination
         const skip = (paginationOptions.page - 1) * paginationOptions.limit;
@@ -110,7 +110,7 @@ export async function GET(request: NextRequest) {
     } else {
       // Use optimized query builder with caching
       const queryBuilder = new ProductivityQueryBuilder(Note)
-        .forUser(authResult.userId)
+        .forUser(authResult.user.id)
         .lean();
 
       // Add filters
@@ -125,7 +125,7 @@ export async function GET(request: NextRequest) {
       const cachedQuery = new CachedProductivityQuery(
         'notes',
         queryBuilder,
-        authResult.userId
+        authResult.user.id
       );
 
       result = await cachedQuery.paginate(paginationOptions);
@@ -134,8 +134,8 @@ export async function GET(request: NextRequest) {
     // Get summary statistics with caching
     const totalActive = await new CachedProductivityQuery(
       'notes',
-      new ProductivityQueryBuilder(Note).forUser(authResult.userId).where({ isDeleted: false }),
-      authResult.userId
+      new ProductivityQueryBuilder(Note).forUser(authResult.user.id).where({ isDeleted: false }),
+      authResult.user.id
     ).count();
 
     // End performance monitoring
@@ -165,8 +165,8 @@ export async function POST(request: NextRequest) {
 
   try {
     // Verify authentication
-    const authResult = await authenticateRequest(request);
-    if (!authResult.success || !authResult.userId) {
+    const authResult = await authenticateApiRequest(request);
+    if (!authResult.success || !authResult.user) {
       return createErrorResponse(
         ProductivityErrorCode.UNAUTHORIZED,
         'Authentication required',
@@ -196,14 +196,14 @@ export async function POST(request: NextRequest) {
       title: title.trim(),
       content: content.trim(),
       color: color || 'info',
-      userId: authResult.userId
+      userId: authResult.user.id
     };
 
     const note = new Note(noteData);
     const savedNote = await note.save();
 
     // Invalidate cache for this user since we added a new note
-    NotesCache.invalidate(authResult.userId);
+    NotesCache.invalidate(authResult.user.id);
 
     return createSuccessResponse({
       note: savedNote.toJSON()

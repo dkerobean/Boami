@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { connectDB } from '@/lib/database/mongoose-connection';
 import CalendarEvent from '@/lib/database/models/CalendarEvent';
-import { authenticateRequest } from '@/lib/auth/api-auth';
+import { authenticateApiRequest, createApiResponse } from '@/lib/auth/nextauth-middleware';
 
 /**
  * GET /api/productivity/calendar/events
@@ -10,8 +10,8 @@ import { authenticateRequest } from '@/lib/auth/api-auth';
 export async function GET(request: NextRequest) {
   try {
     // Verify authentication
-    const authResult = await authenticateRequest(request);
-    if (!authResult.success || !authResult.userId) {
+    const authResult = await authenticateApiRequest(request);
+    if (!authResult.success || !authResult.user) {
       return NextResponse.json(
         { success: false, error: authResult.error || { code: 'UNAUTHORIZED', message: 'Authentication required' } },
         { status: 401 }
@@ -37,7 +37,7 @@ export async function GET(request: NextRequest) {
 
     if (search) {
       // Use text search
-      events = await CalendarEvent.searchEvents(search, authResult.userId);
+      events = await CalendarEvent.searchEvents(search, authResult.user.id);
       total = events.length;
 
       // Apply pagination to search results
@@ -45,12 +45,12 @@ export async function GET(request: NextRequest) {
       events = events.slice(skip, skip + limit);
     } else if (today) {
       // Get today's events
-      events = await CalendarEvent.findToday(authResult.userId);
+      events = await CalendarEvent.findToday(authResult.user.id);
       total = events.length;
     } else if (upcoming) {
       // Get upcoming events
       const upcomingLimit = limit || 10;
-      events = await CalendarEvent.findUpcoming(authResult.userId, upcomingLimit);
+      events = await CalendarEvent.findUpcoming(authResult.user.id, upcomingLimit);
       total = events.length;
     } else if (year && month) {
       // Get events for specific month
@@ -64,7 +64,7 @@ export async function GET(request: NextRequest) {
         );
       }
 
-      events = await CalendarEvent.findByMonth(yearNum, monthNum, authResult.userId);
+      events = await CalendarEvent.findByMonth(yearNum, monthNum, authResult.user.id);
       total = events.length;
     } else if (startDate || endDate) {
       // Get events by date range
@@ -111,25 +111,25 @@ export async function GET(request: NextRequest) {
         end = new Date(start.getFullYear(), start.getMonth() + 1, 0, 23, 59, 59, 999);
       }
 
-      events = await CalendarEvent.findByDateRange(start!, end!, authResult.userId);
+      events = await CalendarEvent.findByDateRange(start!, end!, authResult.user.id);
       total = events.length;
     } else {
       // Regular query with pagination
       const skip = (page - 1) * limit;
       [events, total] = await Promise.all([
-        CalendarEvent.find({ userId: authResult.userId })
+        CalendarEvent.find({ userId: authResult.user.id })
           .sort({ startDate: 1 })
           .skip(skip)
           .limit(limit)
           .lean(),
-        CalendarEvent.countDocuments({ userId: authResult.userId })
+        CalendarEvent.countDocuments({ userId: authResult.user.id })
       ]);
     }
 
     // Get summary statistics
-    const totalEvents = await CalendarEvent.getTotalByUser(authResult.userId);
-    const upcomingEvents = await CalendarEvent.findUpcoming(authResult.userId, 5);
-    const todayEvents = await CalendarEvent.findToday(authResult.userId);
+    const totalEvents = await CalendarEvent.getTotalByUser(authResult.user.id);
+    const upcomingEvents = await CalendarEvent.findUpcoming(authResult.user.id, 5);
+    const todayEvents = await CalendarEvent.findToday(authResult.user.id);
 
     return NextResponse.json({
       success: true,
@@ -166,8 +166,8 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     // Verify authentication
-    const authResult = await authenticateRequest(request);
-    if (!authResult.success || !authResult.userId) {
+    const authResult = await authenticateApiRequest(request);
+    if (!authResult.success || !authResult.user) {
       return NextResponse.json(
         { success: false, error: authResult.error || { code: 'UNAUTHORIZED', message: 'Authentication required' } },
         { status: 401 }
@@ -238,7 +238,7 @@ export async function POST(request: NextRequest) {
       isAllDay: Boolean(isAllDay),
       color: color || '#1976d2',
       location: location?.trim() || null,
-      userId: authResult.userId
+      userId: authResult.user.id
     };
 
     const event = new CalendarEvent(eventData);

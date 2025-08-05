@@ -52,24 +52,38 @@ const Analytics: React.FC<AnalyticsProps> = ({
 
   // Track scroll depth
   useEffect(() => {
-    if (!enableTracking) return;
+    if (!enableTracking || typeof window === 'undefined') return;
 
     let maxScroll = 0;
     const trackScrollDepth = () => {
-      const scrollPercent = Math.round(
-        (window.scrollY / (document.documentElement.scrollHeight - window.innerHeight)) * 100
-      );
+      try {
+        if (!document.documentElement) return;
+        
+        const scrollPercent = Math.round(
+          (window.scrollY / (document.documentElement.scrollHeight - window.innerHeight)) * 100
+        );
 
-      if (scrollPercent > maxScroll && scrollPercent % 25 === 0) {
-        maxScroll = scrollPercent;
-        trackConversion('scroll_depth', {
-          scroll_percent: scrollPercent
-        });
+        if (scrollPercent > maxScroll && scrollPercent % 25 === 0 && scrollPercent <= 100) {
+          maxScroll = scrollPercent;
+          trackConversion('scroll_depth', {
+            scroll_percent: scrollPercent
+          });
+        }
+      } catch (error) {
+        console.warn('Scroll tracking error:', error);
       }
     };
 
-    window.addEventListener('scroll', trackScrollDepth);
-    return () => window.removeEventListener('scroll', trackScrollDepth);
+    // Use passive listener for better performance
+    window.addEventListener('scroll', trackScrollDepth, { passive: true });
+    
+    return () => {
+      try {
+        window.removeEventListener('scroll', trackScrollDepth);
+      } catch (error) {
+        console.warn('Error removing scroll listener:', error);
+      }
+    };
   }, [enableTracking]);
 
   if (!enableTracking) return null;
@@ -93,19 +107,21 @@ const Analytics: React.FC<AnalyticsProps> = ({
         `}
       </Script>
 
-      {/* Hotjar Tracking */}
-      <Script id="hotjar-tracking" strategy="afterInteractive">
-        {`
-          (function(h,o,t,j,a,r){
-            h.hj=h.hj||function(){(h.hj.q=h.hj.q||[]).push(arguments)};
-            h._hjSettings={hjid:${hotjarId},hjsv:6};
-            a=o.getElementsByTagName('head')[0];
-            r=o.createElement('script');r.async=1;
-            r.src=t+h._hjSettings.hjid+j+h._hjSettings.hjsv;
-            a.appendChild(r);
-          })(window,document,'https://static.hotjar.com/c/hotjar-','.js?sv=');
-        `}
-      </Script>
+      {/* Hotjar Tracking - Using Script component to avoid DOM manipulation */}
+      <Script
+        id="hotjar-init"
+        strategy="afterInteractive"
+        dangerouslySetInnerHTML={{
+          __html: `
+            window.hj = window.hj || function(){(window.hj.q=window.hj.q||[]).push(arguments)};
+            window._hjSettings = {hjid:${hotjarId}, hjsv:6};
+          `
+        }}
+      />
+      <Script
+        src={`https://static.hotjar.com/c/hotjar-${hotjarId}.js?sv=6`}
+        strategy="afterInteractive"
+      />
     </>
   );
 };

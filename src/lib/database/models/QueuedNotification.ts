@@ -36,13 +36,11 @@ export interface IQueuedNotificationModel extends Model<IQueuedNotificationDocum
 const queuedNotificationSchema = new Schema<IQueuedNotificationDocument, IQueuedNotificationModel>({
   eventId: {
     type: String,
-    required: true,
-    index: true
+    required: true
   },
   userId: {
     type: String,
-    required: true,
-    index: true
+    required: true
   },
   email: {
     type: String,
@@ -82,14 +80,12 @@ const queuedNotificationSchema = new Schema<IQueuedNotificationDocument, IQueued
   },
   scheduledFor: {
     type: Date,
-    default: Date.now,
-    index: true
+    default: Date.now
   },
   status: {
     type: String,
     enum: ['pending', 'processing', 'sent', 'failed', 'cancelled'],
-    default: 'pending',
-    index: true
+    default: 'pending'
   },
   processedAt: {
     type: Date,

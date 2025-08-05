@@ -115,7 +115,7 @@ const LoadingManager: React.FC = () => {
         (currentPathname.includes('/apps/') || currentPathname.includes('/dashboard')) &&
         (previousPathname.includes('/apps/') || previousPathname.includes('/dashboard'));
 
-      // Start loading for new navigation
+      // Don't auto-start loading if already loading (prevents double loading during auth flows)
       if (!isLoading && !isNavigatingRef.current) {
         debouncedStartLoading();
       }
@@ -126,6 +126,7 @@ const LoadingManager: React.FC = () => {
       // Stop loading after a shorter delay for dashboard navigation
       const delay = isDashboardNavigation ? 150 : 300;
       setTimeout(() => {
+        // Only stop if we started the navigation loading
         if (isNavigatingRef.current) {
           debouncedStopLoading();
         }
@@ -199,6 +200,11 @@ const LoadingManager: React.FC = () => {
  */
 const LoadingOverlayRenderer: React.FC = () => {
   const { isLoading, config } = useLoadingContext();
+
+  // Only render if loading is active - prevents double rendering
+  if (!isLoading) {
+    return null;
+  }
 
   return (
     <LoadingOverlay

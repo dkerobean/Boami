@@ -102,6 +102,14 @@ const ProblemSolutionSection: React.FC = () => {
                 WebkitBackgroundClip: 'text',
                 WebkitTextFillColor: 'transparent',
                 backgroundClip: 'text',
+                color: '#1a1a1a', // Fallback color
+                display: 'inline-block',
+                textAlign: 'center',
+                lineHeight: 1.2,
+                '@supports not (-webkit-background-clip: text)': {
+                  background: 'none',
+                  color: '#1a1a1a',
+                },
               }}
             >
               Stop Juggling Multiple Tools
@@ -236,6 +244,14 @@ const ProblemSolutionSection: React.FC = () => {
                 WebkitBackgroundClip: 'text',
                 WebkitTextFillColor: 'transparent',
                 backgroundClip: 'text',
+                color: '#1976d2', // Fallback color
+                display: 'inline-block',
+                textAlign: 'center',
+                lineHeight: 1.2,
+                '@supports not (-webkit-background-clip: text)': {
+                  background: 'none',
+                  color: '#1976d2',
+                },
               }}
             >
               BOAMI Brings Everything Together

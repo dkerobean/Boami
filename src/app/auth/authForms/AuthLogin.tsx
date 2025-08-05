@@ -7,9 +7,11 @@ import {
   Button,
   Stack,
   Divider,
-  CircularProgress,
   Alert,
+  IconButton,
+  InputAdornment,
 } from "@mui/material";
+import { IconEye, IconEyeOff } from "@tabler/icons-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -22,6 +24,9 @@ import CustomTextField from "@/app/components/forms/theme-elements/CustomTextFie
 import CustomFormLabel from "@/app/components/forms/theme-elements/CustomFormLabel";
 import AuthSocialButtons from "./AuthSocialButtons";
 import { useAuthContext } from "@/app/context/AuthContext";
+import { useLoadingContext } from "@/app/components/shared/loading/LoadingContext";
+import { LoadingAnimation } from "@/app/components/shared/loading/LoadingAnimation";
+import { useAuthTransition } from "@/app/components/auth/AuthTransition";
 
 const validationSchema = yup.object({
   email: yup
@@ -49,11 +54,14 @@ interface LoginFormValues {
 const AuthLogin = ({ title, subtitle, subtext }: loginType) => {
   const router = useRouter();
   const { login } = useAuthContext();
-  const [isLoading, setIsLoading] = useState(false);
+  const { isLoading, setLoading } = useLoadingContext();
+  const { startTransition, stopTransition } = useAuthTransition();
   const [verificationRequired, setVerificationRequired] = useState<string | null>(null);
+  const [showPassword, setShowPassword] = useState(false);
 
-  const handleSubmit = async (values: LoginFormValues) => {
-    setIsLoading(true);
+  const handleSubmit = async (values: LoginFormValues, { setSubmitting }: { setSubmitting: (isSubmitting: boolean) => void }) => {
+    // Start smooth auth transition
+    startTransition('login');
     setVerificationRequired(null);
 
     try {
@@ -71,11 +79,13 @@ const AuthLogin = ({ title, subtitle, subtext }: loginType) => {
 
         console.log('Redirecting to:', returnUrl);
 
-        // Use Next.js router for navigation
-        setTimeout(() => {
-          router.push(returnUrl);
-        }, 500);
+        // Navigate immediately - the auth transition will show progress
+        // Loading will persist until page loads thanks to LoadingProvider
+        router.push(returnUrl);
       } else {
+        // Stop loading on error
+        stopTransition();
+        
         // Check if it's a verification error
         if (result.message?.includes('verify') || result.message?.includes('verification')) {
           setVerificationRequired(values.email);
@@ -86,9 +96,10 @@ const AuthLogin = ({ title, subtitle, subtext }: loginType) => {
       }
     } catch (error) {
       console.error('Login error:', error);
+      stopTransition();
       toast.error('Network error. Please check your connection and try again.');
     } finally {
-      setIsLoading(false);
+      setSubmitting(false);
     }
   };
 
@@ -162,7 +173,7 @@ const AuthLogin = ({ title, subtitle, subtext }: loginType) => {
         validationSchema={validationSchema}
         onSubmit={handleSubmit}
       >
-        {({ values, errors, touched, handleChange, handleBlur, setFieldValue, isValid }) => (
+        {({ values, errors, touched, handleChange, handleBlur, setFieldValue, isValid, isSubmitting }) => (
           <Form>
             <Stack mb={3}>
               <Box>
@@ -178,7 +189,7 @@ const AuthLogin = ({ title, subtitle, subtext }: loginType) => {
                   onBlur={handleBlur}
                   error={touched.email && Boolean(errors.email)}
                   helperText={touched.email && errors.email}
-                  disabled={isLoading}
+                  disabled={isLoading || isSubmitting}
                 />
               </Box>
               <Box>
@@ -186,7 +197,7 @@ const AuthLogin = ({ title, subtitle, subtext }: loginType) => {
                 <CustomTextField
                   id="password"
                   name="password"
-                  type="password"
+                  type={showPassword ? "text" : "password"}
                   variant="outlined"
                   fullWidth
                   value={values.password}
@@ -194,7 +205,21 @@ const AuthLogin = ({ title, subtitle, subtext }: loginType) => {
                   onBlur={handleBlur}
                   error={touched.password && Boolean(errors.password)}
                   helperText={touched.password && errors.password}
-                  disabled={isLoading}
+                  disabled={isLoading || isSubmitting}
+                  InputProps={{
+                    endAdornment: (
+                      <InputAdornment position="end">
+                        <IconButton
+                          aria-label="toggle password visibility"
+                          onClick={() => setShowPassword(!showPassword)}
+                          edge="end"
+                          size="small"
+                        >
+                          {showPassword ? <IconEyeOff size={20} /> : <IconEye size={20} />}
+                        </IconButton>
+                      </InputAdornment>
+                    ),
+                  }}
                 />
               </Box>
               <Stack
@@ -209,7 +234,7 @@ const AuthLogin = ({ title, subtitle, subtext }: loginType) => {
                       <CustomCheckbox
                         checked={values.rememberMe}
                         onChange={(e) => setFieldValue('rememberMe', e.target.checked)}
-                        disabled={isLoading}
+                        disabled={isLoading || isSubmitting}
                       />
                     }
                     label="Remember this Device"
@@ -236,13 +261,17 @@ const AuthLogin = ({ title, subtitle, subtext }: loginType) => {
                 variant="contained"
                 size="large"
                 fullWidth
-                disabled={isLoading || !isValid}
+                disabled={isLoading || isSubmitting || !isValid}
                 sx={{ mb: 2 }}
               >
-                {isLoading ? (
+                {isLoading || isSubmitting ? (
                   <>
-                    <CircularProgress size={20} sx={{ mr: 1 }} />
-                    Signing In...
+                    <LoadingAnimation
+                      type="circular"
+                      size="small"
+                      color="inherit"
+                    />
+                    <Box sx={{ ml: 1 }}>Signing In...</Box>
                   </>
                 ) : (
                   'Sign In'

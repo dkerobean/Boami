@@ -49,18 +49,26 @@ import { PaymentModal, BillingHistory } from '@/components/subscription';
 interface Plan {
   id: string;
   name: string;
+  description: string;
   price: {
     monthly: number;
     annual: number;
     currency: string;
   };
-  features: string[];
-  trialDays: number;
+  features: {
+    [key: string]: {
+      enabled: boolean;
+      limit: number;
+      description: string;
+    };
+  };
+  isActive: boolean;
+  sortOrder: number;
   popular?: boolean;
-  limits: {
-    projects: number;
-    storage: number;
-    apiCalls: number;
+  trialDays?: number;
+  savings?: {
+    annual: number;
+    monthsFreeBenefit: number;
   };
 }
 
@@ -703,17 +711,20 @@ const SubscriptionBillingPage: React.FC = () => {
                     )}
 
                     <List dense sx={{ flexGrow: 1 }}>
-                      {plan.features.map((feature, index) => (
-                        <ListItem key={index} sx={{ px: 0 }}>
-                          <ListItemIcon sx={{ minWidth: 32 }}>
-                            <IconCheck size={18} color="#10b981" />
-                          </ListItemIcon>
-                          <ListItemText
-                            primary={feature}
-                            primaryTypographyProps={{ variant: 'body1' }}
-                          />
-                        </ListItem>
-                      ))}
+                      {Object.entries(plan.features)
+                        .filter(([_, featureConfig]) => featureConfig.enabled)
+                        .map(([featureName, featureConfig], index) => (
+                          <ListItem key={index} sx={{ px: 0 }}>
+                            <ListItemIcon sx={{ minWidth: 32 }}>
+                              <IconCheck size={18} color="#10b981" />
+                            </ListItemIcon>
+                            <ListItemText
+                              primary={featureConfig.description}
+                              primaryTypographyProps={{ variant: 'body1' }}
+                            />
+                          </ListItem>
+                        ))
+                      }
                     </List>
 
                     <Box mt={3}>
@@ -760,7 +771,11 @@ const SubscriptionBillingPage: React.FC = () => {
                               </>
                             ) : (
                               <>
-                                🚀 Start {plan.trialDays}-Day Free Trial
+                                {plan.name === 'Free' ? (
+                                  '🚀 Start Free'
+                                ) : (
+                                  `🚀 Start ${plan.trialDays}-Day Free Trial`
+                                )}
                               </>
                             )}
                           </Button>
