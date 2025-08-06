@@ -63,7 +63,7 @@ export class SubscriptionMonitor {
 
       const expiringSubscriptions = await Subscription.find({
         isActive: true,
-        expiresAt: {
+        currentPeriodEnd: {
           $lte: sevenDaysFromNow,
           $gte: new Date()
         }
@@ -87,23 +87,23 @@ export class SubscriptionMonitor {
 
         const plan = subscription.planId as any;
         const daysUntilExpiry = Math.ceil(
-          (new Date(subscription.expiresAt).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)
+          (new Date(subscription.currentPeriodEnd).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)
         );
 
         const subscriptionData: SubscriptionNotificationData = {
-          _id: subscription._id.toString(),
-          userId: subscription.userId,
-          planId: subscription.planId.toString(),
+          _id: (subscription._id as any).toString(),
+          userId: (subscription.userId as any).toString(),
+          planId: (subscription.planId as any).toString(),
           planName: plan?.name || 'Unknown Plan',
           status: subscription.status,
-          amount: subscription.amount,
-          expiryDate: subscription.expiresAt.toISOString().split('T')[0],
-          isActive: subscription.isActive
+          amount: plan?.price || 0,
+          expiryDate: subscription.currentPeriodEnd.toISOString().split('T')[0],
+          isActive: subscription.isActive()
         };
 
         await notificationService.triggerNotification({
           type: 'subscription_renewal',
-          userId: user._id.toString(),
+          userId: (user._id as any).toString(),
           data: {
             subscription: subscriptionData,
             daysUntilExpiry
@@ -146,7 +146,7 @@ export class SubscriptionMonitor {
 
       await notificationService.triggerNotification({
         type: 'subscription_payment_failed',
-        userId: user._id.toString(),
+        userId: (user._id as any).toString(),
         data: { subscription: subscriptionData },
         priority: 'critical'
       });
@@ -172,7 +172,7 @@ export class SubscriptionMonitor {
 
       await notificationService.triggerNotification({
         type: 'subscription_renewal',
-        userId: user._id.toString(),
+        userId: (user._id as any).toString(),
         data: {
           subscription: {
             ...subscriptionData,
@@ -203,7 +203,7 @@ export class SubscriptionMonitor {
 
       await notificationService.triggerNotification({
         type: 'subscription_cancelled',
-        userId: user._id.toString(),
+        userId: (user._id as any).toString(),
         data: {
           subscription: {
             ...subscriptionData,
@@ -246,13 +246,13 @@ export class SubscriptionMonitor {
 
       const plan = subscription.planId as any;
       const daysUntilExpiry = Math.ceil(
-        (new Date(subscription.expiresAt).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)
+        (new Date(subscription.currentPeriodEnd).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)
       );
 
       return {
         hasActiveSubscription: true,
         currentPlan: plan?.name || 'Unknown Plan',
-        expiryDate: subscription.expiresAt.toISOString().split('T')[0],
+        expiryDate: subscription.currentPeriodEnd.toISOString().split('T')[0],
         daysUntilExpiry,
         status: subscription.status
       };

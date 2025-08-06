@@ -14,6 +14,8 @@ export interface TaskNotificationData {
   status?: string;
   boardId?: string;
   columnId?: string;
+  assignedBy?: string;
+  completedBy?: string;
 }
 
 export class TaskMonitor {
@@ -86,7 +88,7 @@ export class TaskMonitor {
 
       await notificationService.triggerNotification({
         type: 'task_assigned',
-        userId: assignedUser._id.toString(),
+        userId: (assignedUser._id as any).toString(),
         data: {
           task: {
             ...taskData,
@@ -136,7 +138,7 @@ export class TaskMonitor {
 
       await notificationService.triggerNotification({
         type: 'task_completed',
-        userId: creator._id.toString(),
+        userId: (creator._id as any).toString(),
         data: {
           task: {
             ...taskData,
@@ -197,11 +199,11 @@ export class TaskMonitor {
         }
 
         const taskData: TaskNotificationData = {
-          _id: task._id.toString(),
+          _id: (task._id as any).toString(),
           title: task.title,
-          description: task.description,
-          date: task.date,
-          taskProperty: task.taskProperty,
+          description: task.description || '',
+          date: task.date || '',
+          taskProperty: task.taskProperty || '',
           userId: task.userId,
           boardId: task.boardId,
           columnId: task.columnId
@@ -209,7 +211,7 @@ export class TaskMonitor {
 
         await notificationService.triggerNotification({
           type: 'task_deadline',
-          userId: assignedUser._id.toString(),
+          userId: (assignedUser._id as any).toString(),
           data: { task: taskData },
           priority: 'high'
         });
@@ -246,11 +248,11 @@ export class TaskMonitor {
       const tasks = await KanbanTask.find({ date: today });
 
       return tasks.map(task => ({
-        _id: task._id.toString(),
+        _id: (task._id as any).toString(),
         title: task.title,
-        description: task.description,
-        date: task.date,
-        taskProperty: task.taskProperty,
+        description: task.description || '',
+        date: task.date || '',
+        taskProperty: task.taskProperty || '',
         userId: task.userId,
         boardId: task.boardId,
         columnId: task.columnId
@@ -277,11 +279,11 @@ export class TaskMonitor {
       });
 
       return tasks.map(task => ({
-        _id: task._id.toString(),
+        _id: (task._id as any).toString(),
         title: task.title,
-        description: task.description,
-        date: task.date,
-        taskProperty: task.taskProperty,
+        description: task.description || '',
+        date: task.date || '',
+        taskProperty: task.taskProperty || '',
         userId: task.userId,
         boardId: task.boardId,
         columnId: task.columnId
@@ -303,18 +305,18 @@ export class TaskMonitor {
       const users = await User.find({ isActive: true });
 
       for (const user of users) {
-        const userTasks = await KanbanTask.find({ userId: user._id.toString() });
+        const userTasks = await KanbanTask.find({ userId: (user._id as any).toString() });
 
         if (userTasks.length === 0) continue;
 
         const today = new Date().toISOString().split('T')[0];
         const tasksDueToday = userTasks.filter(task => task.date === today);
-        const overdueTasks = userTasks.filter(task => task.date < today);
+        const overdueTasks = userTasks.filter(task => task.date && task.date < today);
 
         if (tasksDueToday.length > 0 || overdueTasks.length > 0) {
           await notificationService.triggerNotification({
             type: 'task_assigned', // Reuse template for summary
-            userId: user._id.toString(),
+            userId: (user._id as any).toString(),
             data: {
               task: {
                 title: 'Daily Task Summary',

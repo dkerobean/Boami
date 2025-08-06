@@ -204,9 +204,7 @@ export class StockAlertMonitor {
 
       // Find the product owner
       let user;
-      if (product.userId) {
-        user = await User.findById(product.userId);
-      } else if (product.createdBy) {
+      if (product.createdBy) {
         user = await User.findOne({ email: product.createdBy });
       }
 
@@ -217,7 +215,7 @@ export class StockAlertMonitor {
 
       await notificationService.triggerNotification({
         type: 'stock_alert',
-        userId: user._id.toString(),
+        userId: (user._id as any).toString(),
         data: { product: product.toObject() },
         priority: 'high'
       });

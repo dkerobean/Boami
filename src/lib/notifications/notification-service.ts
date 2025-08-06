@@ -2,13 +2,9 @@ import { notificationDb } from './database-operations';
 import { templateEngine } from './template-engine';
 import { resendService } from './resend-service';
 import { NOTIFICATION_CONFIGS, PRIORITY_WEIGHTS, EMAIL_CONFIG } from './config';
-import {
-  NotificationType,
-  NotificationPriority,
-  INotificationEventDocument,
-  IQueuedNotificationDocument,
-  User
-} from '../database/models';
+import { NotificationType, NotificationPriority, INotificationEventDocument } from '../database/models/NotificationEvent';
+import { IQueuedNotificationDocument } from '../database/models/QueuedNotification';
+import { User } from '../database/models';
 
 export interface NotificationEventData {
   type: NotificationType;
@@ -28,7 +24,7 @@ export interface NotificationResult {
 }
 
 export class NotificationService {
-  private isProcessinalse;
+  private isProcessing: boolean = false;
   private processingInterval: NodeJS.Timeout | null = null;
 
   constructor() {
@@ -48,7 +44,7 @@ export class NotificationService {
       if (!canSend) {
         return {
           success: true,
-          eventId: event._id.toString(),
+          eventId: (event._id as any).toString(),
           skipped: true,
           reason: 'User preferences disabled this notification type'
         };
@@ -68,8 +64,8 @@ export class NotificationService {
 
       return {
         success: true,
-        eventId: event._id.toString(),
-        queuedId: queuedNotification._id.toString()
+        eventId: (event._id as any).toString(),
+                queuedId: (queuedNotification._id as any).toString()
       };
     } catch (error) {
       console.error('Failed to trigger notification:', error);
@@ -104,7 +100,7 @@ export class NotificationService {
 
     // Create queued notification
     return await notificationDb.createQueuedNotification({
-      eventId: event._id.toString(),
+      eventId: (event._id as any).toString(),
       userId: event.userId,
       email: user.email,
       subject: renderedTemplate.subject,
@@ -233,7 +229,7 @@ export class NotificationService {
   private async processSingleNotification(notification: IQueuedNotificationDocument): Promise<{ success: boolean; error?: string }> {
     try {
       // Update status to processing
-      await notificationDb.updateNotificationStatus(notification._id.toString(), 'processing');
+      await notificationDb.updateNotificationStatus((notification._id as any).toString(), 'processing');
 
       // Send email
       const result = await resendService.sendEmail({
@@ -245,12 +241,12 @@ export class NotificationService {
 
       if (result.success) {
         // Update status to sent
-        await notificationDb.updateNotificationStatus(notification._id.toString(), 'sent');
+        await notificationDb.updateNotificationStatus((notification._id as any).toString(), 'sent');
 
         // Log successful delivery
         await notificationDb.createNotificationLog({
           userId: notification.userId,
-          notificationId: notification._id.toString(),
+          notificationId: (notification._id as any).toString(),
           type: notification.templateId as NotificationType,
           status: 'sent',
           email: notification.email,
@@ -280,13 +276,13 @@ export class NotificationService {
       // Update all to processing
       await Promise.all(
         notifications.map(n =>
-          notificationDb.updateNotificationStatus(n._id.toString(), 'processing')
+          notificationDb.updateNotificationStatus((n._id as any).toString(), 'processing')
         )
       );
 
       // Prepare bulk email data
       const bulkEmails = notifications.map(notification => ({
-        id: notification._id.toString(),
+        id: (notification._id as any).toString(),
         to: notification.email,
         subject: notification.subject,
         html: notification.htmlContent,
