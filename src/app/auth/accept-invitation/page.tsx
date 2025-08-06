@@ -134,7 +134,7 @@ export default function AcceptInvitationPage() {
 
       // Account created successfully, sign in the user
       try {
-        await login(invitation?.email || '', formData.password);
+        await login({ email: invitation?.email || '', password: formData.password });
         // Redirect to dashboard with welcome message
         router.push('/dashboard?welcome=true');
       } catch (loginError) {

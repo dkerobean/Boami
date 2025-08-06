@@ -64,7 +64,7 @@ export async function POST(request: NextRequest) {
     const subscriptionService = new SubscriptionService();
 
     const result = await subscriptionService.cancelSubscription(
-      subscription._id.toString(),
+      String(subscription._id),
       immediately
     );
 

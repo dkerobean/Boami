@@ -37,7 +37,7 @@ export async function GET(request: NextRequest) {
         perm.resource,
         perm.action
       );
-      results[`${perm.resource}.${perm.action}`] = hasPermission;
+      (results as any)[`${perm.resource}.${perm.action}`] = hasPermission;
     }
 
     return NextResponse.json({

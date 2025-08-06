@@ -86,7 +86,8 @@ export async function POST(request: NextRequest) {
       consumerKey: connection.consumerKey,
       consumerSecret: connection.consumerSecret,
       version: connection.version,
-      isWooCommerce: connection.isWooCommerce
+      isWooCommerce: connection.isWooCommerce,
+      isActive: true
     }, {
       timeout: 30000, // 30 second timeout for product counting
       retries: 2

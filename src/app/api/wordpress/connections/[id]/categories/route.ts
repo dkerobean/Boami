@@ -55,7 +55,8 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       consumerKey: connection.consumerKey,
       consumerSecret: connection.consumerSecret,
       version: connection.version,
-      isWooCommerce: connection.isWooCommerce
+      isWooCommerce: connection.isWooCommerce,
+      isActive: true
     }, {
       timeout: 30000, // 30 second timeout for category fetching
       retries: 2

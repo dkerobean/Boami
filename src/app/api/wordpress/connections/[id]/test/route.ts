@@ -40,7 +40,8 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       consumerKey: connection.consumerKey,
       consumerSecret: connection.consumerSecret,
       version: connection.version,
-      isWooCommerce: connection.isWooCommerce
+      isWooCommerce: connection.isWooCommerce,
+      isActive: true
     }, {
       timeout: 15000, // 15 second timeout for testing
       retries: 1 // Only retry once for testing

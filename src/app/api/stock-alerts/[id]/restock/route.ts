@@ -48,7 +48,7 @@ export async function POST(
       return NextResponse.json({
         success: false,
         error: 'Invalid request data',
-        details: validation.error.errors
+        details: validation.error.issues
       }, { status: 400 });
     }
     const validatedData = validation.data;
@@ -56,6 +56,13 @@ export async function POST(
     // Connect to MongoDB database
     await connectDB();
     const db = mongoose.connection.db;
+
+    if (!db) {
+      return NextResponse.json(
+        { success: false, error: 'Database connection not available' },
+        { status: 500 }
+      );
+    }
 
     console.log('Processing restock with real MongoDB operations for alert:', id);
 
@@ -228,6 +235,13 @@ export async function GET(
 
     await connectDB();
     const db = mongoose.connection.db;
+
+    if (!db) {
+      return NextResponse.json(
+        { success: false, error: 'Database connection not available' },
+        { status: 500 }
+      );
+    }
 
     // Get the stock alert
     const alert = await db.collection('stockalerts').findOne({

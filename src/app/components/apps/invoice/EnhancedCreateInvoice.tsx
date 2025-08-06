@@ -72,7 +72,8 @@ function TabPanel(props: TabPanelProps) {
 }
 
 const EnhancedCreateInvoice = () => {
-  const { addInvoice, invoices } = useContext(InvoiceContext);
+  const context = useContext(InvoiceContext);
+  const { addInvoice, invoices } = context || {};
   const [activeStep, setActiveStep] = useState(0);
   const [showAlert, setShowAlert] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
@@ -138,7 +139,7 @@ const EnhancedCreateInvoice = () => {
   }, []);
 
   useEffect(() => {
-    if (invoices.length > 0) {
+    if (invoices && invoices.length > 0) {
       const lastId = invoices[invoices.length - 1].id;
       setFormData(prev => ({ ...prev, id: lastId + 1 }));
     } else {
@@ -239,7 +240,7 @@ const EnhancedCreateInvoice = () => {
 
   const handleSubmit = () => {
     if (formData.orders && formData.orders.length > 0) {
-      addInvoice(formData as InvoiceList);
+      addInvoice?.(formData as InvoiceList);
       setShowAlert(true);
       setTimeout(() => {
         router.push("/apps/invoice/list");
@@ -340,7 +341,7 @@ const EnhancedCreateInvoice = () => {
                         type="email"
                         fullWidth
                         value={formData.billFromEmail}
-                        onChange={(e) => handleInputChange("billFromEmail", e.target.value)}
+                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleInputChange("billFromEmail", e.target.value)}
                         required
                       />
                       <CustomTextField

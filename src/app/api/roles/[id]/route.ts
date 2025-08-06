@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/app/api/auth/[...nextauth]/route';
 import { Role, Permission, User } from '@/lib/database/models';
+import type { IRoleDocument } from '@/lib/database/models';
+import { Types } from 'mongoose';
 import { PermissionService } from '@/lib/services/permission.service';
 import { RoleUtils } from '@/lib/utils/role.utils';
 import { z } from 'zod';
@@ -38,7 +40,7 @@ export async function GET(
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    const role = await Role.findById(params.id).populate('permissions', 'name resource action description');
+    const role = await Role.findById(params.id).populate('permissions', 'name resource action description') as IRoleDocument | null;
 
     if (!role) {
       return NextResponse.json({ error: 'Role not found' }, { status: 404 });
@@ -51,7 +53,7 @@ export async function GET(
       .limit(10); // Limit to first 10 users for preview
 
     // Get role impact analysis
-    const impactAnalysis = await RoleUtils.getRoleImpactAnalysis(role._id.toString());
+    const impactAnalysis = await RoleUtils.getRoleImpactAnalysis(String(role._id));
 
     return NextResponse.json({
       id: role._id,
@@ -110,14 +112,14 @@ export async function PUT(
 
     if (!validation.success) {
       return NextResponse.json(
-        { error: 'Validation failed', details: validation.error.errors },
+        { error: 'Validation failed', details: validation.error.issues },
         { status: 400 }
       );
     }
 
     const updateData = validation.data;
 
-    const role = await Role.findById(params.id);
+    const role = await Role.findById(params.id) as IRoleDocument | null;
     if (!role) {
       return NextResponse.json({ error: 'Role not found' }, { status: 404 });
     }
@@ -144,8 +146,8 @@ export async function PUT(
     // If permissions are being updated, validate them
     if (updateData.permissions) {
       const permissionValidation = await RoleUtils.validatePermissionAssignment(
-        role._id,
-        updateData.permissions
+        String(role._id),
+        updateData.permissions.map(id => new Types.ObjectId(id))
       );
 
       if (!permissionValidation.isValid) {
@@ -174,7 +176,7 @@ export async function PUT(
         ...(updateData.permissions && { permissions: updateData.permissions })
       },
       { new: true, runValidators: true }
-    ).populate('permissions', 'name resource action description');
+    ).populate('permissions', 'name resource action description') as IRoleDocument | null;
 
     if (!updatedRole) {
       return NextResponse.json({ error: 'Failed to update role' }, { status: 500 });
@@ -238,7 +240,7 @@ export async function DELETE(
       );
     }
 
-    const role = await Role.findById(params.id);
+    const role = await Role.findById(params.id) as IRoleDocument | null;
     if (!role) {
       return NextResponse.json({ error: 'Role not found' }, { status: 404 });
     }

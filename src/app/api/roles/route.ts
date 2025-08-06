@@ -26,19 +26,19 @@ export async function GET(request: NextRequest) {
     const rolesWithCounts = await Promise.all(
       roles.map(async (role) => {
         const roleObj = role.toObject();
+        let userCount = 0;
 
         if (includeUserCount) {
-          const userCount = await User.countDocuments({ role: role._id });
-          roleObj.userCount = userCount;
+          userCount = await User.countDocuments({ role: role._id });
         }
 
         return {
           id: roleObj._id,
           name: roleObj.name,
           description: roleObj.description,
-          isSystem: roleObj.isSystemRole,
+          isSystem: roleObj.isSystem,
           permissions: roleObj.permissions || [],
-          userCount: roleObj.userCount || 0,
+          userCount,
           createdAt: roleObj.createdAt,
           updatedAt: roleObj.updatedAt
         };

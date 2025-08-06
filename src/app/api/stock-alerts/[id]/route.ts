@@ -80,7 +80,7 @@ export async function PUT(
       return NextResponse.json({
         success: false,
         error: 'Invalid request data',
-        details: validation.error.errors
+        details: validation.error.issues
       }, { status: 400 });
     }
     const validatedData = validation.data;
@@ -214,9 +214,10 @@ export async function POST(
     // 5. Update monitoring job
     
     const updatedAlert = {
-      ...mockStockAlert,
+      id,
       status: newStatus,
       lastUpdated: new Date(),
+      actionTaken: actionMessage
     };
     
     return NextResponse.json({

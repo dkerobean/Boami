@@ -11,6 +11,13 @@ export async function GET(request: NextRequest) {
     await connectDB();
     const db = mongoose.connection.db;
 
+    if (!db) {
+      return NextResponse.json(
+        { success: false, error: 'Database connection not available' },
+        { status: 500 }
+      );
+    }
+
     // Get total products count
     const totalProducts = await db.collection('products').countDocuments();
 

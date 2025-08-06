@@ -141,11 +141,11 @@ export async function POST(request: NextRequest) {
     }
 
     // Record webhook received
-    webhookMonitor.recordEvent({
+    console.log('Webhook received:', {
       id: webhookId || `webhook_${Date.now()}`,
       event: eventType || 'unknown',
       status: 'received',
-      payload: webhookPayload
+      timestamp: new Date()
     });
 
     // Process webhook
@@ -153,7 +153,7 @@ export async function POST(request: NextRequest) {
 
     try {
       // Record processing start
-      webhookMonitor.recordEvent({
+      console.log({
         id: webhookId || `processing_${Date.now()}`,
         event: eventType || 'unknown',
         status: 'processing'
@@ -174,7 +174,7 @@ export async function POST(request: NextRequest) {
       const processingTime = Date.now() - startTime;
 
       // Record success
-      webhookMonitor.recordEvent({
+      console.log({
         id: webhookId || `success_${Date.now()}`,
         event: eventType || 'unknown',
         status: 'success',
@@ -196,7 +196,7 @@ export async function POST(request: NextRequest) {
       const processingTime = Date.now() - startTime;
 
       // Record processing failure
-      webhookMonitor.recordEvent({
+      console.log({
         id: webhookId || `error_${Date.now()}`,
         event: eventType || 'unknown',
         status: 'failed',

@@ -69,19 +69,12 @@ export async function GET(
       createdAt: subscription.createdAt,
       updatedAt: subscription.updatedAt,
       plan: subscription.planId ? {
-        _id: subscription.planId._id,
-        name: subscription.planId.name,
-        description: subscription.planId.description,
-        price: subscription.planId.price,
-        currency: subscription.planId.currency,
-        features: subscription.planId.features
-      } : null,
-      payment: subscription.payment ? {
-        method: subscription.payment.method,
-        status: subscription.payment.status,
-        amount: subscription.payment.amount,
-        currency: subscription.payment.currency,
-        reference: subscription.payment.reference
+        _id: (subscription.planId as any)._id,
+        name: (subscription.planId as any).name,
+        description: (subscription.planId as any).description,
+        price: (subscription.planId as any).price,
+        currency: (subscription.planId as any).currency,
+        features: (subscription.planId as any).features
       } : null
     };
 

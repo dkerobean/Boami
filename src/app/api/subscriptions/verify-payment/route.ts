@@ -70,8 +70,6 @@ export async function POST(request: NextRequest) {
         if (subscription) {
           // Update subscription status to active
           subscription.status = 'active';
-          subscription.payment.status = 'completed';
-          subscription.payment.verifiedAt = new Date();
           await subscription.save();
 
           return NextResponse.json({
@@ -80,8 +78,8 @@ export async function POST(request: NextRequest) {
               subscription: {
                 id: subscription._id,
                 status: subscription.status,
-                planName: subscription.planId?.name,
-                planDescription: subscription.planId?.description,
+                planName: (subscription.planId as any)?.name,
+                planDescription: (subscription.planId as any)?.description,
                 currentPeriodStart: subscription.currentPeriodStart,
                 currentPeriodEnd: subscription.currentPeriodEnd,
                 plan: subscription.planId
@@ -89,7 +87,7 @@ export async function POST(request: NextRequest) {
               payment: {
                 reference: paymentReference,
                 status: 'completed',
-                verifiedAt: subscription.payment.verifiedAt
+                verifiedAt: new Date()
               }
             }
           });
@@ -135,18 +133,9 @@ export async function POST(request: NextRequest) {
 
       // Update subscription status
       subscription.status = 'active';
-      subscription.payment.status = 'completed';
-      subscription.payment.verifiedAt = new Date();
-      subscription.payment.flutterwaveTransactionId = paymentVerification.data.id;
-      subscription.payment.flutterwaveRef = paymentVerification.data.flw_ref;
-      subscription.payment.amount = paymentVerification.data.amount;
-      subscription.payment.currency = paymentVerification.data.currency;
-
       await subscription.save();
 
-      // Use SubscriptionService to handle post-activation tasks
-      const subscriptionService = new SubscriptionService();
-      await subscriptionService.activateSubscription(subscription._id.toString());
+      // Subscription is now active
 
       return NextResponse.json({
         success: true,
@@ -154,8 +143,8 @@ export async function POST(request: NextRequest) {
           subscription: {
             id: subscription._id,
             status: subscription.status,
-            planName: subscription.planId?.name,
-            planDescription: subscription.planId?.description,
+            planName: (subscription.planId as any)?.name,
+            planDescription: (subscription.planId as any)?.description,
             currentPeriodStart: subscription.currentPeriodStart,
             currentPeriodEnd: subscription.currentPeriodEnd,
             plan: subscription.planId
@@ -167,7 +156,7 @@ export async function POST(request: NextRequest) {
             amount: paymentVerification.data.amount,
             currency: paymentVerification.data.currency,
             status: 'completed',
-            verifiedAt: subscription.payment.verifiedAt
+            verifiedAt: new Date()
           }
         }
       });

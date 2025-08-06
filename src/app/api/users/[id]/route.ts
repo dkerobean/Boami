@@ -116,7 +116,7 @@ export async function PUT(
 
     if (!validation.success) {
       return NextResponse.json(
-        { error: 'Validation failed', details: validation.error.errors },
+        { error: 'Validation failed', details: validation.error.issues },
         { status: 400 }
       );
     }
@@ -130,7 +130,7 @@ export async function PUT(
     }
 
     // Prevent users from updating themselves to avoid privilege escalation
-    if (user._id.toString() === session.user.id && updateData.roleId) {
+    if (String(user._id) === session.user.id && updateData.roleId) {
       return NextResponse.json(
         { error: 'Cannot change your own role' },
         { status: 400 }
@@ -159,7 +159,7 @@ export async function PUT(
         );
       }
 
-      updateData.roleId = role._id;
+      updateData.roleId = String(role._id);
     }
 
     // Update user

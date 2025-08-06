@@ -137,7 +137,7 @@ const QuickRestockModal: React.FC<QuickRestockModalProps> = ({
   };
 
   const isStockSufficient = () => {
-    return getNewStockLevel() > alert?.threshold;
+    return getNewStockLevel() > (alert?.threshold || 0);
   };
 
   if (!alert) return null;

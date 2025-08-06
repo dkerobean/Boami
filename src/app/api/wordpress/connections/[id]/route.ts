@@ -129,7 +129,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
     // Check if URL is being changed and conflicts with another connection
     if (validatedData.siteUrl && validatedData.siteUrl !== existingConnection.siteUrl) {
       const conflictingConnection = await WordPressConnection.findByUrl(validatedData.siteUrl);
-      if (conflictingConnection && conflictingConnection._id.toString() !== id) {
+      if (conflictingConnection && String(conflictingConnection._id) !== id) {
         return NextResponse.json({
           success: false,
           error: 'Another connection with this site URL already exists'

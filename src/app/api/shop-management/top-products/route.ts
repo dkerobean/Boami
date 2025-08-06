@@ -24,6 +24,13 @@ export async function GET(request: NextRequest) {
     await connectDB();
     const db = mongoose.connection.db;
 
+    if (!db) {
+      return NextResponse.json(
+        { success: false, error: 'Database connection not available' },
+        { status: 500 }
+      );
+    }
+
     const { searchParams } = new URL(request.url);
     const limit = parseInt(searchParams.get('limit') || '10');
     const metric = searchParams.get('metric') || 'sales'; // sales, revenue, stock

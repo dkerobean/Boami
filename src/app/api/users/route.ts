@@ -51,7 +51,7 @@ export async function GET(request: NextRequest) {
 
     if (!queryValidation.success) {
       return NextResponse.json(
-        { error: 'Invalid query parameters', details: queryValidation.error.errors },
+        { error: 'Invalid query parameters', details: queryValidation.error.issues },
         { status: 400 }
       );
     }
@@ -159,7 +159,7 @@ export async function POST(request: NextRequest) {
 
     if (!validation.success) {
       return NextResponse.json(
-        { error: 'Validation failed', details: validation.error.errors },
+        { error: 'Validation failed', details: validation.error.issues },
         { status: 400 }
       );
     }

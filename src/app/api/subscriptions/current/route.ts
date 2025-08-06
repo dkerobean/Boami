@@ -173,7 +173,7 @@ export async function PUT(request: NextRequest) {
     const { SubscriptionService } = await import('../../../../lib/services/SubscriptionService');
     const subscriptionService = new SubscriptionService();
 
-    const result = await subscriptionService.updateSubscription(subscription._id.toString(), {
+    const result = await subscriptionService.updateSubscription(String(subscription._id), {
       planId,
       immediate
     });

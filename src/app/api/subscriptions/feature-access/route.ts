@@ -11,7 +11,7 @@ export async function POST(request: NextRequest) {
   let userId: string | undefined;
 
   try {
-    subscriptionLogger.info('Feature access check started', LogCategory.FEATURE_ACCESS);
+    subscriptionLogger.info('Feature access check started', LogCategory.ACCESS);
 
     await connectToDatabase();
 
@@ -21,17 +21,14 @@ export async function POST(request: NextRequest) {
 
     if (!userId || !feature) {
       const error = createFeatureAccessError(
-        'Invalid request: Missing required fields',
-        ERROR_CODES.INVALID_REQUEST,
-        feature,
+        feature || 'unknown',
         undefined,
         undefined,
         userId
       );
 
-      subscriptionLogger.warn('Feature access check failed: Missing required fields', LogCategory.FEATURE_ACCESS, {
-        userId,
-        metadata: { feature, missingFields: !userId ? 'userId' : 'feature' }
+      subscriptionLogger.warn('Feature access check failed: Missing required fields', LogCategory.ACCESS, {
+        userId
       });
 
       recordError(error, { userId, feature, endpoint: '/api/subscriptions/feature-access' });
@@ -45,19 +42,15 @@ export async function POST(request: NextRequest) {
     const duration = Date.now() - startTime;
 
     if (!hasAccess) {
-      subscriptionLogger.logFeatureAccessDenied(userId, feature);
+      subscriptionLogger.warn(`Feature access denied for user ${userId} to feature ${feature}`, LogCategory.ACCESS, { userId });
     }
 
-    subscriptionLogger.logPerformanceMetric('feature_access_check', duration, {
-      userId,
-      feature,
-      hasAccess
+    subscriptionLogger.info(`Feature access check completed in ${duration}ms`, LogCategory.ACCESS, {
+      userId
     });
 
-    subscriptionLogger.info('Feature access check completed', LogCategory.FEATURE_ACCESS, {
-      userId,
-      duration,
-      metadata: { feature, hasAccess }
+    subscriptionLogger.info('Feature access check completed', LogCategory.ACCESS, {
+      userId
     });
 
     return NextResponse.json({
@@ -70,10 +63,8 @@ export async function POST(request: NextRequest) {
   } catch (error: any) {
     const duration = Date.now() - startTime;
 
-    subscriptionLogger.error('Feature access check error', error, LogCategory.FEATURE_ACCESS, {
-      userId,
-      duration,
-      metadata: { endpoint: '/api/subscriptions/feature-access' }
+    subscriptionLogger.error('Feature access check error', LogCategory.ACCESS, {
+      userId
     });
 
     recordError(error, { userId, endpoint: '/api/subscriptions/feature-access', duration });

@@ -47,7 +47,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({
         success: false,
         error: 'Invalid query parameters',
-        details: queryValidation.error.errors
+        details: queryValidation.error.issues
       }, { status: 400 });
     }
     const validatedQuery = queryValidation.data;
@@ -57,7 +57,7 @@ export async function GET(request: NextRequest) {
       search: validatedQuery.search,
       priority: validatedQuery.priority,
       status: validatedQuery.status,
-      alertType: validatedQuery.alertType,
+      alertType: validatedQuery.alertType as any,
       page: validatedQuery.page,
       limit: validatedQuery.limit,
       sortBy: validatedQuery.sortBy,
@@ -101,7 +101,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({
         success: false,
         error: 'Invalid request data',
-        details: dataValidation.error.errors
+        details: dataValidation.error.issues
       }, { status: 400 });
     }
     const validatedData = dataValidation.data;
@@ -170,7 +170,7 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({
         success: false,
         error: 'Invalid update data',
-        details: updateValidation.error.errors
+        details: updateValidation.error.issues
       }, { status: 400 });
     }
     const validatedUpdateData = updateValidation.data;
