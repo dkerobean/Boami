@@ -54,7 +54,7 @@ export async function GET(request: NextRequest) {
 
     // If includeTasks is true, fetch tasks for each board
     if (includeTasks && boards.length > 0) {
-      const boardIds = boards.map(board => board._id.toString());
+      const boardIds = boards.map(board => (board._id as any).toString());
       const tasks = await KanbanTask.find({
         userId: authResult.user.id,
         boardId: { $in: boardIds }
@@ -74,7 +74,7 @@ export async function GET(request: NextRequest) {
 
       // Add tasks to boards
       boards = boards.map((board: any) => {
-        const boardTasks = tasksByBoard[board._id.toString()] || {};
+        const boardTasks = tasksByBoard[(board._id as any).toString()] || {};
         const columnsWithTasks = board.columns.map((column: any) => ({
           ...column,
           tasks: boardTasks[column.id] || []

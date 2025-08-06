@@ -4,8 +4,7 @@ import {
   getOnboardingRecommendations,
   generateOnboardingChecklist,
   generateWelcomeMessage,
-  shouldShowOnboarding,
-  OnboardingPreferences
+  shouldShowOnboarding
 } from '@/lib/utils/user-onboarding';
 import {
   withProductivityAuth,
@@ -48,7 +47,7 @@ async function handleGetOnboarding(request: NextRequest, authResult: Productivit
 async function handleInitializeOnboarding(request: NextRequest, authResult: ProductivityAuthResult) {
   // Parse request body
   const body = await request.json();
-  const preferences: OnboardingPreferences = {
+  const preferences: any = {
     includeNotes: body.includeNotes ?? true,
     includeCalendar: body.includeCalendar ?? true,
     includeKanban: body.includeKanban ?? true,
@@ -66,7 +65,7 @@ async function handleInitializeOnboarding(request: NextRequest, authResult: Prod
   }
 
   // Initialize user data
-  const result = await initializeUserProductivityData(authResult.userId!, preferences);
+  const result = await initializeUserProductivityData({ userId: authResult.userId!, ...preferences });
 
   return createSuccessResponse({
     initialized: result.success,

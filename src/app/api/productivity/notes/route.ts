@@ -43,7 +43,7 @@ export async function GET(request: NextRequest) {
     // Parse and validate query parameters
     const { searchParams } = new URL(request.url);
     const paginationOptions = validatePagination({
-      page: searchParams.get('page'),
+      page: searchParams.get('page') ? parseInt(searchParams.get('page')!) : undefined,
       limit: Math.min(parseInt(searchParams.get('limit') || '50'), 100),
       sortBy: searchParams.get('sortBy') || 'createdAt',
       sortOrder: searchParams.get('sortOrder') as 'asc' | 'desc' || 'desc'
@@ -66,15 +66,15 @@ export async function GET(request: NextRequest) {
       if (cached) {
         // Apply pagination to cached search results
         const skip = (paginationOptions.page - 1) * paginationOptions.limit;
-        const paginatedData = cached.slice(skip, skip + paginationOptions.limit);
+        const paginatedData = (cached as any[]).slice(skip, skip + paginationOptions.limit);
 
         result = {
           data: paginatedData,
           pagination: {
             page: paginationOptions.page,
             limit: paginationOptions.limit,
-            total: cached.length,
-            pages: Math.ceil(cached.length / paginationOptions.limit)
+            total: (cached as any[]).length,
+            pages: Math.ceil((cached as any[]).length / paginationOptions.limit)
           }
         };
       } else {
