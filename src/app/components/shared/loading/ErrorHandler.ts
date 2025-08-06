@@ -2,6 +2,7 @@
  * Error handling and timeout management for the loading system
  */
 
+import React from 'react';
 import { LoadingConfig } from './types';
 import { logLoadingEvent } from './utils';
 
@@ -253,10 +254,14 @@ export class LoadingErrorHandler {
     try {
       return await operation();
     } catch (error) {
-      this.handleError(errorType, error.message || 'Operation failed', {
+      const errorMessage = error instanceof Error ? error.message : 'Operation failed';
+      const errorString = error instanceof Error ? error.toString() : String(error);
+      const stack = error instanceof Error ? error.stack : undefined;
+      
+      this.handleError(errorType, errorMessage, {
         ...context,
-        error: error.toString(),
-        stack: error.stack,
+        error: errorString,
+        stack,
       });
       return null;
     }

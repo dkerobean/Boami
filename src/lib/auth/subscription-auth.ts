@@ -40,7 +40,7 @@ function extractToken(request: NextRequest): string | null {
   }
 
   // Also check for token in cookies (for browser requests)
-  const cookieToken = request.cookies.get('auth-token')?.va
+  const cookieToken = request.cookies.get('auth-token')?.value;
   if (cookieToken) {
     return cookieToken;
   }
@@ -117,18 +117,18 @@ export async function authenticateUser(request: NextRequest): Promise<AuthResult
     }
 
     // Get user's subscription
-    const subscription = await Subscription.findByUserId(new Types.ObjectId(user._id));
+    const subscription = await Subscription.findByUserId(new Types.ObjectId(user._id as string));
 
     const authenticatedUser: AuthenticatedUser = {
-      id: user._id.toString(),
+      id: (user._id as any).toString(),
       email: user.email,
-      role: user.role,
+      role: (user.role as any).name || 'user',
       isActive: user.isActive,
       isEmailVerified: user.isEmailVerified,
       subscription: subscription ? {
-        id: subscription._id.toString(),
+        id: (subscription._id as any).toString(),
         status: subscription.status,
-        planId: subscription.planId.toString(),
+        planId: (subscription.planId as any).toString(),
         isActive: subscription.isActive()
       } : undefined
     };
@@ -301,7 +301,7 @@ export function checkRateLimit(
 
   // Clean up old entries periodically
   if (Math.random() < 0.01) { // 1% chance
-    for (const [k, v] of rateLimitStore.entries()) {
+    for (const [k, v] of Array.from(rateLimitStore.entries())) {
       if (now > v.resetTime) {
         rateLimitStore.delete(k);
       }

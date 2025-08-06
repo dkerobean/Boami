@@ -22,7 +22,7 @@ export class ProductivityMigration {
       await connectDB();
 
       // Check if user already has notes
-      const existingNotwait Note.countDocuments({ userId });
+      const existingNotes = await Note.countDocuments({ userId });
       if (existingNotes > 0) {
         console.log(`User ${userId} already has ${existingNotes} notes, skipping migration`);
         return 0;
@@ -90,7 +90,7 @@ export class ProductivityMigration {
             taskImage: task.taskImage || null,
             date: task.date || null,
             taskProperty: task.taskProperty || null,
-            boardId: savedBoard._id.toString(),
+            boardId: (savedBoard._id as any).toString(),
             columnId: category.id,
             order: taskIndex,
             userId: userId
@@ -227,7 +227,7 @@ export class ProductivityMigration {
 
       for (const user of users) {
         try {
-          const result = await this.migrateAllForUser(user._id.toString());
+          const result = await this.migrateAllForUser((user._id as any).toString());
           totalNotes += result.notes;
           totalBoards += result.boards;
           totalTasks += result.tasks;
@@ -271,7 +271,7 @@ export class ProductivityMigration {
       const welcomeTask = new KanbanTask({
         title: 'Welcome to your Kanban board!',
         description: 'This is your first task. You can edit, move, or delete it.',
-        boardId: board._id.toString(),
+        boardId: (board._id as any).toString(),
         columnId: board.columns[0].id, // First column (Todo)
         order: 0,
         userId: userId

@@ -273,7 +273,7 @@ export default function PaymentModal({
         <Label htmlFor="paymentMethod">Payment Method</Label>
         <Select
           value={paymentInfo.paymentMethod}
-          onValueChange={(value) => setPaymentInfo(prev => ({ ...prev, paymentMethod: value }))}
+          onChange={(event) => setPaymentInfo(prev => ({ ...prev, paymentMethod: event.target.value as string }))}
         >
           <SelectTrigger>
             <SelectValue />

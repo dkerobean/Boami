@@ -41,6 +41,8 @@ export interface CompanySettings {
   website?: string;
 }
 
+export type TemplateType = "modern" | "corporate" | "creative";
+
 export interface InvoiceList {
   id: number;
   billFrom: string;

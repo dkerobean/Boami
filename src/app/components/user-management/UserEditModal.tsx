@@ -76,7 +76,7 @@ export default function UserEditModal({ isOpen, onClose, user, onUpdate }: UserE
         designation: user.designation || '',
         phone: user.phone || '',
         bio: user.bio || '',
-ompany: user.company || '',
+        company: user.company || '',
         department: user.department || ''
       });
     }
@@ -109,7 +109,7 @@ ompany: user.company || '',
     } catch (error) {
       if (error instanceof z.ZodError) {
         const newErrors: Record<string, string> = {};
-        error.errors.forEach(err => {
+        error.issues.forEach(err => {
           if (err.path[0]) {
             newErrors[err.path[0] as string] = err.message;
           }

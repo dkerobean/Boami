@@ -96,7 +96,8 @@ export function withPermission<P extends object>(
     }
 
     if (!hasPermission) {
-      return fallback ? <fallback {...props} /> : null;
+      const FallbackComponent = fallback;
+      return FallbackComponent ? <FallbackComponent {...props} /> : null;
     }
 
     return <Component {...props} />;

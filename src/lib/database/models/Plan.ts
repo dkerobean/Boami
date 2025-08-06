@@ -195,4 +195,3 @@ const Plan = (mongoose.models.Plan || mongoose.model<IPlanDocument, IPlanModel>(
 
 export default Plan;
 export { Plan };
-export type { IPlan, IPlanDocument, IPlanModel };

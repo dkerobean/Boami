@@ -36,7 +36,7 @@ import {
   Refresh,
   Settings,
   Timeline,
-  Error,
+  Error as ErrorIcon,
   CheckCircle,
   Warning,
   Info,
@@ -250,7 +250,7 @@ const RecurringPaymentMonitor: React.FC = () => {
   const getStatusIcon = (type: string) => {
     switch (type) {
       case 'success': return <CheckCircle />;
-      case 'error': return <Error />;
+      case 'error': return <ErrorIcon />;
       case 'warning': return <Warning />;
       case 'info': return <Info />;
       default: return <Info />;

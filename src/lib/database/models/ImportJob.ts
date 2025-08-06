@@ -18,7 +18,7 @@ export interface IImportJob extends Document {
     skipped: number;
     failed: number;
   };
-  errors: Array<{
+  importErrors: Array<{
     row: number;
     field: string;
     message: string;
@@ -115,7 +115,7 @@ const ImportJobSchema = new Schema<IImportJob>({
       min: 0 
     }
   },
-  errors: [{
+  importErrors: [{
     row: { 
       type: Number, 
       required: true,
@@ -229,7 +229,7 @@ ImportJobSchema.methods.markFailed = function(error?: string) {
   this.status = 'failed';
   this.completedAt = new Date();
   if (error) {
-    this.errors.push({
+    this.importErrors.push({
       row: 0,
       field: 'general',
       message: error

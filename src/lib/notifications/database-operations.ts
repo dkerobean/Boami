@@ -3,18 +3,17 @@ import {
   QueuedNotification,
   EmailTemplate,
   NotificationLog,
-  EmailPreferences,
-  type INotificationEventDocument,
-  type IQueuedNotificationDocument,
-  type IEmailTemplateDocument,
-  type INotificationLogDocument,
-  type IEmailPreferencesDocument,
-  type NotificationType,
-  type NotificationPriority,
-  type NotificationStatus,
-  type NotificationLogStatus,
-  type DigestFrequency
+  EmailPreferences
 } from '../database/models';
+import type { INotificationEventDocument } from '../database/models/NotificationEvent';
+import type { IQueuedNotificationDocument } from '../database/models/QueuedNotification';
+import type { IEmailTemplateDocument } from '../database/models/EmailTemplate';
+import type { INotificationLogDocument } from '../database/models/NotificationLog';
+import type { IEmailPreferencesDocument } from '../database/models/EmailPreferences';
+import type { NotificationType, NotificationPriority } from '../database/models/NotificationEvent';
+import type { NotificationStatus } from '../database/models/QueuedNotification';
+import type { NotificationLogStatus } from '../database/models/NotificationLog';
+import type { DigestFrequency } from '../database/models/EmailPreferences';
 
 export class NotificationDatabaseOperations {
 
@@ -53,15 +52,15 @@ export class NotificationDatabaseOperations {
   }
 
   async getPendingEvents(limit: number = 100): Promise<INotificationEventDocument[]> {
-    return await NotificationEvent.findPendingEvents().limit(limit);
+    return await NotificationEvent.find({ processed: false }).limit(limit);
   }
 
   async getEventsByUser(userId: string, limit: number = 50): Promise<INotificationEventDocument[]> {
-    return await NotificationEvent.findByUser(userId).limit(limit);
+    return await NotificationEvent.find({ userId }).limit(limit);
   }
 
   async getEventsByType(type: NotificationType, limit: number = 50): Promise<INotificationEventDocument[]> {
-    return await NotificationEvent.findByType(type).limit(limit);
+    return await NotificationEvent.find({ type }).limit(limit);
   }
 
   async deleteOldEvents(olderThanDays: number = 30): Promise<number> {
@@ -135,19 +134,19 @@ export class NotificationDatabaseOperations {
   }
 
   async getPendingNotifications(limit: number = 100): Promise<IQueuedNotificationDocument[]> {
-    return await QueuedNotification.findPendingNotifications().limit(limit);
+    return await QueuedNotification.find({ status: 'pending' }).limit(limit);
   }
 
   async getNotificationsByStatus(status: NotificationStatus, limit: number = 50): Promise<IQueuedNotificationDocument[]> {
-    return await QueuedNotification.findByStatus(status).limit(limit);
+    return await QueuedNotification.find({ status }).limit(limit);
   }
 
   async getFailedNotifications(limit: number = 50): Promise<IQueuedNotificationDocument[]> {
-    return await QueuedNotification.findFailedNotifications().limit(limit);
+    return await QueuedNotification.find({ status: 'failed' }).limit(limit);
   }
 
   async getNotificationsByUser(userId: string, limit: number = 50): Promise<IQueuedNotificationDocument[]> {
-    return await QueuedNotification.findByUser(userId).limit(limit);
+    return await QueuedNotification.find({ userId }).limit(limit);
   }
 
   async deleteOldQueuedNotifications(olderThanDays: number = 7): Promise<number> {
@@ -264,15 +263,15 @@ export class NotificationDatabaseOperations {
   }
 
   async getNotificationLogsByUser(userId: string, limit: number = 50): Promise<INotificationLogDocument[]> {
-    return await NotificationLog.findByUser(userId).limit(limit);
+    return await NotificationLog.find({ userId }).limit(limit);
   }
 
   async getNotificationLogsByType(type: NotificationType, limit: number = 50): Promise<INotificationLogDocument[]> {
-    return await NotificationLog.findByType(type).limit(limit);
+    return await NotificationLog.find({ type }).limit(limit);
   }
 
   async getNotificationLogsByStatus(status: NotificationLogStatus, limit: number = 50): Promise<INotificationLogDocument[]> {
-    return await NotificationLog.findByStatus(status).limit(limit);
+    return await NotificationLog.find({ status }).limit(limit);
   }
 
   async getDeliveryStats(startDate?: Date, endDate?: Date): Promise<any> {
@@ -330,7 +329,7 @@ export class NotificationDatabaseOperations {
     if (!preferences) return null;
 
     if (notificationType && typeof preferences[notificationType] === 'boolean') {
-      preferences[notificationType] = false;
+      (preferences as any)[notificationType] = false;
     } else {
       // Unsubscribe from all non-critical notifications
       preferences.stockAlerts = false;

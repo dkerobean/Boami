@@ -175,10 +175,10 @@ kanbanBoardSchema.methods.addColumn = function(name: string): IKanbanColumn {
  */
 kanbanBoardSchema.methods.removeColumn = function(columnId: string): boolean {
   const initialLength = this.columns.length;
-  this.columns = this.columns.filter(col => col.id !== columnId);
+  this.columns = this.columns.filter((col: IKanbanColumn) => col.id !== columnId);
 
   // Reorder remaining columns
-  this.columns.forEach((column, index) => {
+  this.columns.forEach((column: IKanbanColumn, index: number) => {
     column.order = index;
   });
 
@@ -189,7 +189,7 @@ kanbanBoardSchema.methods.removeColumn = function(columnId: string): boolean {
  * Instance method to update a column name
  */
 kanbanBoardSchema.methods.updateColumn = function(columnId: string, name: string): boolean {
-  const column = this.columns.find(col => col.id === columnId);
+  const column = this.columns.find((col: IKanbanColumn) => col.id === columnId);
   if (column) {
     column.name = name.trim();
     return true;
@@ -208,7 +208,7 @@ kanbanBoardSchema.methods.reorderColumns = function(columnIds: string[]): boolea
   const reorderedColumns: IKanbanColumn[] = [];
 
   for (let i = 0; i < columnIds.length; i++) {
-    const column = this.columns.find(col => col.id === columnIds[i]);
+    const column = this.columns.find((col: IKanbanColumn) => col.id === columnIds[i]);
     if (!column) {
       return false;
     }
@@ -224,7 +224,7 @@ kanbanBoardSchema.methods.reorderColumns = function(columnIds: string[]): boolea
  * Instance method to get a specific column
  */
 kanbanBoardSchema.methods.getColumn = function(columnId: string): IKanbanColumn | null {
-  return this.columns.find(col => col.id === columnId) || null;
+  return this.columns.find((col: IKanbanColumn) => col.id === columnId) || null;
 };
 
 /**

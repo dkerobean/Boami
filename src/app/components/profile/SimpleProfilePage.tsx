@@ -90,7 +90,7 @@ const SimpleProfilePage: React.FC = () => {
     return (
       <Container maxWidth="lg" sx={{ py: 4 }}>
         <Alert severity="error" sx={{ mb: 3 }}>
-          Error loading profile: {error}
+          Error loading profile: {error?.message || 'Unknown error'}
         </Alert>
       </Container>
     );

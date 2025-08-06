@@ -117,7 +117,7 @@ const ProductSelector: React.FC<ProductSelectorProps> = ({
 
   const handleProductSelect = (product: ProductType) => {
     const invoiceItem: InvoiceItem = {
-      productId: product.id,
+      productId: product.id?.toString(),
       itemName: product.title,
       sku: product.sku || `SKU-${product.id}`,
       description: `${product.title} - ${product.category.join(", ")}`,
@@ -235,8 +235,8 @@ const ProductSelector: React.FC<ProductSelectorProps> = ({
                     sx={{
                       height: "320px",
                       cursor: "pointer",
-                      border: isProductSelected(product.id) ? "2px solid" : "1px solid",
-                      borderColor: isProductSelected(product.id) ? "success.main" : "divider",
+                      border: isProductSelected(product.id?.toString()) ? "2px solid" : "1px solid",
+                      borderColor: isProductSelected(product.id?.toString()) ? "success.main" : "divider",
                       "&:hover": {
                         boxShadow: 4,
                         transform: "translateY(-2px)",
@@ -245,7 +245,7 @@ const ProductSelector: React.FC<ProductSelectorProps> = ({
                       display: "flex",
                       flexDirection: "column",
                     }}
-                    onClick={() => !isProductSelected(product.id) && handleProductSelect(product)}
+                    onClick={() => !isProductSelected(product.id?.toString()) && handleProductSelect(product)}
                   >
                     <Box position="relative" sx={{ height: "180px", overflow: "hidden" }}>
                       {product.photo ? (
@@ -276,7 +276,7 @@ const ProductSelector: React.FC<ProductSelectorProps> = ({
                       )}
                       
                       {/* Selected Badge */}
-                      {isProductSelected(product.id) && (
+                      {isProductSelected(product.id?.toString()) && (
                         <Box
                           sx={{
                             position: "absolute",
@@ -361,7 +361,7 @@ const ProductSelector: React.FC<ProductSelectorProps> = ({
                           </Typography>
                         </Stack>
 
-                        {!isProductSelected(product.id) ? (
+                        {!isProductSelected(product.id?.toString()) ? (
                           <Button
                             fullWidth
                             variant="contained"

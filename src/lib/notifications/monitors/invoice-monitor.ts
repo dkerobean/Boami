@@ -74,7 +74,7 @@ export class InvoiceMonitor {
 
       await notificationService.triggerNotification({
         type: 'invoice_status_changed',
-        userId: creator._id.toString(),
+        userId: (creator._id as any).toString(),
         data: {
           invoice: {
             ...invoiceData,
@@ -112,7 +112,7 @@ export class InvoiceMonitor {
 
       await notificationService.triggerNotification({
         type: 'payment_received',
-        userId: creator._id.toString(),
+        userId: (creator._id as any).toString(),
         data: {
           invoice: {
             ...invoiceData,
@@ -141,6 +141,10 @@ export class InvoiceMonitor {
 
       // Find invoices that are overdue (sent more than 30 days ago and not paid)
       const db = mongoose.connection.db;
+      if (!db) {
+        console.error('Database connection not available');
+        return [];
+      }
       const overdueInvoices = await db.collection('invoices').find({
         status: { $in: ['Sent', 'Draft'] },
         orderDate: { $lt: thirtyDaysAgo },
@@ -185,7 +189,7 @@ export class InvoiceMonitor {
 
         await notificationService.triggerNotification({
           type: 'invoice_overdue',
-          userId: creator._id.toString(),
+          userId: (creator._id as any).toString(),
           data: { invoice: invoiceData },
           priority: 'high'
         });
@@ -232,7 +236,7 @@ export class InvoiceMonitor {
 
       await notificationService.triggerNotification({
         type: 'invoice_status_changed', // Reuse template
-        userId: creator._id.toString(),
+        userId: (creator._id as any).toString(),
         data: {
           invoice: {
             ...invoiceData,
@@ -264,6 +268,18 @@ export class InvoiceMonitor {
       await connectToDatabase();
 
       const db = mongoose.connection.db;
+      if (!db) {
+        console.error('Database connection not available');
+        return { 
+          totalInvoices: 0, 
+          paidInvoices: 0, 
+          pendingInvoices: 0, 
+          overdueInvoices: 0, 
+          totalAmount: 0, 
+          paidAmount: 0, 
+          pendingAmount: 0 
+        };
+      }
       const invoices = await db.collection('invoices').find({ userId }).toArray();
 
       const thirtyDaysAgo = new Date();

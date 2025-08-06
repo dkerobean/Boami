@@ -2,7 +2,7 @@
  * Scheduled jobs for sending subscription-related emails
  */
 
-import { subscriptionEmailService, sendSubscriptionEmail } from '../email/subscription-email-service';
+import { SubscriptionEmailService } from '../email/subscription-email-service';
 import { subscriptionLogger, LogCategory } from '../utils/subscription-logger';
 import { connectToDatabase } from '../database/mongoose-connection';
 import { Subscription, User, Plan } from '../database/models';
@@ -73,11 +73,9 @@ class SubscriptionEmailJobs {
     this.scheduleExpiredSubscriptionJob();
     this.scheduleFailedPaymentRetryJob();
 
-    subscriptionLogger.info('Subscription email jobs initialized', LogCategory.SUBSCRIPTION, {
-      metadata: {
-        renewalJobs: this.renewalReminderJobs.length,
-        enabledJobs: this.renewalReminderJobs.filter(j => j.config.enabled).length
-      }
+    subscriptionLogger.info('Subscription email jobs initialized', {
+      renewalJobs: this.renewalReminderJobs.length,
+      enabledJobs: this.renewalReminderJobs.filter(j => j.config.enabled).length
     });
   }
 
@@ -90,8 +88,9 @@ class SubscriptionEmailJobs {
 
     this.jobIntervals.set(jobId, interval);
 
-    subscriptionLogger.info(`Scheduled renewal reminder job: ${jobId}`, LogCategory.SUBSCRIPTION, {
-      metadata: { daysBeforeRenewal: job.daysBeforeRenewal, schedule: job.config.schedule }
+    subscriptionLogger.info(`Scheduled renewal reminder job: ${jobId}`, {
+      daysBeforeRenewal: job.daysBeforeRenewal, 
+      schedule: job.config.schedule
     });
   }
 
@@ -115,7 +114,7 @@ class SubscriptionEmailJobs {
 
   public async processRenewalReminders(daysBeforeRenewal: number, config: EmailJobConfig): Promise<void> {
     try {
-      subscriptionLogger.info(`Processing renewal reminders: ${daysBeforeRenewal} days`, LogCategory.SUBSCRIPTION);
+      subscriptionLogger.info(`Processing renewal reminders: ${daysBeforeRenewal} days`);
 
       await connectToDatabase();
 
@@ -168,7 +167,7 @@ class SubscriptionEmailJobs {
       ]);
 
       if (subscriptions.length === 0) {
-        subscriptionLogger.info(`No renewal reminders to send for ${daysBeforeRenewal} days`, LogCategory.SUBSCRIPTION);
+        subscriptionLogger.info(`No renewal reminders to send for ${daysBeforeRenewal} days`);
         return;
       }
 
@@ -180,33 +179,23 @@ class SubscriptionEmailJobs {
             : subscription.plan.price.annual;
 
           const emailData = {
-            userName: `${subscription.user.firstName} ${subscription.user.lastName}`.trim(),
-            userEmail: subscription.user.email,
+            firstName: subscription.user.firstName,
             planName: subscription.plan.name,
-            planPrice: formatCurrency(renewalAmount, subscription.plan.price.currency),
+            planPrice: renewalAmount,
             currency: subscription.plan.price.currency,
             billingPeriod: subscription.billingPeriod,
-            nextBillingDate: new Date(subscription.currentPeriodEnd).toLocaleDateString(),
-            subscriptionId: subscription._id.toString(),
-            supportUrl: process.env.SUPPORT_URL || '/contact',
-            manageSubscriptionUrl: process.env.MANAGE_SUBSCRIPTION_URL || '/subscription/manage',
-            companyName: process.env.COMPANY_NAME || 'Your Company',
-            companyLogo: process.env.COMPANY_LOGO_URL,
-            daysUntilRenewal: daysBeforeRenewal,
-            renewalAmount: formatCurrency(renewalAmount, subscription.plan.price.currency),
-            updatePaymentUrl: process.env.UPDATE_PAYMENT_URL || '/subscription/payment-methods'
+            renewalDate: new Date(subscription.currentPeriodEnd).toLocaleDateString(),
+            appUrl: process.env.APP_URL || 'https://yourapp.com'
           };
 
-          return await sendSubscriptionEmail.renewalReminder(
+          return await SubscriptionEmailService.sendRenewalReminder(
             subscription.user.email,
-            emailData,
-            subscription.user._id.toString()
+            emailData
           );
         } catch (error: any) {
-          subscriptionLogger.error('Failed to send renewal reminder', error, LogCategory.SUBSCRIPTION, {
+          subscriptionLogger.error('Failed to send renewal reminder', error, {
             userId: subscription.user._id.toString(),
-            subscriptionId: subscription._id.toString(),
-            metadata: { daysBeforeRenewal }
+            subscriptionId: subscription._id.toString()
           });
           return { success: false, error: error.message };
         }
@@ -216,25 +205,21 @@ class SubscriptionEmailJobs {
       const successful = results.filter(r => r.success).length;
       const failed = results.filter(r => !r.success).length;
 
-      subscriptionLogger.info(`Renewal reminders processed: ${daysBeforeRenewal} days`, LogCategory.SUBSCRIPTION, {
-        metadata: {
-          total: subscriptions.length,
-          successful,
-          failed,
-          daysBeforeRenewal
-        }
+      subscriptionLogger.info(`Renewal reminders processed: ${daysBeforeRenewal} days`, {
+        total: subscriptions.length,
+        successful,
+        failed,
+        daysBeforeRenewal
       });
 
     } catch (error: any) {
-      subscriptionLogger.error(`Failed to process renewal reminders: ${daysBeforeRenewal} days`, error, LogCategory.SUBSCRIPTION, {
-        metadata: { daysBeforeRenewal }
-      });
+      subscriptionLogger.error(`Failed to process renewal reminders: ${daysBeforeRenewal} days`, error);
     }
   }
 
   public async processExpiredSubscriptions(): Promise<void> {
     try {
-      subscriptionLogger.info('Processing expired subscriptions', LogCategory.SUBSCRIPTION);
+      subscriptionLogger.info('Processing expired subscriptions');
 
       await connectToDatabase();
 
@@ -284,51 +269,42 @@ class SubscriptionEmailJobs {
 
           // Send expiration email
           const emailData = {
-            userName: `${subscription.user.firstName} ${subscription.user.lastName}`.trim(),
-            userEmail: subscription.user.email,
+            firstName: subscription.user.firstName,
             planName: subscription.plan.name,
-            planPrice: formatCurrency(subscription.plan.price.monthly, subscription.plan.price.currency),
-            currency: subscription.plan.price.currency,
-            billingPeriod: subscription.billingPeriod,
-            subscriptionId: subscription._id.toString(),
-            supportUrl: process.env.SUPPORT_URL || '/contact',
-            manageSubscriptionUrl: process.env.MANAGE_SUBSCRIPTION_URL || '/subscription/manage',
-            companyName: process.env.COMPANY_NAME || 'Your Company',
-            companyLogo: process.env.COMPANY_LOGO_URL
+            expiredDate: new Date(subscription.currentPeriodEnd).toLocaleDateString(),
+            appUrl: process.env.APP_URL || 'https://yourapp.com'
           };
 
-          await sendSubscriptionEmail.expired(
+          await SubscriptionEmailService.sendSubscriptionExpired(
             subscription.user.email,
-            emailData,
-            subscription.user._id.toString()
+            emailData
           );
 
-          subscriptionLogger.info('Expired subscription processed', LogCategory.SUBSCRIPTION, {
+          subscriptionLogger.info('Expired subscription processed', {}, {
             userId: subscription.user._id.toString(),
-            subscriptionId: subscription._id.toString(),
-            metadata: { planName: subscription.plan.name }
+            subscriptionId: subscription._id.toString()
           });
 
         } catch (error: any) {
-          subscriptionLogger.error('Failed to process expired subscription', error, LogCategory.SUBSCRIPTION, {
+          subscriptionLogger.error('Failed to process expired subscription', error, {
             userId: subscription.user._id.toString(),
             subscriptionId: subscription._id.toString()
           });
         }
       }
 
-      subscriptionLogger.info('Expired subscriptions processing completed', LogCategory.SUBSCRIPTION, {
-        metadata: { processedCount: expiredSubscriptions.length }
+      subscriptionLogger.info('Expired subscriptions processing completed', {
+        processedCount: expiredSubscriptions.length
       });
 
     } catch (error: any) {
-      subscriptionLogger.error('Failed to process expired subscriptions', error, LogCategory.SUBSCRIPTION);
+      subscriptionLogger.error('Failed to process expired subscriptions', error);
     }
   }
 
   public async processFailedPaymentRetries(): Promise<void> {
     try {
-      subscriptionLogger.info('Processing failed payment retries', LogCategory.SUBSCRIPTION);
+      subscriptionLogger.info('Processing failed payment retries');
 
       // In a real implementation, you would:
       // 1. Find subscriptions with failed payments
@@ -336,10 +312,10 @@ class SubscriptionEmailJobs {
       // 3. Send appropriate notifications based on retry results
       // 4. Update subscription status if all retries fail
 
-      subscriptionLogger.info('Failed payment retries processing completed', LogCategory.SUBSCRIPTION);
+      subscriptionLogger.info('Failed payment retries processing completed');
 
     } catch (error: any) {
-      subscriptionLogger.error('Failed to process payment retries', error, LogCategory.SUBSCRIPTION);
+      subscriptionLogger.error('Failed to process payment retries', error);
     }
   }
 
@@ -363,23 +339,23 @@ class SubscriptionEmailJobs {
     if (interval) {
       clearInterval(interval);
       this.jobIntervals.delete(jobId);
-      subscriptionLogger.info(`Stopped job: ${jobId}`, LogCategory.SUBSCRIPTION);
+      subscriptionLogger.info(`Stopped job: ${jobId}`);
     }
   }
 
   public stopAllJobs(): void {
-    for (const [jobId, interval] of this.jobIntervals.entries()) {
+    this.jobIntervals.forEach((interval, jobId) => {
       clearInterval(interval);
-    }
+    });
     this.jobIntervals.clear();
-    subscriptionLogger.info('All subscription email jobs stopped', LogCategory.SUBSCRIPTION);
+    subscriptionLogger.info('All subscription email jobs stopped');
   }
 
   public getJobStatus(): Record<string, boolean> {
     const status: Record<string, boolean> = {};
-    for (const [jobId] of this.jobIntervals.entries()) {
+    this.jobIntervals.forEach((_, jobId) => {
       status[jobId] = true;
-    }
+    });
     return status;
   }
 }
@@ -391,40 +367,29 @@ export const subscriptionEmailJobs = new SubscriptionEmailJobs();
 export const sendTestEmails = {
   renewalReminder: async (userEmail: string, daysBeforeRenewal: number = 7) => {
     const testData = {
-      userName: 'Test User',
-      userEmail,
+      firstName: 'Test',
       planName: 'Professional Plan',
-      planPrice: '$29.99',
+      planPrice: 29.99,
       currency: 'USD',
       billingPeriod: 'monthly' as const,
-      nextBillingDate: new Date(Date.now() + daysBeforeRenewal * 24 * 60 * 60 * 1000).toLocaleDateString(),
-      subscriptionId: 'test_sub_123',
-      supportUrl: '/contact',
-      manageSubscriptionUrl: '/subscription/manage',
-      companyName: 'Test Company',
-      daysUntilRenewal: daysBeforeRenewal,
-      renewalAmount: '$29.99',
-      updatePaymentUrl: '/subscription/payment-methods'
+      renewalDate: new Date(Date.now() + daysBeforeRenewal * 24 * 60 * 60 * 1000).toLocaleDateString(),
+      appUrl: 'https://yourapp.com'
     };
 
-    return await sendSubscriptionEmail.renewalReminder(userEmail, testData);
+    return await SubscriptionEmailService.sendRenewalReminder(userEmail, testData);
   },
 
   subscriptionConfirmation: async (userEmail: string) => {
     const testData = {
-      userName: 'Test User',
-      userEmail,
+      firstName: 'Test',
       planName: 'Professional Plan',
-      planPrice: '$29.99',
+      planPrice: 29.99,
       currency: 'USD',
-      billingPeriod: 'monthly' as const,
-      nextBillingDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toLocaleDateString(),
-      subscriptionId: 'test_sub_123',
-      supportUrl: '/contact',
-      manageSubscriptionUrl: '/subscription/manage',
-      companyName: 'Test Company'
+      billingPeriod: 'monthly',
+      features: ['Advanced Analytics', 'Priority Support', 'Custom Integrations'],
+      appUrl: 'https://yourapp.com'
     };
 
-    return await sendSubscriptionEmail.confirmation(userEmail, testData);
+    return await SubscriptionEmailService.sendSubscriptionWelcome(userEmail, testData);
   }
 };

@@ -265,4 +265,3 @@ const Subscription = (mongoose.models.Subscription || mongoose.model<ISubscripti
 
 export default Subscription;
 export { Subscription };
-export type { ISubscription, ISubscriptionDocument, ISubscriptionModel };

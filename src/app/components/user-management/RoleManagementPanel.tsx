@@ -38,7 +38,7 @@ interface RoleManagementPanelProps {
   onCreateRole: (roleData: { name: string; description: string; permissions: string[] }) => Promise<void>;
   onUpdateRole: (roleId: string, updates: { name?: string; description?: string; permissions?: string[] }) => Promise<void>;
   onDeleteRole: (roleId: string) => Promise<void>;
-  refreshTrigger?: numb
+  refreshTrigger?: number;
 }
 
 export default function RoleManagementPanel({
@@ -251,7 +251,7 @@ export default function RoleManagementPanel({
       const resourcePermissionIds = resourcePermissions.map(p => p.id);
       setFormData(prev => ({
         ...prev,
-        permissions: [...new Set([...prev.permissions, ...resourcePermissionIds])]
+        permissions: Array.from(new Set([...prev.permissions, ...resourcePermissionIds]))
       }));
     } else {
       const allPermissionIds = Object.values(permissions).flat().map(p => p.id);

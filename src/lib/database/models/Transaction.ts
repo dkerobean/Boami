@@ -328,4 +328,3 @@ const Transaction = (mongoose.models.Transaction || mongoose.model<ITransactionD
 
 export default Transaction;
 export { Transaction };
-export type { ITransaction, ITransactionDocument, ITransactionModel };

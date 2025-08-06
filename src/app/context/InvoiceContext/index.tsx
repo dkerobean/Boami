@@ -1,7 +1,7 @@
 'use client'
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { usePathname } from 'next/navigation';
-import { InvoiceList, order } from '@/app/(DashboardLayout)/types/apps/invoice';
+import { InvoiceList } from '@/app/(DashboardLayout)/types/apps/invoice';
 import axios from '@/utils/axios';
 import toast from 'react-hot-toast';
 import { useAuthContext } from '../AuthContext';
@@ -107,7 +107,7 @@ export const InvoiceProvider: React.FC<{ children: React.ReactNode }> = ({ child
             const response = await axios.delete(`/api/invoices/${id}`);
 
             if (response.data.success) {
-                setInvoices((prevInvoices) => prevInvoices.filter((invoice) => invoice._id !== id));
+                setInvoices((prevInvoices) => prevInvoices.filter((invoice) => invoice.id.toString() !== id));
                 toast.success('Invoice deleted successfully');
             } else {
                 toast.error(response.data.message || 'Failed to delete invoice');
@@ -148,7 +148,7 @@ export const InvoiceProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
             if (response.data.success) {
                 setInvoices((prevInvoices) =>
-                    prevInvoices.map((invoice) => (invoice._id === id ? response.data.data : invoice))
+                    prevInvoices.map((invoice) => (invoice.id.toString() === id ? response.data.data : invoice))
                 );
                 toast.success('Invoice updated successfully');
             } else {

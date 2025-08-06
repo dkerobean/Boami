@@ -61,7 +61,7 @@ export default function SubscriptionStatus({
         return {
           icon: CheckCircleIcon,
           label: 'Active',
-          variant: 'success' as const,
+          variant: 'default' as const,
           color: 'text-green-600',
           bgColor: 'bg-green-50 border-green-200'
         };
@@ -85,7 +85,7 @@ export default function SubscriptionStatus({
         return {
           icon: AlertCircleIcon,
           label: 'Past Due',
-          variant: 'warning' as const,
+          variant: 'secondary' as const,
           color: 'text-orange-600',
           bgColor: 'bg-orange-50 border-orange-200'
         };

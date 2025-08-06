@@ -4,7 +4,7 @@ import { styled } from '@mui/material/styles';
 import { TypographyProps } from '@mui/material/Typography';
 
 // Hero Headline Component
-const HeroHeadline = styled(Typography)(({ theme }) => ({
+const HeroHeadline = styled(Typography)<TypographyProps>(({ theme }) => ({
   fontWeight: 700,
   fontSize: 'clamp(2rem, 5vw, 3.5rem)',
   lineHeight: 1.1,
@@ -16,8 +16,8 @@ const HeroHeadline = styled(Typography)(({ theme }) => ({
   },
 }));
 
-// Section Headline Component
-const SectionHeadline = styled(Typography)(({ theme }) => ({
+// Section Headline Component  
+const SectionHeadline = styled(Typography)<TypographyProps>(({ theme }) => ({
   fontWeight: 600,
   fontSize: 'clamp(1.75rem, 4vw, 2.5rem)',
   lineHeight: 1.2,
@@ -27,7 +27,7 @@ const SectionHeadline = styled(Typography)(({ theme }) => ({
 }));
 
 // Feature Title Component
-const FeatureTitle = styled(Typography)(({ theme }) => ({
+const FeatureTitle = styled(Typography)<TypographyProps>(({ theme }) => ({
   fontWeight: 600,
   fontSize: 'clamp(1.25rem, 3vw, 1.5rem)',
   lineHeight: 1.3,
@@ -35,7 +35,7 @@ const FeatureTitle = styled(Typography)(({ theme }) => ({
 }));
 
 // Body Text Large Component
-const BodyLarge = styled(Typography)(({ theme }) => ({
+const BodyLarge = styled(Typography)<TypographyProps>(({ theme }) => ({
   fontSize: '1.125rem',
   lineHeight: 1.6,
   fontWeight: 400,
@@ -47,7 +47,7 @@ const BodyLarge = styled(Typography)(({ theme }) => ({
 }));
 
 // Caption Text Component
-const CaptionText = styled(Typography)(({ theme }) => ({
+const CaptionText = styled(Typography)<TypographyProps>(({ theme }) => ({
   fontSize: '0.875rem',
   lineHeight: 1.4,
   fontWeight: 400,
@@ -55,7 +55,7 @@ const CaptionText = styled(Typography)(({ theme }) => ({
 }));
 
 // Overline Text Component (for labels)
-const OverlineText = styled(Typography)(({ theme }) => ({
+const OverlineText = styled(Typography)<TypographyProps>(({ theme }) => ({
   fontSize: '0.75rem',
   fontWeight: 600,
   textTransform: 'uppercase',
@@ -66,7 +66,7 @@ const OverlineText = styled(Typography)(({ theme }) => ({
 }));
 
 // Gradient Text Component
-const GradientText = styled(Typography)(({ theme }) => ({
+const GradientText = styled(Typography)<TypographyProps>(({ theme }) => ({
   background: `linear-gradient(45deg, ${theme.palette.primary.main}, ${theme.palette.secondary.main})`,
   WebkitBackgroundClip: 'text',
   WebkitTextFillColor: 'transparent',
@@ -86,7 +86,7 @@ export {
 };
 
 // Main Typography component with variants
-interface CustomTypographyProps extends TypographyProps {
+interface CustomTypographyProps extends Omit<TypographyProps, 'variant'> {
   variant?:
     | 'heroHeadline'
     | 'sectionHeadline'

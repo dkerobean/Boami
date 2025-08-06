@@ -32,7 +32,6 @@ class RedisClient {
     if (redisUrl) {
       // Use Redis URL if provided (common in production)
       client = new Redis(redisUrl, {
-        retryDelayOnFailover: 100,
         enableReadyCheck: false,
         maxRetriesPerRequest: null,
       });
@@ -43,7 +42,6 @@ class RedisClient {
         port: redisPort,
         password: redisPassword,
         db: redisDb,
-        retryDelayOnFailover: 100,
         enableReadyCheck: false,
         maxRetriesPerRequest: null,
       });

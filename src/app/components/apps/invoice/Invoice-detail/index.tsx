@@ -30,16 +30,18 @@ import {
 import { format, isValid, parseISO } from "date-fns";
 import Link from "next/link";
 import Image from "next/image";
-import { TemplateType } from "@/app/(DashboardLayout)/types/apps/invoice";
-import TemplateSelector from "../templates/TemplateSelector";
+import TemplateSelector, { TemplateType } from "../templates/TemplateSelector";
 import InvoicePrintExport from "../InvoicePrintExport";
 import ModernBusinessTemplate from "../templates/ModernBusinessTemplate";
 import CorporateTemplate from "../templates/CorporateTemplate";
 import CreativeTemplate from "../templates/CreativeTemplate";
-import EcommerceInvoiceTemplate from "../templates/EcommerceInvoiceTemplate";
 
 const InvoiceDetail = () => {
-  const { invoices } = useContext(InvoiceContext);
+  const context = useContext(InvoiceContext);
+  if (!context) {
+    throw new Error('InvoiceDetail must be used within an InvoiceProvider');
+  }
+  const { invoices } = context;
   const [selectedInvoice, setSelectedInvoice]: any = useState(null);
   const [selectedTemplate, setSelectedTemplate] = useState<TemplateType>("modern");
   const [viewMode, setViewMode] = useState<"classic" | "template">("template");
@@ -107,7 +109,7 @@ const InvoiceDetail = () => {
       if (invoice) {
         setSelectedInvoice(invoice);
         // Set template from invoice data or default to modern
-        setSelectedTemplate(invoice.template || "modern");
+        setSelectedTemplate("modern"); // Default template
       }
     }
   }, [getTitle, invoices]);
@@ -131,8 +133,6 @@ const InvoiceDetail = () => {
         return <CorporateTemplate invoice={selectedInvoice} logoUrl={logoUrl} />;
       case "creative":
         return <CreativeTemplate invoice={selectedInvoice} logoUrl={logoUrl} />;
-      case "ecommerce":
-        return <EcommerceInvoiceTemplate invoice={selectedInvoice} logoUrl={logoUrl} />;
       case "modern":
       default:
         return <ModernBusinessTemplate invoice={selectedInvoice} logoUrl={logoUrl} />;

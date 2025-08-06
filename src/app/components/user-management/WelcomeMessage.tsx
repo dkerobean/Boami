@@ -99,23 +99,14 @@ export default function WelcomeMessage({ onDismiss }: WelcomeMessageProps) {
           <div className="flex items-start space-x-3">
             <ShieldCheckIcon className="h-5 w-5 text-blue-500 mt-0.5" />
             <div>
-              <p className="text-sm font-medium text-gray-900">Your Role: {user.role?.name}</p>
+              <p className="text-sm font-medium text-gray-900">Your Role: {typeof user.role === 'string' ? user.role : (user.role as any)?.name || 'User'}</p>
               <p className="text-sm text-gray-600">
-                {user.role?.description || 'You have been assigned appropriate permissions for your role.'}
+                {typeof user.role === 'string' ? 'You have been assigned appropriate permissions for your role.' : ((user.role as any)?.description || 'You have been assigned appropriate permissions for your role.')}
               </p>
             </div>
           </div>
 
-          {session.user.invitedBy && (
-            <div className="bg-blue-50 border border-blue-200 rounded-md p-3">
-              <p className="text-sm text-blue-800">
-                <strong>Invited by:</strong> {session.user.invitedBy.firstName} {session.user.invitedBy.lastName}
-              </p>
-              <p className="text-xs text-blue-600 mt-1">
-                {session.user.invitedBy.email}
-              </p>
-            </div>
-          )}
+          {/* Invitation info would go here if available */}
 
           <div className="bg-gray-50 border border-gray-200 rounded-md p-3">
             <h4 className="text-sm font-medium text-gray-900 mb-2">Getting Started</h4>

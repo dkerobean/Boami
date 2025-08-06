@@ -160,7 +160,7 @@ eck if key exists and is not expired
     const now = Date.now();
     const expiredKeys: string[] = [];
 
-    for (const [key, entry] of this.cache.entries()) {
+    for (const [key, entry] of Array.from(this.cache.entries())) {
       if (now > entry.expiresAt) {
         expiredKeys.push(key);
       }

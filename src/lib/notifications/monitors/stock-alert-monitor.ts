@@ -63,7 +63,7 @@ export class StockAlertMonitor {
         const productsByUser = this.groupProductsByUser(lowStockProducts);
 
         // Send notifications for each user
-        for (const [userId, products] of productsByUser.entries()) {
+        for (const [userId, products] of Array.from(productsByUser.entries())) {
           await this.sendStockAlerts(userId, products);
         }
       }
@@ -153,7 +153,7 @@ export class StockAlertMonitor {
         const product = products[0];
         await notificationService.triggerNotification({
           type: 'stock_alert',
-          userId: user._id.toString(),
+          userId: (user._id as any).toString(),
           data: { product },
           priority: 'high'
         });
@@ -161,7 +161,7 @@ export class StockAlertMonitor {
         // Multiple products - send batch alert
         await notificationService.triggerNotification({
           type: 'stock_alert',
-          userId: user._id.toString(),
+          userId: (user._id as any).toString(),
           data: {
             products,
             batchAlert: true,
@@ -198,7 +198,7 @@ export class StockAlertMonitor {
       }
 
       // Check if product is actually low on stock
-      if (product.qty > product.lowStockThreshold) {
+      if (product.qty > (product.lowStockThreshold || 0)) {
         return; // Not low on stock
       }
 

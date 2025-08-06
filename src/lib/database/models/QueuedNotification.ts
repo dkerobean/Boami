@@ -118,7 +118,7 @@ queuedNotificationSchema.statics.findPendingNotifications = function() {
   return this.find({
     status: 'pending',
     scheduledFor: { $lte: new Date() },
-    attempts: { $lt: this.maxAttempts }
+    $expr: { $lt: ['$attempts', '$maxAttempts'] }
   }).sort({ priority: -1, createdAt: 1 });
 };
 
@@ -129,7 +129,7 @@ queuedNotificationSchema.statics.findByStatus = function(status: NotificationSta
 queuedNotificationSchema.statics.findFailedNotifications = function() {
   return this.find({
     status: 'failed',
-    attempts: { $gte: this.maxAttempts }
+    $expr: { $gte: ['$attempts', '$maxAttempts'] }
   }).sort({ createdAt: -1 });
 };
 

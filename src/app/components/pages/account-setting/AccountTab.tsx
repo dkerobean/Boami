@@ -184,7 +184,7 @@ const AccountTab = () => {
   if (error) {
     return (
       <Alert severity="error" sx={{ m: 2 }}>
-        Error loading user data: {error}
+        Error loading user data: {error?.message || 'Unknown error'}
       </Alert>
     );
   }

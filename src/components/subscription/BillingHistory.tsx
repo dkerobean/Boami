@@ -106,13 +106,13 @@ export default function BillingHistory({
     switch (status) {
       case 'paid':
         return {
-          variant: 'success' as const,
+          variant: 'default' as const,
           label: 'Paid',
           color: 'text-green-600'
         };
       case 'pending':
         return {
-          variant: 'warning' as const,
+          variant: 'secondary' as const,
           label: 'Pending',
           color: 'text-yellow-600'
         };

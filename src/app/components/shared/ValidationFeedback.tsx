@@ -36,7 +36,6 @@ export function ValidationFeedback({
       {isValid && showSuccess && (
         <Alert
           severity="success"
-          size={compact ? "small" : "medium"}
           sx={{ mb: 1 }}
           icon={<IconCheck size="1rem" />}
         >
@@ -55,7 +54,6 @@ export function ValidationFeedback({
       {errors && errors.length > 0 && (
         <Alert
           severity="error"
-          size={compact ? "small" : "medium"}
           sx={{ mb: 1 }}
           icon={<IconAlertCircle size="1rem" />}
         >
@@ -86,7 +84,6 @@ export function ValidationFeedback({
       {warnings && warnings.length > 0 && (
         <Alert
           severity="warning"
-          size={compact ? "small" : "medium"}
           icon={<IconAlertTriangle size="1rem" />}
         >
           {compact ? (
@@ -180,10 +177,10 @@ export function ValidationStatusChip({
   const isValid = validationResult.isValid;
   const hasErrors = isFieldResult
     ? !!validationResult.error
-    : (validationResult as ValidationResult).errors?.length > 0;
+    : ((validationResult as ValidationResult)?.errors?.length || 0) > 0;
   const hasWarnings = isFieldResult
     ? !!validationResult.warning
-    : (validationResult as ValidationResult).warnings?.length > 0;
+    : ((validationResult as ValidationResult)?.warnings?.length || 0) > 0;
 
   if (isValid && !showValid && !hasWarnings) {
     return null;

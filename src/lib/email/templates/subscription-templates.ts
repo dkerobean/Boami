@@ -25,7 +25,7 @@ export interface SubscriptionEmailData {
 
 export interface PaymentEmailData extends SubscriptionEmailData {
   paymentAmount: string;
-Date: string;
+  paymentDate: string;
   paymentMethod: string;
   transactionId: string;
   invoiceUrl?: string;

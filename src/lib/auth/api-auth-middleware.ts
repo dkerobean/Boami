@@ -264,29 +264,44 @@ export function withFullAuth<T extends any[]>(
 
 // Public API (no auth required)
 export const withPublicAPI = <T extends any[]>(
-  handler: (request: NextRequest, ...args: T) => Promise<NextResponse>
+  handler: (request: NextRequest, user?: AuthenticatedUser, ...args: T) => Promise<NextResponse>
 ) => withFullAuth({ requireAuth: false, cors: true }, handler);
 
 // Basic authenticated API
 export const withAuthenticatedAPI = <T extends any[]>(
   handler: (request: NextRequest, user: AuthenticatedUser, ...args: T) => Promise<NextResponse>
-) => withFullAuth({ cors: true }, handler);
+) => withFullAuth({ cors: true }, (request: NextRequest, user?: AuthenticatedUser, ...args: T) => {
+  if (!user) {
+    throw new Error('User authentication required');
+  }
+  return handler(request, user, ...args);
+});
 
 // Admin-only API
 export const withAdminAPI = <T extends any[]>(
   handler: (request: NextRequest, user: AuthenticatedUser, ...args: T) => Promise<NextResponse>
-) => withFullAuth({ requireRole: 'admin', cors: true }, handler);
+) => withFullAuth({ requireRole: 'admin', cors: true }, (request: NextRequest, user?: AuthenticatedUser, ...args: T) => {
+  if (!user) {
+    throw new Error('User authentication required');
+  }
+  return handler(request, user, ...args);
+});
 
 // Subscription-required API
 export const withSubscriptionAPI = <T extends any[]>(
   handler: (request: NextRequest, user: AuthenticatedUser, ...args: T) => Promise<NextResponse>
-) => withFullAuth({ requireActiveSubscription: true, cors: true }, handler);
+) => withFullAuth({ requireActiveSubscription: true, cors: true }, (request: NextRequest, user?: AuthenticatedUser, ...args: T) => {
+  if (!user) {
+    throw new Error('User authentication required');
+  }
+  return handler(request, user, ...args);
+});
 
 // Rate-limited public API
 export const withRateLimitedAPI = <T extends any[]>(
   maxRequests: number = 10,
   windowMs: number = 60000,
-  handler: (request: NextRequest, ...args: T) => Promise<NextResponse>
+  handler: (request: NextRequest, user?: AuthenticatedUser, ...args: T) => Promise<NextResponse>
 ) => withFullAuth({
   requireAuth: false,
   rateLimit: { maxRequests, windowMs },

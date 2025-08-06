@@ -65,7 +65,7 @@ const ProfileBanner = () => {
     return (
       <BlankCard>
         <Alert severity="error" sx={{ m: 2 }}>
-          Error loading profile: {error}
+          Error loading profile: {error?.message || 'Unknown error'}
         </Alert>
       </BlankCard>
     );

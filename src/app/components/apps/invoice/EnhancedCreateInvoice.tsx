@@ -350,14 +350,14 @@ const EnhancedCreateInvoice = () => {
                         rows={3}
                         fullWidth
                         value={formData.billFromAddress}
-                        onChange={(e) => handleInputChange("billFromAddress", e.target.value)}
+                        onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => handleInputChange("billFromAddress", e.target.value)}
                         required
                       />
                       <CustomTextField
                         label="Phone"
                         fullWidth
                         value={formData.billFromPhone}
-                        onChange={(e) => handleInputChange("billFromPhone", e.target.value)}
+                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleInputChange("billFromPhone", e.target.value)}
                       />
                     </Stack>
                   </Grid>
@@ -371,7 +371,7 @@ const EnhancedCreateInvoice = () => {
                         label="Customer Name"
                         fullWidth
                         value={formData.billTo}
-                        onChange={(e) => handleInputChange("billTo", e.target.value)}
+                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleInputChange("billTo", e.target.value)}
                         required
                       />
                       <CustomTextField
@@ -379,7 +379,7 @@ const EnhancedCreateInvoice = () => {
                         type="email"
                         fullWidth
                         value={formData.billToEmail}
-                        onChange={(e) => handleInputChange("billToEmail", e.target.value)}
+                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleInputChange("billToEmail", e.target.value)}
                         required
                       />
                       <CustomTextField
@@ -388,14 +388,14 @@ const EnhancedCreateInvoice = () => {
                         rows={3}
                         fullWidth
                         value={formData.billToAddress}
-                        onChange={(e) => handleInputChange("billToAddress", e.target.value)}
+                        onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => handleInputChange("billToAddress", e.target.value)}
                         required
                       />
                       <CustomTextField
                         label="Phone"
                         fullWidth
                         value={formData.billToPhone}
-                        onChange={(e) => handleInputChange("billToPhone", e.target.value)}
+                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleInputChange("billToPhone", e.target.value)}
                       />
                     </Stack>
                   </Grid>
@@ -429,7 +429,7 @@ const EnhancedCreateInvoice = () => {
                               label="Item Name"
                               fullWidth
                               value={item.itemName}
-                              onChange={(e) => handleItemChange(index, "itemName", e.target.value)}
+                              onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleItemChange(index, "itemName", e.target.value)}
                             />
                           </Grid>
                           <Grid item xs={12} sm={2}>
@@ -438,7 +438,7 @@ const EnhancedCreateInvoice = () => {
                               type="number"
                               fullWidth
                               value={item.unitPrice}
-                              onChange={(e) => handleItemChange(index, "unitPrice", parseFloat(e.target.value) || 0)}
+                              onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleItemChange(index, "unitPrice", parseFloat(e.target.value) || 0)}
                             />
                           </Grid>
                           <Grid item xs={12} sm={2}>
@@ -447,7 +447,7 @@ const EnhancedCreateInvoice = () => {
                               type="number"
                               fullWidth
                               value={item.units}
-                              onChange={(e) => handleItemChange(index, "units", parseInt(e.target.value) || 0)}
+                              onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleItemChange(index, "units", parseInt(e.target.value) || 0)}
                             />
                           </Grid>
                           <Grid item xs={12} sm={2}>
@@ -578,7 +578,7 @@ const EnhancedCreateInvoice = () => {
                       rows={6}
                       fullWidth
                       value={formData.notes}
-                      onChange={(e) => handleInputChange("notes", e.target.value)}
+                      onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => handleInputChange("notes", e.target.value)}
                       placeholder="Add any additional notes or terms..."
                     />
                   </Grid>

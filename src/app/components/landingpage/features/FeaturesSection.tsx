@@ -97,45 +97,6 @@ const FeaturesSection: React.FC = () => {
                       ))}
                     </List>
 
-                    {/* Feature Metrics (if available) */}
-                    {feature.metrics && (
-                      <Box
-                        sx={{
-                          display: 'flex',
-                          gap: 3,
-                          mt: 3,
-                          flexWrap: 'wrap'
-                        }}
-                      >
-                        {feature.metrics.map((metric, metricIndex) => (
-                          <Box key={metricIndex} textAlign="center">
-                            <Typography
-                              variant="h4"
-                              component="div"
-                              fontWeight={700}
-                              color="primary"
-                            >
-                              {metric.value}
-                            </Typography>
-                            <Typography
-                              variant="body2"
-                              color="text.secondary"
-                            >
-                              {metric.label}
-                            </Typography>
-                            {metric.improvement && (
-                              <Typography
-                                variant="caption"
-                                color="success.main"
-                                fontWeight={600}
-                              >
-                                {metric.improvement}
-                              </Typography>
-                            )}
-                          </Box>
-                        ))}
-                      </Box>
-                    )}
                   </Box>
                 </Grid>
 

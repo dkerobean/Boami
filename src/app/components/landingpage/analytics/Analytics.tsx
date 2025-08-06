@@ -1,6 +1,13 @@
 import React, { useEffect } from 'react';
 import Script from 'next/script';
 
+declare global {
+  interface Window {
+    gtag: (...args: any[]) => void;
+    hj: (...args: any[]) => void;
+  }
+}
+
 interface AnalyticsProps {
   googleAnalyticsId?: string;
   hotjarId?: string;

@@ -8,7 +8,7 @@ export interface AlertProps extends Omit<MuiAlertProps, 'variant'> {
 
 const StyledAlert = styled(MuiAlert, {
   shouldForwardProp: (prop) => prop !== 'variant',
-})<AlertProps>(({ theme, variant }) => ({
+})<{ variant?: 'default' | 'destructive' }>(({ theme, variant }) => ({
   ...(variant === 'destructive' && {
     backgroundColor: theme.palette.error.light,
     color: theme.palette.error.contrastText,
@@ -29,7 +29,7 @@ export const Alert: React.FC<AlertProps> = ({
   return (
     <StyledAlert 
       severity={muiSeverity}
-      variant={variant}
+      variant={variant as any}
       {...props}
     >
       {children}

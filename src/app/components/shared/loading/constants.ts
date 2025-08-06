@@ -11,6 +11,7 @@ export const DEFAULT_LOADING_CONFIG: Required<LoadingConfig> = {
   showLogo: false,
   showText: false,
   customText: 'Loading...',
+  fadeInDuration: 100, // 100ms fade in
   fadeOutDuration: 150, // 150ms fade out
   size: 'medium',
   color: 'primary',

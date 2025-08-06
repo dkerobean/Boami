@@ -37,7 +37,7 @@ const IntroCard = () => {
     return (
       <ChildCard>
         <Alert severity="error">
-          Error loading user information: {error}
+          Error loading user information: {error?.message || 'Unknown error'}
         </Alert>
       </ChildCard>
     );

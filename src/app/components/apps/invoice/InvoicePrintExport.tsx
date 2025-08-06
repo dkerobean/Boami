@@ -36,7 +36,7 @@ const InvoicePrintExport: React.FC<InvoicePrintExportProps> = ({
   const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
 
   const handlePrint = useReactToPrint({
-    content: () => printRef.current,
+    contentRef: printRef,
     documentTitle: `Invoice-${invoice.id}`,
   });
 

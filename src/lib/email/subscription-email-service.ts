@@ -120,7 +120,7 @@ export class SubscriptionEmailService {
         throw new Error('Invalid email address format');
       }
 
-      const client = prResendClient.getClient();
+      const client = ResendClient.getClient();
 
       const { data, error } = await client.emails.send({
         from: ResendClient.formatSender('Boami Subscriptions'),

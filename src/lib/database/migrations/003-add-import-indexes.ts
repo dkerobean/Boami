@@ -14,24 +14,18 @@ export async function up(): Promise<void> {
     console.log('🔄 Adding import performance indexes...');
 
     // Index for income categories (userId + name for faster lookups)
-    await IncomeCategory.createIndexes([
-      { userId: 1, name: 1 },
-      { userId: 1, name: 'text' } // Text index for case-insensitive search
-    ]);
+    await IncomeCategory.collection.createIndex({ userId: 1, name: 1 });
+    await IncomeCategory.collection.createIndex({ userId: 1, name: 'text' }); // Text index for case-insensitive search
     console.log('✅ Income category indexes created');
 
     // Index for expense categories (userId + name for faster lookups)
-    await ExpenseCategory.createIndexes([
-      { userId: 1, name: 1 },
-      { userId: 1, name: 'text' } // Text index for case-insensitive search
-    ]);
+    await ExpenseCategory.collection.createIndex({ userId: 1, name: 1 });
+    await ExpenseCategory.collection.createIndex({ userId: 1, name: 'text' }); // Text index for case-insensitive search
     console.log('✅ Expense category indexes created');
 
     // Index for vendors (userId + name for faster lookups)
-    await Vendor.createIndexes([
-      { userId: 1, name: 1 },
-      { userId: 1, name: 'text' } // Text index for case-insensitive search
-    ]);
+    await Vendor.collection.createIndex({ userId: 1, name: 1 });
+    await Vendor.collection.createIndex({ userId: 1, name: 'text' }); // Text index for case-insensitive search
     console.log('✅ Vendor indexes created');
 
     console.log('🎉 Import performance indexes migration completed successfully');
@@ -47,18 +41,18 @@ export async function down(): Promise<void> {
     console.log('🔄 Removing import performance indexes...');
 
     // Remove indexes from income categories
-    await IncomeCategory.collection.dropIndex({ userId: 1, name: 1 });
-    await IncomeCategory.collection.dropIndex({ userId: 1, name: 'text' });
+    await IncomeCategory.collection.dropIndex('userId_1_name_1');
+    await IncomeCategory.collection.dropIndex('userId_1_name_text');
     console.log('✅ Income category indexes removed');
 
     // Remove indexes from expense categories  
-    await ExpenseCategory.collection.dropIndex({ userId: 1, name: 1 });
-    await ExpenseCategory.collection.dropIndex({ userId: 1, name: 'text' });
+    await ExpenseCategory.collection.dropIndex('userId_1_name_1');
+    await ExpenseCategory.collection.dropIndex('userId_1_name_text');
     console.log('✅ Expense category indexes removed');
 
     // Remove indexes from vendors
-    await Vendor.collection.dropIndex({ userId: 1, name: 1 });
-    await Vendor.collection.dropIndex({ userId: 1, name: 'text' });
+    await Vendor.collection.dropIndex('userId_1_name_1');
+    await Vendor.collection.dropIndex('userId_1_name_text');
     console.log('✅ Vendor indexes removed');
 
     console.log('🎉 Import performance indexes rollback completed successfully');

@@ -46,7 +46,7 @@ export const DEFAULT_TEMPLATES: DefaultTemplate[] = [
           </div>
         </div>
 
-        <diyle="background: #f8f9fa; padding: 15px; text-align: center; font-size: 12px; color: #6c757d;">
+        <div style="background: #f8f9fa; padding: 15px; text-align: center; font-size: 12px; color: #6c757d;">
           <p>This is an automated notification from {{companyName}}.</p>
           <p><a href="{{unsubscribeUrl}}" style="color: #6c757d;">Unsubscribe from stock alerts</a></p>
         </div>
@@ -147,72 +147,72 @@ export const DEFAULT_TEMPLATES: DefaultTemplate[] = [
     name: 'invoice-status-changed',
     type: 'invoice_status_changed',
     subject: '💼 Invoice {{invoice.invoiceNumber}} Status Updated',
-    htmlTemplate: `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-        <div style="background: #e8f5e8; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
-          <h2 style="color: #28a745; margin: 0;">Invoice Status Updated</h2>
-        </div>
-
-        <div style="padding: 20px;">
-          <p>Hello {{user.firstName}},</p>
-
-          <p>Invoice <strong>{{invoice.invoiceNumber}}</strong> status has been updated to <strong>{{invoice.status}}</strong>.</p>
-
-          <div style="background: #f8f9fa; border: 1px solid #dee2e6; padding: 15px; border-radius: 5px; margin: 20px 0;">
-            <h3 style="margin-top: 0;">Invoice Details:</h3>
-            <ul style="margin: 0;">
-              <li><strong>Invoice Number:</strong> {{invoice.invoiceNumber}}</li>
-              <li><strong>Status:</strong> {{invoice.status}}</li>
-              <li><strong>Amount:</strong> ${{invoice.grandTotal}}</li>
-              <li><strong>Client:</strong> {{invoice.billTo}}</li>
-              <li><strong>Date:</strong> {{invoice.orderDate}}</li>
-            </ul>
-          </div>
-
-          {{#if invoice.status === 'Paid'}}
-          <div style="background: #d4edda; border: 1px solid #c3e6cb; padding: 15px; border-radius: 5px; margin: 20px 0;">
-            <p style="margin: 0; color: #155724;"><strong>🎉 Payment Received!</strong> Thank you for your business.</p>
-          </div>
-          {{/if}}
-
-          <div style="text-align: center; margin: 30px 0;">
-            <a href="{{baseUrl}}/dashboard/invoices/{{invoice._id}}"
-               style="background: #28a745; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; display: inline-block;">
-              View Invoice
-            </a>
-          </div>
-        </div>
-
-        <div style="background: #f8f9fa; padding: 15px; text-align: center; font-size: 12px; color: #6c757d;">
-          <p>This is an automated notification from {{companyName}}.</p>
-          <p><a href="{{unsubscribeUrl}}" style="color: #6c757d;">Unsubscribe from invoice notifications</a></p>
-        </div>
-      </div>
-    `,
-    textTemplate: `
-      INVOICE STATUS UPDATED
-
-      Hello {{user.firstName}},
-
-      Invoice {{invoice.invoiceNumber}} status has been updated to {{invoice.status}}.
-
-      Invoice Details:
-      - Invoice Number: {{invoice.invoiceNumber}}
-      - Status: {{invoice.status}}
-      - Amount: ${{invoice.grandTotal}}
-      - Client: {{invoice.billTo}}
-      - Date: {{invoice.orderDate}}
-
-      {{#if invoice.status === 'Paid'}}
-      🎉 Payment Received! Thank you for your business.
-      {{/if}}
-
-      View Invoice: {{baseUrl}}/dashboard/invoices/{{invoice._id}}
-
-      ---
-      This is an automated notification from {{companyName}}.
-      Unsubscribe: {{unsubscribeUrl}}
-    `,
+    htmlTemplate: [
+      '<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">',
+      '  <div style="background: #e8f5e8; padding: 20px; border-radius: 8px; margin-bottom: 20px;">',
+      '    <h2 style="color: #28a745; margin: 0;">Invoice Status Updated</h2>',
+      '  </div>',
+      '',
+      '  <div style="padding: 20px;">',
+      '    <p>Hello {{user.firstName}},</p>',
+      '',
+      '    <p>Invoice <strong>{{invoice.invoiceNumber}}</strong> status has been updated to <strong>{{invoice.status}}</strong>.</p>',
+      '',
+      '    <div style="background: #f8f9fa; border: 1px solid #dee2e6; padding: 15px; border-radius: 5px; margin: 20px 0;">',
+      '      <h3 style="margin-top: 0;">Invoice Details:</h3>',
+      '      <ul style="margin: 0;">',
+      '        <li><strong>Invoice Number:</strong> {{invoice.invoiceNumber}}</li>',
+      '        <li><strong>Status:</strong> {{invoice.status}}</li>',
+      '        <li><strong>Amount:</strong> ${{invoice.grandTotal}}</li>',
+      '        <li><strong>Client:</strong> {{invoice.billTo}}</li>',
+      '        <li><strong>Date:</strong> {{invoice.orderDate}}</li>',
+      '      </ul>',
+      '    </div>',
+      '',
+      '    {{#if invoice.status === \'Paid\'}}',
+      '    <div style="background: #d4edda; border: 1px solid #c3e6cb; padding: 15px; border-radius: 5px; margin: 20px 0;">',
+      '      <p style="margin: 0; color: #155724;"><strong>🎉 Payment Received!</strong> Thank you for your business.</p>',
+      '    </div>',
+      '    {{/if}}',
+      '',
+      '    <div style="text-align: center; margin: 30px 0;">',
+      '      <a href="{{baseUrl}}/dashboard/invoices/{{invoice._id}}"',
+      '         style="background: #28a745; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; display: inline-block;">',
+      '        View Invoice',
+      '      </a>',
+      '    </div>',
+      '  </div>',
+      '',
+      '  <div style="background: #f8f9fa; padding: 15px; text-align: center; font-size: 12px; color: #6c757d;">',
+      '    <p>This is an automated notification from {{companyName}}.</p>',
+      '    <p><a href="{{unsubscribeUrl}}" style="color: #6c757d;">Unsubscribe from invoice notifications</a></p>',
+      '  </div>',
+      '</div>'
+    ].join('\n'),
+    textTemplate: [
+      'INVOICE STATUS UPDATED',
+      '',
+      'Hello {{user.firstName}},',
+      '',
+      'Invoice {{invoice.invoiceNumber}} status has been updated to {{invoice.status}}.',
+      '',
+      'Invoice Details:',
+      '- Invoice Number: {{invoice.invoiceNumber}}',
+      '- Status: {{invoice.status}}',
+      '- Amount: ${{invoice.grandTotal}}',
+      '- Client: {{invoice.billTo}}',
+      '- Date: {{invoice.orderDate}}',
+      '',
+      '{{#if invoice.status === \'Paid\'}}',
+      '🎉 Payment Received! Thank you for your business.',
+      '{{/if}}',
+      '',
+      'View Invoice: {{baseUrl}}/dashboard/invoices/{{invoice._id}}',
+      '',
+      '---',
+      'This is an automated notification from {{companyName}}.',
+      'Unsubscribe: {{unsubscribeUrl}}'
+    ].join('\n'),
     variables: ['user.firstName', 'invoice.invoiceNumber', 'invoice.status', 'invoice.grandTotal', 'invoice.billTo', 'invoice.orderDate', 'invoice._id']
   },
 
@@ -220,62 +220,62 @@ export const DEFAULT_TEMPLATES: DefaultTemplate[] = [
     name: 'subscription-renewal',
     type: 'subscription_renewal',
     subject: '🔔 Subscription Renewal Reminder',
-    htmlTemplate: `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-        <div style="background: #fff3cd; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
-          <h2 style="color: #856404; margin: 0;">Subscription Renewal Reminder</h2>
-        </div>
-
-        <div style="padding: 20px;">
-          <p>Hello {{user.firstName}},</p>
-
-          <p>Your {{subscription.planName}} subscription is set to expire in {{daysUntilExpiry}} days.</p>
-
-          <div style="background: #f8f9fa; border: 1px solid #dee2e6; padding: 15px; border-radius: 5px; margin: 20px 0;">
-            <h3 style="margin-top: 0;">Subscription Details:</h3>
-            <ul style="margin: 0;">
-              <li><strong>Plan:</strong> {{subscription.planName}}</li>
-              <li><strong>Expiry Date:</strong> {{subscription.expiryDate}}</li>
-              <li><strong>Amount:</strong> ${{subscription.amount}}</li>
-            </ul>
-          </div>
-
-          <p>To continue enjoying uninterrupted service, please renew your subscription before it expires.</p>
-
-          <div style="text-align: center; margin: 30px 0;">
-            <a href="{{baseUrl}}/dashboard/subscription"
-               style="background: #ffc107; color: #212529; padding: 12px 24px; text-decoration: none; border-radius: 5px; display: inline-block;">
-              Renew Subscription
-            </a>
-          </div>
-        </div>
-
-        <div style="background: #f8f9fa; padding: 15px; text-align: center; font-size: 12px; color: #6c757d;">
-          <p>This is an automated notification from {{companyName}}.</p>
-          <p><a href="{{unsubscribeUrl}}" style="color: #6c757d;">Unsubscribe from subscription notifications</a></p>
-        </div>
-      </div>
-    `,
-    textTemplate: `
-      SUBSCRIPTION RENEWAL REMINDER
-
-      Hello {{user.firstName}},
-
-      Your {{subscription.planName}} subscription is set to expire in {{daysUntilExpiry}} days.
-
-      Subscription Details:
-      - Plan: {{subscription.planName}}
-      - Expiry Date: {{subscription.expiryDate}}
-      - Amount: ${{subscription.amount}}
-
-      To continue enjoying uninterrupted service, please renew your subscription before it expires.
-
-      Renew Subscription: {{baseUrl}}/dashboard/subscription
-
-      ---
-      This is an automated notification from {{companyName}}.
-      Unsubscribe: {{unsubscribeUrl}}
-    `,
+    htmlTemplate: [
+      '<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">',
+      '  <div style="background: #fff3cd; padding: 20px; border-radius: 8px; margin-bottom: 20px;">',
+      '    <h2 style="color: #856404; margin: 0;">Subscription Renewal Reminder</h2>',
+      '  </div>',
+      '',
+      '  <div style="padding: 20px;">',
+      '    <p>Hello {{user.firstName}},</p>',
+      '',
+      '    <p>Your {{subscription.planName}} subscription is set to expire in {{daysUntilExpiry}} days.</p>',
+      '',
+      '    <div style="background: #f8f9fa; border: 1px solid #dee2e6; padding: 15px; border-radius: 5px; margin: 20px 0;">',
+      '      <h3 style="margin-top: 0;">Subscription Details:</h3>',
+      '      <ul style="margin: 0;">',
+      '        <li><strong>Plan:</strong> {{subscription.planName}}</li>',
+      '        <li><strong>Expiry Date:</strong> {{subscription.expiryDate}}</li>',
+      '        <li><strong>Amount:</strong> ${{subscription.amount}}</li>',
+      '      </ul>',
+      '    </div>',
+      '',
+      '    <p>To continue enjoying uninterrupted service, please renew your subscription before it expires.</p>',
+      '',
+      '    <div style="text-align: center; margin: 30px 0;">',
+      '      <a href="{{baseUrl}}/dashboard/subscription"',
+      '         style="background: #ffc107; color: #212529; padding: 12px 24px; text-decoration: none; border-radius: 5px; display: inline-block;">',
+      '        Renew Subscription',
+      '      </a>',
+      '    </div>',
+      '  </div>',
+      '',
+      '  <div style="background: #f8f9fa; padding: 15px; text-align: center; font-size: 12px; color: #6c757d;">',
+      '    <p>This is an automated notification from {{companyName}}.</p>',
+      '    <p><a href="{{unsubscribeUrl}}" style="color: #6c757d;">Unsubscribe from subscription notifications</a></p>',
+      '  </div>',
+      '</div>'
+    ].join('\n'),
+    textTemplate: [
+      'SUBSCRIPTION RENEWAL REMINDER',
+      '',
+      'Hello {{user.firstName}},',
+      '',
+      'Your {{subscription.planName}} subscription is set to expire in {{daysUntilExpiry}} days.',
+      '',
+      'Subscription Details:',
+      '- Plan: {{subscription.planName}}',
+      '- Expiry Date: {{subscription.expiryDate}}',
+      '- Amount: ${{subscription.amount}}',
+      '',
+      'To continue enjoying uninterrupted service, please renew your subscription before it expires.',
+      '',
+      'Renew Subscription: {{baseUrl}}/dashboard/subscription',
+      '',
+      '---',
+      'This is an automated notification from {{companyName}}.',
+      'Unsubscribe: {{unsubscribeUrl}}'
+    ].join('\n'),
     variables: ['user.firstName', 'subscription.planName', 'subscription.expiryDate', 'subscription.amount', 'daysUntilExpiry']
   },
 
@@ -397,7 +397,7 @@ export async function updateDefaultTemplates(): Promise<void> {
       const existing = await notificationDb.getEmailTemplateByName(template.name);
 
       if (existing) {
-        await notificationDb.updateEmailTemplate(existing._id.toString(), {
+        await notificationDb.updateEmailTemplate((existing._id as any).toString(), {
           subject: template.subject,
           htmlTemplate: template.htmlTemplate,
           textTemplate: template.textTemplate,

@@ -15,6 +15,7 @@ export interface LoadingConfig {
   showLogo?: boolean;
   showText?: boolean;
   customText?: string;
+  fadeInDuration?: number; // Default: 150ms
   fadeOutDuration?: number; // Default: 150ms
   size?: LoadingSize;
   color?: LoadingColor;

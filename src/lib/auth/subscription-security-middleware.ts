@@ -164,7 +164,7 @@ export class SubscriptionSecurityMiddleware {
       // Log the error
       await SubscriptionLogger.logSecurityActivity(
         'security_middleware_error',
-        { error: error.message },
+        { error: error instanceof Error ? error.message : String(error) },
         {
           ipAddress: this.getClientIP(request),
           userAgent: request.headers.get('user-agent') || '',
@@ -225,18 +225,18 @@ export class SubscriptionSecurityMiddleware {
         count: 1,
         resetTime: now + config.windowMs
       });
-      return { allowed: true, ...config };
+      return { allowed: true, limit: config.max, windowMs: config.windowMs };
     }
 
     if (existing.count >= config.max) {
-      return { allowed: false, ...config };
+      return { allowed: false, limit: config.max, windowMs: config.windowMs };
     }
 
     // Increment count
     existing.count++;
     this.rateLimitStore.set(key, existing);
 
-    return { allowed: true, ...config };
+    return { allowed: true, limit: config.max, windowMs: config.windowMs };
   }
 
   /**
@@ -245,7 +245,7 @@ export class SubscriptionSecurityMiddleware {
   static cleanupRateLimitStore() {
     const now = Date.now();
 
-    for (const [key, value] of this.rateLimitStore.entries()) {
+    for (const [key, value] of Array.from(this.rateLimitStore.entries())) {
       if (now > value.resetTime) {
         this.rateLimitStore.delete(key);
       }

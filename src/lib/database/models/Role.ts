@@ -1,5 +1,5 @@
 import mongoose, { Document, Schema, Model, Types } from 'mongoose';
-import { IPermissionDocument } from './Permission';
+import { IPermissionDocument, IPermissionModel } from './Permission';
 
 /**
  * Role interface defining the structure of roles
@@ -73,13 +73,13 @@ roleSchema.index({ createdAt: -1 });
  * Instance method to check if role has specific permission
  */
 roleSchema.methods.hasPermission = async function(resource: string, action: string): Promise<boolean> {
-  const Permission = mongoose.model('Permission');
+  const Permission = mongoose.model('Permission') as IPermissionModel;
   const permission = await Permission.findByResourceAndAction(resource, action);
 
   if (!permission) return false;
 
   return this.permissions.some((permId: Types.ObjectId) =>
-    permId.toString() === permission._id.toString()
+    permId.toString() === (permission._id as any).toString()
   );
 };
 
@@ -156,4 +156,3 @@ const Role = (mongoose.models.Role ||
 
 export default Role;
 export { Role };
-export type { IRole, IRoleDocument, IRoleModel };

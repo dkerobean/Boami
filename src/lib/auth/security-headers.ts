@@ -71,7 +71,7 @@ export class SecurityHeaders {
     ].filter(Boolean);
 
     // Allow same-origin requests
-    rem(!origin && !referer) {
+    if (!origin && !referer) {
       return true; // Server-to-server requests
     }
 

@@ -8,6 +8,10 @@ import mongoose from 'mongoose';
 export async function up() {
   await connectDB();
   const db = mongoose.connection.db;
+  
+  if (!db) {
+    throw new Error('Database connection not established');
+  }
 
   try {
     // Plan collection indexes
@@ -69,34 +73,38 @@ export async function up() {
 export async function down() {
   await connectDB();
   const db = mongoose.connection.db;
+  
+  if (!db) {
+    throw new Error('Database connection not established');
+  }
 
   try {
-    // Drop Plan collection indexes
-    await db.collection('plans').dropIndex({ isActive: 1, sortOrder: 1 });
-    await db.collection('plans').dropIndex({ name: 1 });
-    await db.collection('plans').dropIndex({ flutterwavePlanId: 1 });
+    // Drop Plan collection indexes by name
+    await db.collection('plans').dropIndex('isActive_1_sortOrder_1');
+    await db.collection('plans').dropIndex('name_1');
+    await db.collection('plans').dropIndex('flutterwavePlanId_1');
 
-    // Drop Subscription collection indexes
-    await db.collection('subscriptions').dropIndex({ userId: 1 });
-    await db.collection('subscriptions').dropIndex({ planId: 1 });
-    await db.collection('subscriptions').dropIndex({ status: 1 });
-    await db.collection('subscriptions').dropIndex({ currentPeriodEnd: 1 });
-    await db.collection('subscriptions').dropIndex({ userId: 1, status: 1 });
-    await db.collection('subscriptions').dropIndex({ status: 1, currentPeriodEnd: 1 });
-    await db.collection('subscriptions').dropIndex({ flutterwaveSubscriptionId: 1 });
+    // Drop Subscription collection indexes by name
+    await db.collection('subscriptions').dropIndex('userId_1');
+    await db.collection('subscriptions').dropIndex('planId_1');
+    await db.collection('subscriptions').dropIndex('status_1');
+    await db.collection('subscriptions').dropIndex('currentPeriodEnd_1');
+    await db.collection('subscriptions').dropIndex('userId_1_status_1');
+    await db.collection('subscriptions').dropIndex('status_1_currentPeriodEnd_1');
+    await db.collection('subscriptions').dropIndex('flutterwaveSubscriptionId_1');
 
-    // Drop Transaction collection indexes
-    await db.collection('transactions').dropIndex({ userId: 1 });
-    await db.collection('transactions').dropIndex({ subscriptionId: 1 });
-    await db.collection('transactions').dropIndex({ flutterwaveTransactionId: 1 });
-    await db.collection('transactions').dropIndex({ flutterwaveReference: 1 });
-    await db.collection('transactions').dropIndex({ status: 1 });
-    await db.collection('transactions').dropIndex({ type: 1 });
-    await db.collection('transactions').dropIndex({ processedAt: 1 });
-    await db.collection('transactions').dropIndex({ userId: 1, status: 1 });
-    await db.collection('transactions').dropIndex({ status: 1, createdAt: -1 });
-    await db.collection('transactions').dropIndex({ type: 1, status: 1 });
-    await db.collection('transactions').dropIndex({ createdAt: -1 });
+    // Drop Transaction collection indexes by name
+    await db.collection('transactions').dropIndex('userId_1');
+    await db.collection('transactions').dropIndex('subscriptionId_1');
+    await db.collection('transactions').dropIndex('flutterwaveTransactionId_1');
+    await db.collection('transactions').dropIndex('flutterwaveReference_1');
+    await db.collection('transactions').dropIndex('status_1');
+    await db.collection('transactions').dropIndex('type_1');
+    await db.collection('transactions').dropIndex('processedAt_1');
+    await db.collection('transactions').dropIndex('userId_1_status_1');
+    await db.collection('transactions').dropIndex('status_1_createdAt_-1');
+    await db.collection('transactions').dropIndex('type_1_status_1');
+    await db.collection('transactions').dropIndex('createdAt_-1');
 
     console.log('✅ Subscription system indexes migration rolled back');
   } catch (error) {

@@ -61,7 +61,11 @@ import {
 } from "@/app/(DashboardLayout)/types/apps/invoice";
 
 const EnhancedEditInvoice = () => {
-  const { invoices, updateInvoice } = useContext(InvoiceContext);
+  const context = useContext(InvoiceContext);
+  if (!context) {
+    throw new Error('EnhancedEditInvoice must be used within an InvoiceProvider');
+  }
+  const { invoices, updateInvoice } = context;
   const [showAlert, setShowAlert] = useState(false);
   const [editing, setEditing] = useState(false);
   const router = useRouter();
@@ -135,8 +139,7 @@ const EnhancedEditInvoice = () => {
       let selectedInvoice;
       if (getTitle) {
         selectedInvoice = invoices.find(
-          (inv: any) => 
-            inv._id === getTitle || 
+          (inv) => 
             inv.id?.toString() === getTitle ||
             inv.billFrom === getTitle // Backward compatibility
         );
@@ -151,7 +154,7 @@ const EnhancedEditInvoice = () => {
       if (selectedInvoice) {
         // Convert invoice data to enhanced form data
         const enhancedData: InvoiceCreateFormData = {
-          id: selectedInvoice.id || selectedInvoice._id,
+          id: selectedInvoice.id,
           billFrom: selectedInvoice.billFrom || "",
           billFromEmail: selectedInvoice.billFromEmail || "",
           billFromPhone: selectedInvoice.billFromPhone?.toString() || "",
@@ -168,11 +171,11 @@ const EnhancedEditInvoice = () => {
           vat: selectedInvoice.vat || 0,
           tax: selectedInvoice.tax || selectedInvoice.vat || 0,
           grandTotal: selectedInvoice.grandTotal || 0,
-          subtotal: selectedInvoice.subtotal || selectedInvoice.totalCost || 0,
+          subtotal: selectedInvoice.totalCost || 0,
           date: selectedInvoice.orderDate 
             ? new Date(selectedInvoice.orderDate).toISOString().split("T")[0]
             : new Date().toISOString().split("T")[0],
-          template: selectedInvoice.template || "ecommerce",
+          template: "ecommerce",
           
           // Enhanced features (use existing or defaults)
           discounts: selectedInvoice.discounts || [],
@@ -189,7 +192,7 @@ const EnhancedEditInvoice = () => {
           subtotalBeforeDiscount: selectedInvoice.subtotalBeforeDiscount || selectedInvoice.totalCost || 0,
           totalDiscount: selectedInvoice.totalDiscount || 0,
           notes: selectedInvoice.notes || "",
-          terms: selectedInvoice.terms || "",
+          terms: "",
           manualTaxOverride: selectedInvoice.manualTaxOverride,
         };
 
@@ -389,7 +392,7 @@ const EnhancedEditInvoice = () => {
         orderDate: new Date(formData.date),
       };
       
-      await updateInvoice(legacyInvoiceData);
+      await updateInvoice(formData.id.toString(), legacyInvoiceData);
       setEditing(false);
       setShowAlert(true);
       setTimeout(() => {

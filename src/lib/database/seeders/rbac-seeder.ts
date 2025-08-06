@@ -206,7 +206,7 @@ export async function seedRBAC(): Promise<void> {
 export async function getDefaultRoleId(roleName: string): Promise<mongoose.Types.ObjectId | null> {
   try {
     const role = await Role.findByName(roleName);
-    return role ? role._id : null;
+    return role ? (role._id as mongoose.Types.ObjectId) : null;
   } catch (error) {
     console.error(`Error getting role ID for ${roleName}:`, error);
     return null;

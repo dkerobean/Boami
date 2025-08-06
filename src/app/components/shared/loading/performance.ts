@@ -2,6 +2,7 @@
  * Performance optimization utilities for the loading system
  */
 
+import React from 'react';
 import { LoadingConfig } from './types';
 
 /**
@@ -77,9 +78,9 @@ export class LoadingPerformanceMonitor {
   public getAllStats(): Record<string, any> {
     const stats: Record<string, any> = {};
 
-    for (const [name] of this.metrics) {
+    this.metrics.forEach((_, name) => {
       stats[name] = this.getStats(name);
-    }
+    });
 
     return stats;
   }
@@ -113,8 +114,8 @@ export class LoadingPerformanceMonitor {
       const navigationObserver = new PerformanceObserver((list) => {
         for (const entry of list.getEntries()) {
           const navEntry = entry as PerformanceNavigationTiming;
-          this.recordMetric('navigation.loadComplete', navEntry.loadEventEnd - navEntry.navigationStart);
-          this.recordMetric('navigation.domContentLoaded', navEntry.domContentLoadedEventEnd - navEntry.navigationStart);
+          this.recordMetric('navigation.loadComplete', navEntry.loadEventEnd - navEntry.startTime);
+          this.recordMetric('navigation.domContentLoaded', navEntry.domContentLoadedEventEnd - navEntry.startTime);
         }
       });
       navigationObserver.observe({ entryTypes: ['navigation'] });

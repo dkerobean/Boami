@@ -1,4 +1,4 @@
-import mongoose, { Document, Schema } from 'mongoose';
+import mongoose, { Document, Schema, Model } from 'mongoose';
 
 /**
  * System Configuration interface
@@ -20,6 +20,11 @@ export interface ISystemConfigStatics {
   isRBACSeeded(): Promise<boolean>;
   markRBACSeeded(): Promise<void>;
 }
+
+/**
+ * System Configuration model interface
+ */
+export interface ISystemConfigModel extends Model<ISystemConfig>, ISystemConfigStatics {}
 
 /**
  * System Configuration Schema
@@ -79,7 +84,7 @@ SystemConfigSchema.statics.setConfig = async function(key: string, value: any, d
  * Static method to check if RBAC is seeded
  */
 SystemConfigSchema.statics.isRBACSeeded = async function(): Promise<boolean> {
-  const config = await this.getConfig('rbac_seeded');
+  const config = await (this as ISystemConfigModel).getConfig('rbac_seeded');
   return config === true;
 };
 
@@ -87,9 +92,9 @@ SystemConfigSchema.statics.isRBACSeeded = async function(): Promise<boolean> {
  * Static method to mark RBAC as seeded
  */
 SystemConfigSchema.statics.markRBACSeeded = async function(): Promise<void> {
-  await this.setConfig('rbac_seeded', true, 'RBAC system has been initialized');
+  await (this as ISystemConfigModel).setConfig('rbac_seeded', true, 'RBAC system has been initialized');
 };
 
-const SystemConfig = mongoose.models.SystemConfig || mongoose.model<ISystemConfig, ISystemConfigStatics>('SystemConfig', SystemConfigSchema);
+const SystemConfig = (mongoose.models.SystemConfig || mongoose.model<ISystemConfig, ISystemConfigModel>('SystemConfig', SystemConfigSchema)) as ISystemConfigModel;
 
 export default SystemConfig;

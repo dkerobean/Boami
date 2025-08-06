@@ -81,7 +81,7 @@ export default function SubscriptionCard({
     switch (status) {
       case 'active':
         return (
-          <Badge variant="success" className="flex items-center">
+          <Badge variant="default" className="flex items-center">
             <CheckCircleIcon className="h-3 w-3 mr-1" />
             Active
           </Badge>
@@ -102,7 +102,7 @@ export default function SubscriptionCard({
         );
       case 'past_due':
         return (
-          <Badge variant="warning" className="flex items-center">
+          <Badge variant="secondary" className="flex items-center">
             <AlertCircleIcon className="h-3 w-3 mr-1" />
             Past Due
           </Badge>
@@ -268,10 +268,10 @@ export default function SubscriptionCard({
               <div>
                 <div className="flex justify-between text-sm mb-1">
                   <span>Storage (MB)</span>
-                  <span>{formatUsage(subscription.usage.storage, subscription.plan.limits.storage)}</span>
+                  <span>{formatUsage((subscription.usage as any).storage || 0, (subscription.plan.limits as any).storage || 0)}</span>
                 </div>
                 <Progress
-                  value={getUsagePercentage(subscription.usage.storage, subscription.plan.limits.storage)}
+                  value={getUsagePercentage((subscription.usage as any).storage || 0, (subscription.plan.limits as any).storage || 0)}
                   className="h-2"
                 />
               </div>

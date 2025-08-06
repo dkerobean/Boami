@@ -42,7 +42,11 @@ import {
 import CustomCheckbox from "@/app/components/forms/theme-elements/CustomCheckbox";
 
 function InvoiceList() {
-  const { invoices, deleteInvoice } = useContext(InvoiceContext);
+  const context = useContext(InvoiceContext);
+  if (!context) {
+    throw new Error('InvoiceList must be used within an InvoiceProvider');
+  }
+  const { invoices, deleteInvoice } = context;
   const [searchTerm, setSearchTerm] = useState("");
   const [activeTab, setActiveTab] = useState("All");
   const [selectedProducts, setSelectedProducts] = useState<any>([]);
@@ -96,7 +100,7 @@ function InvoiceList() {
     const selectAllValue = !selectAll;
     setSelectAll(selectAllValue);
     if (selectAllValue) {
-      setSelectedProducts(invoices.map((invoice: { _id: any }) => invoice._id));
+      setSelectedProducts(invoices.map((invoice) => invoice.id));
     } else {
       setSelectedProducts([]);
     }
@@ -337,25 +341,17 @@ function InvoiceList() {
           </TableHead>
           <TableBody>
             {filteredInvoices.map(
-              (invoice: {
-                _id: any;
-                invoiceNumber: any;
-                billFrom: any;
-                billTo: any;
-                totalCost: any;
-                grandTotal: any;
-                status: any;
-              }) => (
-                <TableRow key={invoice._id}>
+              (invoice) => (
+                <TableRow key={invoice.id}>
                   <TableCell padding="checkbox">
                     <CustomCheckbox
-                      checked={selectedProducts.includes(invoice._id)}
-                      onChange={() => toggleSelectProduct(invoice._id)}
+                      checked={selectedProducts.includes(invoice.id)}
+                      onChange={() => toggleSelectProduct(invoice.id)}
                     />
                   </TableCell>
                   <TableCell>
                     <Typography variant="h6" fontSize="14px">
-                      {invoice.invoiceNumber || invoice._id}
+                      {invoice.id}
                     </Typography>
                   </TableCell>
                   <TableCell>
@@ -417,7 +413,7 @@ function InvoiceList() {
                       <IconButton
                         color="success"
                         component={Link}
-                        href={`/apps/invoice/edit/${invoice._id}`}
+                        href={`/apps/invoice/edit/${invoice.id}`}
                       >
                         <IconEdit width={22} />
                       </IconButton>
@@ -426,7 +422,7 @@ function InvoiceList() {
                       <IconButton
                         color="primary"
                         component={Link}
-                        href={`/apps/invoice/detail/${invoice._id}`}
+                        href={`/apps/invoice/detail/${invoice.id}`}
                       >
                         <IconEye width={22} />
                       </IconButton>
@@ -435,7 +431,7 @@ function InvoiceList() {
                       <IconButton
                         color="error"
                         onClick={() => {
-                          setSelectedProducts([invoice._id]);
+                          setSelectedProducts([invoice.id]);
                           handleDelete();
                         }}
                       >

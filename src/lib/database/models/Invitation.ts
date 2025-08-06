@@ -219,4 +219,3 @@ const Invitation = (mongoose.models.Invitation ||
 
 export default Invitation;
 export { Invitation };
-export type { IInvitation, IInvitationDocument, IInvitationModel };

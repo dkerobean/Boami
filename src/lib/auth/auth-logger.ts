@@ -149,7 +149,8 @@ export class AuthLogger {
 
     // Check if logging is enabled and level is appropriate
     if (!config.enabled || !this.shouldLog(level, eventType)) {
-      re   }
+      return;
+    }
 
     const logEntry: AuthLogEntry = {
       id: this.generateLogId(),

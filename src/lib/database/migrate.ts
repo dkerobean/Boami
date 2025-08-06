@@ -30,7 +30,7 @@ export class MigrationRunner {
 
     try {
       // Get executed migrations
-      const executedMigrations = await Migration.fin executedAt: 1 });
+      const executedMigrations = await Migration.find({}, { executedAt: 1 });
       const executedNames = executedMigrations.map(m => m.name);
 
       // Find pending migrations
@@ -174,6 +174,9 @@ export class MigrationRunner {
       });
 
       // Verify database structure
+      if (!mongoose.connection.db) {
+        throw new Error('Database connection not established');
+      }
       const collections = await mongoose.connection.db.listCollections().toArray();
       const collectionNames = collections.map(c => c.name);
 
@@ -213,7 +216,7 @@ export class MigrationRunner {
 if (require.main === module) {
   const command = process.argv[2];
 
-  async function runCommand() {
+  const runCommand = async () => {
     try {
       switch (command) {
         case 'up':
@@ -253,7 +256,7 @@ if (require.main === module) {
       console.error('Command failed:', error);
       process.exit(1);
     }
-  }
+  };
 
   runCommand();
 }

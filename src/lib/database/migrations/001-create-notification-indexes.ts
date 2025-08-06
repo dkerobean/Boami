@@ -5,6 +5,10 @@ export async function up(): Promise<void> {
   await connectToDatabase();
 
   const db = mongoose.connection.db;
+  
+  if (!db) {
+    throw new Error('Database connection not established');
+  }
 
   console.log('Creating notification system indexes...');
 
@@ -58,6 +62,10 @@ export async function down(): Promise<void> {
   await connectToDatabase();
 
   const db = mongoose.connection.db;
+  
+  if (!db) {
+    throw new Error('Database connection not established');
+  }
 
   console.log('Dropping notification system indexes...');
 
@@ -76,7 +84,7 @@ export async function down(): Promise<void> {
       const indexes = await collection.indexes();
 
       for (const index of indexes) {
-        if (index.name !== '_id_') {
+        if (index.name && index.name !== '_id_') {
           await collection.dropIndex(index.name);
         }
       }

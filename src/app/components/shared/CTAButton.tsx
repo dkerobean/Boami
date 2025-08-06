@@ -1,9 +1,10 @@
 import React from 'react';
 import Button from '@mui/material/Button';
 import { styled } from '@mui/material/styles';
+import { ButtonProps } from '@mui/material/Button';
 import { CTAButton as CTAButtonProps } from '@/types/landing-page';
 
-const StyledCTAButton = styled(Button)(({ theme, variant, size }) => ({
+const StyledCTAButton = styled(Button)<ButtonProps>(({ theme, variant, size }) => ({
   padding: size === 'large' ? '16px 48px' : size === 'small' ? '8px 24px' : '12px 36px',
   fontSize: size === 'large' ? '18px' : size === 'small' ? '14px' : '16px',
   fontWeight: 600,

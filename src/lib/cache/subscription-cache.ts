@@ -124,7 +124,7 @@ export class SubscriptionCache {
     if (!this.isCacheAvailable()) return null;
 
     try {
-      const client = RedisClit.getInstance();
+      const client = RedisClient.getInstance();
       const key = this.generateKey(this.PLAN_PREFIX, planId);
       const cached = await client.get(key);
 

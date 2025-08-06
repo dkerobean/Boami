@@ -493,4 +493,3 @@ const User = (mongoose.models.User || mongoose.model<IUserDocument, IUserModel>(
 
 export default User;
 export { User };
-export type { IUser, IUserDocument, IUserModel };

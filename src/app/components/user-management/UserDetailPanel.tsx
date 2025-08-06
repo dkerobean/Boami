@@ -252,7 +252,7 @@ export default function UserDetailPanel({ userId, onEdit, onStatusChange }: User
         </div>
 
         {/* Professional Information */}
-        {(user.designation || user.company || user.department) && (
+        {(user.designation || user.company || user.depment) && (
           <div>
             <h3 className="text-lg font-medium text-gray-900 mb-3">Professional Information</h3>
             <div className="space-y-3">
@@ -267,8 +267,8 @@ export default function UserDetailPanel({ userId, onEdit, onStatusChange }: User
                   <BuildingOfficeIcon className="h-5 w-5 text-gray-400 mt-0.5" />
                   <div>
                     <p className="text-sm text-gray-900">{user.company}</p>
-                    {user.department && (
-                      <p className="text-xs text-gray-500">{user.department}</p>
+                    {user.depment && (
+                      <p className="text-xs text-gray-500">{user.depment}</p>
                     )}
                   </div>
                 </div>

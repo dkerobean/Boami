@@ -44,6 +44,7 @@ import {
   IconSettings,
 } from '@tabler/icons-react';
 import { useSubscription } from '@/app/context/SubscriptionContext';
+import { useAuthContext } from '@/app/context/AuthContext';
 import { PaymentModal, BillingHistory } from '@/components/subscription';
 
 interface Plan {
@@ -96,6 +97,7 @@ function TabPanel(props: TabPanelProps) {
 
 const SubscriptionBillingPage: React.FC = () => {
   const { subscription, loading, error, refreshSubscription, hasFeatureAccess, isSubscriptionActive } = useSubscription();
+  const { user } = useAuthContext();
   const [plans, setPlans] = useState<Plan[]>([]);
   const [loadingPlans, setLoadingPlans] = useState(true);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
@@ -476,7 +478,6 @@ const SubscriptionBillingPage: React.FC = () => {
                   sx={{
                     bgcolor: 'white',
                     color: 'primary.main',
-                    '&:hover': { bgcolor: 'grey.100' },
                     fontWeight: 700,
                     px: 6,
                     py: 2,
@@ -702,7 +703,7 @@ const SubscriptionBillingPage: React.FC = () => {
                       </Typography>
                     </Box>
 
-                    {plan.trialDays > 0 && (
+                    {plan.trialDays && plan.trialDays > 0 && (
                       <Chip
                         label={`${plan.trialDays}-day free trial`}
                         color="success"
@@ -774,12 +775,12 @@ const SubscriptionBillingPage: React.FC = () => {
                                 {plan.name === 'Free' ? (
                                   '🚀 Start Free'
                                 ) : (
-                                  `🚀 Start ${plan.trialDays}-Day Free Trial`
+                                  `🚀 Start ${plan.trialDays || 0}-Day Free Trial`
                                 )}
                               </>
                             )}
                           </Button>
-                          {plan.trialDays > 0 && (
+                          {plan.trialDays && plan.trialDays > 0 && (
                             <Typography variant="caption" color="text.secondary" display="block" textAlign="center" sx={{ fontWeight: 500 }}>
                               {plan.trialDays} days free, then {formatCurrency(monthlyPrice, plan.price.currency)}/month
                             </Typography>
@@ -802,14 +803,20 @@ const SubscriptionBillingPage: React.FC = () => {
 
       {/* Billing History Tab */}
       <TabPanel value={tabValue} index={2}>
-        <BillingHistory />
+        <BillingHistory userId={user?._id || ''} />
       </TabPanel>
 
       {/* Payment Modal */}
       <PaymentModal
         isOpen={showPaymentModal}
         onClose={() => setShowPaymentModal(false)}
-        plan={selectedPlan}
+        plan={selectedPlan ? {
+          ...selectedPlan,
+          features: Object.entries(selectedPlan.features)
+            .filter(([_, featureConfig]) => featureConfig.enabled)
+            .map(([featureName, _]) => featureName),
+          trialDays: selectedPlan.trialDays || 0
+        } : null}
         billingPeriod={billingPeriod}
         onPaymentSuccess={handlePaymentSuccess}
       />

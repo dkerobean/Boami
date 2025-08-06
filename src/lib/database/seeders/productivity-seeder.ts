@@ -163,7 +163,7 @@ async function seedKanbanData(userId: string, size: 'minimal' | 'standard' | 'ex
     if (boardData.tasks && boardData.tasks.length > 0) {
       const tasks = boardData.tasks.map(task => ({
         ...task,
-        boardId: board._id.toString(),
+        boardId: (board._id as any).toString(),
         userId,
         createdAt: new Date(Date.now() - Math.random() * 14 * 24 * 60 * 60 * 1000), // Random date within last 14 days
         updatedAt: new Date()

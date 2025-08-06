@@ -15,6 +15,10 @@ export async function seedDashboardData(options: SeedDashboardDataOptions) {
     await connectDB();
     const db = mongoose.connection.db;
     
+    if (!db) {
+      throw new Error('Database connection not established');
+    }
+    
     console.log(`🌱 Seeding dashboard data for user: ${options.userEmail}`);
 
     // Sample products
@@ -220,6 +224,10 @@ export async function clearUserDashboardData(userId: string) {
   try {
     await connectDB();
     const db = mongoose.connection.db;
+    
+    if (!db) {
+      throw new Error('Database connection not established');
+    }
 
     console.log(`🧹 Clearing dashboard data for user: ${userId}`);
 

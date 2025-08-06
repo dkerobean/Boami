@@ -136,8 +136,8 @@ const AccessibilityEnhancements: React.FC = () => {
       document.head.appendChild(style);
 
       // Handle escape key for closing modals/dropdowns
-      const handleEscapeKey = (e: KeyboardEvent) => {
-        if (e.key === 'Escape') {
+      const handleEscapeKey = (e: Event) => {
+        if ((e as KeyboardEvent).key === 'Escape') {
           // Close any open modals or dropdowns
           const openModals = document.querySelectorAll('[role="dialog"][aria-hidden="false"]');
           openModals.forEach((modal) => {

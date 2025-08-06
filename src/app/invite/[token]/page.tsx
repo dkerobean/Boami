@@ -548,7 +548,7 @@ export default function InvitationAcceptancePage() {
                   <p className="mt-1 text-sm text-red-600">{formErrors.bio}</p>
                 )}
                 <p className="mt-1 text-xs text-gray-500">
-                  {formData.bio.length}/500 characters
+                  {formData.bio?.length || 0}/500 characters
                 </p>
               </div>
 

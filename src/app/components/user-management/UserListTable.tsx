@@ -385,7 +385,7 @@ export default function UserListTable({
                           Resend
                         </button>
                       )}
-                      {canUpdateUsers.hasPermission && (
+                      {canUpdateUsers && (
                         <button
                           onClick={() => onEditUser(user)}
                           className="text-indigo-600 hover:text-indigo-900"
@@ -394,7 +394,7 @@ export default function UserListTable({
                           <PencilIcon className="h-4 w-4" />
                         </button>
                       )}
-                      {canDeleteUsers.hasPermission && (
+                      {canDeleteUsers && (
                         <button
                           onClick={() => onDeleteUser(user)}
                           className="text-red-600 hover:text-red-900"

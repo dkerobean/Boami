@@ -280,7 +280,7 @@ export class AuthTestHelpers {
     };
 
     this.mockProvider.addMockUser(defaultUser);
-    await this.mockProvider.mockLoginultUser.email);
+    await this.mockProvider.mockLogin(defaultUser.email);
 
     return defaultUser;
   }
@@ -582,7 +582,7 @@ export class AuthTestSuiteRunner {
     totalTests: number;
     passed: number;
     failed: number;
-    results: typeof this.results;
+    results: Array<{ scenario: string; passed: boolean; error?: string; }>;
   }> {
     this.results = [];
 

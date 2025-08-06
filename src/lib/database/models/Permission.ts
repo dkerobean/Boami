@@ -101,4 +101,3 @@ const Permission = (mongoose.models.Permission ||
 
 export default Permission;
 export { Permission };
-export type { IPermission, IPermissionDocument, IPermissionModel };

@@ -61,7 +61,11 @@ import {
 } from "@/app/(DashboardLayout)/types/apps/invoice";
 
 const EnhancedInvoiceCreation = () => {
-  const { addInvoice, invoices, loading } = useContext(InvoiceContext);
+  const context = useContext(InvoiceContext);
+  if (!context) {
+    throw new Error('EnhancedInvoiceCreation must be used within an InvoiceProvider');
+  }
+  const { addInvoice, invoices, loading } = context;
   const [showAlert, setShowAlert] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const router = useRouter();
