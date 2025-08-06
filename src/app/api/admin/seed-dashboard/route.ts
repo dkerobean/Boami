@@ -14,7 +14,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(response, { status });
     }
 
-    const userId = authResult.user.id || authResult.user.userId;
+    const userId = authResult.user.id;
     const userEmail = authResult.user.email;
 
     console.log('✅ User authenticated:', userEmail);
@@ -67,7 +67,7 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json(response, { status });
     }
 
-    const userId = authResult.user.id || authResult.user.userId;
+    const userId = authResult.user.id;
     const userEmail = authResult.user.email;
 
     console.log('✅ User authenticated:', userEmail);

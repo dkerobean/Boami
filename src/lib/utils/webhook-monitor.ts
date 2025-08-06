@@ -382,3 +382,6 @@ export class WebhookMonitor {
     console.log(`🔄 Webhook retry scheduler started (every ${intervalMinutes} minutes)`);
   }
 }
+
+// Export the main webhook monitor instance
+export const webhookMonitor = WebhookMonitor;

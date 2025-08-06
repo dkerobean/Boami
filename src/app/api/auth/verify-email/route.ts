@@ -3,7 +3,7 @@ import { RateLimiter } from '@/lib/auth/rate-limiter';
 import { VerificationCodeManager } from '@/lib/auth/verification';
 import { JWTManager } from '@/lib/auth/jwt';
 import { EmailSender } from '@/lib/email/sender';
-import { connectToDatabase } from '@/lib/database/mongoose-connection';
+import { connectToDatabase } from '@/lib/database/connection';
 import { User } from '@/lib/database/models/User';
 import { VerificationCode } from '@/lib/database/models/VerificationCode';
 import * as yup from 'yup';
@@ -138,7 +138,7 @@ export async function POST(request: NextRequest) {
     const tokens = JWTManager.generateTokens({
       userId: user._id?.toString() || '',
       email: user.email,
-      role: user.role,
+      role: (user.role as any)?.toString() || 'user',
       isEmailVerified: true
     });
 

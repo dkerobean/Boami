@@ -23,7 +23,7 @@ export async function POST(request: NextRequest) {
     }
 
     const hasAccess = await PermissionService.hasFeatureAccess(
-      session.user.id,
+      user.userId,
       feature
     );
 

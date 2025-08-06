@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { connectDB } from '@/lib/database/mongoose-connection';
+import { connectDB } from '@/lib/database/connection';
 import RecurringPayment from '@/lib/database/models/RecurringPayment';
 import IncomeCategory from '@/lib/database/models/IncomeCategory';
 import ExpenseCategory from '@/lib/database/models/ExpenseCategory';

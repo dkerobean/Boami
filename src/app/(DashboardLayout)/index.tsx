@@ -27,7 +27,8 @@ import DeleteIcon from "@mui/icons-material/Delete";
 import SearchIcon from "@mui/icons-material/Search";
 
 function InvoiceList() {
-  const { invoices, deleteInvoice } = useContext(InvoiceContext);
+  const context = useContext(InvoiceContext);
+  const { invoices, deleteInvoice } = context || { invoices: [], deleteInvoice: () => {} };
   const [searchTerm, setSearchTerm] = useState("");
   const [activeTab, setActiveTab] = useState("All");
   const [selectedProducts, setSelectedProducts] = useState<any>([]);

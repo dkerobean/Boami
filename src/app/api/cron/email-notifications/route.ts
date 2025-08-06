@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { connectToDatabase } from '@/lib/database/mongoose-connection';
+import { connectToDatabase } from '@/lib/database/connection';
 import { SubscriptionEmailIntegration } from '@/lib/services/SubscriptionEmailIntegration';
 
 /**

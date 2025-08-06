@@ -6,14 +6,14 @@ import {
   MCPKanbanTasksUtility,
   MCPProductivityManager
 } from '@/lib/utils/mongodb-mcp-integration';
-import { connectToDatabase } from '@/lib/database/mongoose-connection';
+import { connectToDatabase } from '@/lib/database/connection';
 import Note from '@/lib/database/models/Note';
 import CalendarEvent from '@/lib/database/models/CalendarEvent';
 import KanbanBoard from '@/lib/database/models/KanbanBoard';
 import KanbanTask from '@/lib/database/models/KanbanTask';
 
 // Mock database connection
-jest.mock('@/lib/database/mongoose-connection');
+jest.mock('@/lib/database/connection');
 const mockConnectToDatabase = connectToDatabase as jest.MockedFunction<typeof connectToDatabase>;
 
 // Mock models

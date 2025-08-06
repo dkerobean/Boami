@@ -208,7 +208,7 @@ const EcommerceEditProduct = () => {
           });
         } catch (fetchError) {
           console.error('❌ Upload fetch failed:', fetchError);
-          throw new Error(`Upload request failed: ${fetchError.message}`);
+          throw new Error(`Upload request failed: ${fetchError instanceof Error ? fetchError.message : String(fetchError)}`);
         }
 
         if (!uploadResponse.ok) {

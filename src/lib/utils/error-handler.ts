@@ -455,4 +455,7 @@ export class ErrorHandler {
   }
 }
 
+// Export the main error handler instance
+export const errorHandler = ErrorHandler;
+
 export default ErrorHandler;

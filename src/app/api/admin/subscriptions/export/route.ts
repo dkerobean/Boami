@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { connectToDatabase } from '@/lib/database/mongoose-connection';
+import { connectToDatabase } from '@/lib/database/connection';
 import { Subscription } from '@/lib/database/models';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth/auth-config';
@@ -12,7 +12,7 @@ export async function GET(request: NextRequest) {
   try {
     // Check admin authentication
     const session = await getServerSession(authOptions);
-    if (!session?.user?.role || session.user.role !== 'admin') {
+    if (!session?.user?.role || session.user.role?.name !== 'admin') {
       return NextResponse.json(
         { success: false, error: 'Admin access required' },
         { status: 403 }

@@ -101,12 +101,11 @@ export default function NavItem({
     <List component="li" disablePadding key={item?.id && item.title}>
       <NavigationWrapper
         href={item.href}
-        onClick={lgDown ? onClick : undefined}
+        onClick={lgDown ? () => onClick({} as React.MouseEvent<HTMLElement>) : undefined}
       >
         <ListItemStyled
           disabled={item?.disabled}
           selected={pathDirect === item?.href}
-          component="div"
         >
           <ListItemIcon
             sx={{

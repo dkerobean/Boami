@@ -1,6 +1,6 @@
 import NextAuth, { NextAuthOptions } from 'next-auth';
 import CredentialsProvider from 'next-auth/providers/credentials';
-import { connectDB } from '@/lib/database/mongoose-connection';
+import { connectDB } from '@/lib/database/connection';
 import { User, Role, Permission } from '@/lib/database/models';
 import bcrypt from 'bcryptjs';
 
@@ -73,7 +73,7 @@ export const authOptions: NextAuthOptions = {
           await user.save();
 
           const userResult = {
-            id: user._id.toString(),
+            id: (user._id as any).toString(),
             email: user.email,
             name: user.getFullName(),
             firstName: user.firstName,
@@ -82,7 +82,7 @@ export const authOptions: NextAuthOptions = {
               id: (user.role as any)._id.toString(),
               name: (user.role as any).name,
               permissions: (user.role as any).permissions || []
-            } : null,
+            } : undefined,
             isEmailVerified: user.isEmailVerified,
             profileImage: user.profileImage
           };

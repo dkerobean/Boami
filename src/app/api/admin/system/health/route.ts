@@ -16,24 +16,30 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    if (session.user.role !== 'admin') {
+    if (session.user.role?.name !== 'admin') {
       return NextResponse.json(
         { success: false, error: 'Admin access required' },
         { status: 403 }
       );
     }
 
-    subscriptionLogger.info('Fetching system health', {
+    await subscriptionLogger.logSecurityActivity('system_health_fetch', {
       adminId: session.user.id
+    }, {
+      userId: session.user.id,
+      severity: 'info'
     });
 
     // Get system health metrics
     const healthMetrics = await SubscriptionMonitoringService.getSystemHealth();
 
-    subscriptionLogger.info('System health fetched successfully', {
+    await subscriptionLogger.logSecurityActivity('system_health_fetched', {
       adminId: session.user.id,
       status: healthMetrics.status,
       alertCount: healthMetrics.alerts.length
+    }, {
+      userId: session.user.id,
+      severity: 'info'
     });
 
     return NextResponse.json({
@@ -42,15 +48,23 @@ export async function GET(request: NextRequest) {
     });
 
   } catch (error: any) {
-    subscriptionLogger.error('Error fetching system health', {
+    await subscriptionLogger.logSecurityActivity('system_health_fetch_failed', {
       error: error.message,
       stack: error.stack
+    }, {
+      severity: 'error'
     });
 
     const handledError = errorHandler.handleError(error);
+    
+    // Map error severity to HTTP status code
+    const statusCode = handledError.severity === 'critical' ? 500 :
+                      handledError.severity === 'high' ? 500 :
+                      handledError.severity === 'medium' ? 400 : 400;
+    
     return NextResponse.json(
       { success: false, error: handledError.message },
-      { status: handledError.statusCode }
+      { status: statusCode }
     );
   }
 }
@@ -66,7 +80,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (session.user.role !== 'admin') {
+    if (session.user.role?.name !== 'admin') {
       return NextResponse.json(
         { success: false, error: 'Admin access required' },
         { status: 403 }
@@ -76,11 +90,14 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { action, alertId, ruleId, ruleData } = body;
 
-    subscriptionLogger.info('System health action requested', {
+    await subscriptionLogger.logSecurityActivity('system_health_action_requested', {
       adminId: session.user.id,
       action,
       alertId,
       ruleId
+    }, {
+      userId: session.user.id,
+      severity: 'info'
     });
 
     let result: any = {};
@@ -183,10 +200,13 @@ export async function POST(request: NextRequest) {
         );
     }
 
-    subscriptionLogger.info('System health action completed', {
+    await subscriptionLogger.logSecurityActivity('system_health_action_completed', {
       adminId: session.user.id,
       action,
       result
+    }, {
+      userId: session.user.id,
+      severity: 'info'
     });
 
     return NextResponse.json({
@@ -195,15 +215,23 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (error: any) {
-    subscriptionLogger.error('Error processing system health action', {
+    await subscriptionLogger.logSecurityActivity('system_health_action_failed', {
       error: error.message,
       stack: error.stack
+    }, {
+      severity: 'error'
     });
 
     const handledError = errorHandler.handleError(error);
+    
+    // Map error severity to HTTP status code
+    const statusCode = handledError.severity === 'critical' ? 500 :
+                      handledError.severity === 'high' ? 500 :
+                      handledError.severity === 'medium' ? 400 : 400;
+    
     return NextResponse.json(
       { success: false, error: handledError.message },
-      { status: handledError.statusCode }
+      { status: statusCode }
     );
   }
 }

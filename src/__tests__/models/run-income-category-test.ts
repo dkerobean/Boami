@@ -3,7 +3,7 @@
  * Simple test runner to validate the model functionality
  */
 
-import { connectDB, disconnectDB } from '@/lib/database/mongoose-connection';
+import { connectDB, disconnectDB } from '@/lib/database/connection';
 import IncomeCategory from '@/lib/database/models/IncomeCategory';
 
 async function runIncomeCategoryTests() {

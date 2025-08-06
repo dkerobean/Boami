@@ -16,7 +16,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (session.user.role !== 'admin') {
+    if (session.user.role?.name !== 'admin') {
       return NextResponse.json(
         { success: false, error: 'Admin access required' },
         { status: 403 }
@@ -26,10 +26,13 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { operation, options = {} } = body;
 
-    subscriptionLogger.info('Data migration operation requested', {
+    await subscriptionLogger.logSecurityActivity('data_migration_requested', {
       adminId: session.user.id,
       operation,
       options
+    }, {
+      userId: session.user.id,
+      severity: 'info'
     });
 
     let result: any;
@@ -81,12 +84,15 @@ export async function POST(request: NextRequest) {
         );
     }
 
-    subscriptionLogger.info('Data migration operation completed', {
+    await subscriptionLogger.logSecurityActivity('data_migration_completed', {
       adminId: session.user.id,
       operation,
       success: result.success,
       processed: result.processed || result.deleted || result.exported,
       errors: result.errors
+    }, {
+      userId: session.user.id,
+      severity: 'info'
     });
 
     return NextResponse.json({
@@ -99,15 +105,23 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (error: any) {
-    subscriptionLogger.error('Data migration operation failed', {
+    await subscriptionLogger.logSecurityActivity('data_migration_failed', {
       error: error.message,
       stack: error.stack
+    }, {
+      severity: 'error'
     });
 
     const handledError = errorHandler.handleError(error);
+    
+    // Map error severity to HTTP status code
+    const statusCode = handledError.severity === 'critical' ? 500 :
+                      handledError.severity === 'high' ? 500 :
+                      handledError.severity === 'medium' ? 400 : 400;
+    
     return NextResponse.json(
       { success: false, error: handledError.message },
-      { status: handledError.statusCode }
+      { status: statusCode }
     );
   }
 }
@@ -123,7 +137,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    if (session.user.role !== 'admin') {
+    if (session.user.role?.name !== 'admin') {
       return NextResponse.json(
         { success: false, error: 'Admin access required' },
         { status: 403 }
@@ -232,15 +246,23 @@ export async function GET(request: NextRequest) {
     });
 
   } catch (error: any) {
-    subscriptionLogger.error('Error fetching migration operations', {
+    await subscriptionLogger.logSecurityActivity('migration_operations_fetch_failed', {
       error: error.message,
       stack: error.stack
+    }, {
+      severity: 'error'
     });
 
     const handledError = errorHandler.handleError(error);
+    
+    // Map error severity to HTTP status code
+    const statusCode = handledError.severity === 'critical' ? 500 :
+                      handledError.severity === 'high' ? 500 :
+                      handledError.severity === 'medium' ? 400 : 400;
+    
     return NextResponse.json(
       { success: false, error: handledError.message },
-      { status: handledError.statusCode }
+      { status: statusCode }
     );
   }
 }

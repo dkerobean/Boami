@@ -53,7 +53,7 @@ export async function GET(request: NextRequest) {
     }
 
     try {
-      const { connectDB } = await import('@/lib/database/mongoose-connection');
+      const { connectDB } = await import('@/lib/database/connection');
       diagnostics.imports.database = '✅ Success';
 
       // Test database connection

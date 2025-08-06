@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { connectDB } from '@/lib/database/mongoose-connection';
+import { connectDB } from '@/lib/database/connection';
 import Income from '@/lib/database/models/Income';
 import IncomeCategory from '@/lib/database/models/IncomeCategory';
 import { authenticateApiRequest, createApiResponse } from '@/lib/auth/nextauth-middleware';

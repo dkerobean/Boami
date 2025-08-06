@@ -1,6 +1,6 @@
 import { NextRequest } from 'next/server'
 import { GET, POST } from '@/app/api/finance/expenses/route'
-import { connectToDatabase } from '@/lib/database/mongoose-connection'
+import { connectToDatabase } from '@/lib/database/connection'
 import { Expense } from '@/lib/database/models/Expense'
 import { ExpenseCategory } from '@/lib/database/models/ExpenseCategory'
 import { Vendor } from '@/lib/database/models/Vendor'
@@ -8,7 +8,7 @@ import { User } from '@/lib/database/models/User'
 import jwt from 'jsonwebtoken'
 
 // Mock the database connection
-jest.mock('@/lib/database/mongoose-connection')
+jest.mock('@/lib/database/connection')
 
 describe('/api/finance/expenses', () => {
   let mockUser: any

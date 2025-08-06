@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { connectDB } from '@/lib/database/mongoose-connection';
+import { connectDB } from '@/lib/database/connection';
 import CalendarEvent from '@/lib/database/models/CalendarEvent';
 import { authenticateRequest } from '@/lib/auth/api-auth';
 

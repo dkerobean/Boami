@@ -74,7 +74,7 @@ export default function UserManagementPage() {
   const [retryCount, setRetryCount] = useState(0);
 
   // Permission checks
-  const { hasPermission: canReadUsers } = usePermission('users', 'read');
+  const { hasPermission: canReadUsers, loading: canReadUsersLoading } = usePermission('users', 'read');
   const { hasPermission: canCreateUsers } = usePermission('users', 'create');
   const { hasPermission: canUpdateUsers } = usePermission('users', 'update');
   const { hasPermission: canDeleteUsers } = usePermission('users', 'delete');
@@ -139,10 +139,10 @@ export default function UserManagementPage() {
 
   // Load stats on component mount
   useEffect(() => {
-    if (canReadUsers.hasPermission) {
+    if (canReadUsers) {
       fetchUserStats();
     }
-  }, [canReadUsers.hasPermission, fetchUserStats]);
+  }, [canReadUsers, fetchUserStats]);
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -150,7 +150,7 @@ export default function UserManagementPage() {
       // Cmd/Ctrl + K to open invite modal
       if ((event.metaKey || event.ctrlKey) && event.key === 'k') {
         event.preventDefault();
-        if (canCreateUsers.hasPermission && !operationLoading) {
+        if (canCreateUsers && !operationLoading) {
           setShowInviteModal(true);
         }
       }
@@ -174,11 +174,11 @@ export default function UserManagementPage() {
 
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [canCreateUsers.hasPermission, operationLoading, statsLoading, fetchUserStats]);
+  }, [canCreateUsers, operationLoading, statsLoading, fetchUserStats]);
 
   // Auto-refresh data periodically
   useEffect(() => {
-    if (!canReadUsers.hasPermission) return;
+    if (!canReadUsers) return;
 
     const interval = setInterval(() => {
       if (!operationLoading && !statsLoading) {
@@ -188,7 +188,7 @@ export default function UserManagementPage() {
     }, 30000); // Refresh every 30 seconds
 
     return () => clearInterval(interval);
-  }, [canReadUsers.hasPermission, operationLoading, statsLoading, fetchUserStats]);
+  }, [canReadUsers, operationLoading, statsLoading, fetchUserStats]);
 
   const handleInviteUsers = async (invitations: Array<{ email: string; roleId: string }>, customMessage?: string) => {
     try {
@@ -454,7 +454,7 @@ export default function UserManagementPage() {
   };
 
   // Check if user has access to this page
-  if (!canReadUsers.hasPermission && !canReadUsers.loading) {
+  if (!canReadUsers) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="max-w-md w-full bg-white rounded-lg shadow-md p-8 text-center">
@@ -468,7 +468,7 @@ export default function UserManagementPage() {
     );
   }
 
-  if (canReadUsers.loading) {
+  if (canReadUsersLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
@@ -551,7 +551,7 @@ export default function UserManagementPage() {
                 </svg>
                 Refresh
               </button>
-              {canCreateUsers.hasPermission && (
+              {canCreateUsers && (
                 <button
                   onClick={() => setShowInviteModal(true)}
                   disabled={operationLoading}
@@ -581,7 +581,7 @@ export default function UserManagementPage() {
                 <span>Users</span>
               </div>
             </button>
-            {canReadRoles.hasPermission && (
+            {canReadRoles && (
               <button
                 onClick={() => setActiveTab('roles')}
                 className={`py-4 px-1 border-b-2 font-medium text-sm ${

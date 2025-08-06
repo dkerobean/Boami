@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { connectDB } from '@/lib/database/mongoose-connection';
+import { connectDB } from '@/lib/database/connection';
 import { User } from '@/lib/database/models/User';
 import { VerificationCode } from '@/lib/database/models/VerificationCode';
 import { PasswordManager } from '@/lib/auth/password';

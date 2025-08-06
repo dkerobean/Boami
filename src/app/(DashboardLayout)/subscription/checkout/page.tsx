@@ -33,7 +33,7 @@ const CheckoutPage: React.FC = () => {
   const [processing, setProcessing] = useState<boolean>(false);
 
   const planId = searchParams.get('planId');
-  const billingPeriod = searchParams.get('billingPeriod') || 'monthly';
+  const billingPeriod = (searchParams.get('billingPeriod') as 'monthly' | 'annual') || 'monthly';
 
   useEffect(() => {
     if (!isAuthenticated && !authLoading) {
@@ -342,21 +342,11 @@ const CheckoutPage: React.FC = () => {
         <PaymentModal
           isOpen={showPaymentModal}
           onClose={() => setShowPaymentModal(false)}
+          plan={plan}
+          billingPeriod={billingPeriod}
+          user={user}
           onSuccess={handlePaymentSuccess}
-          onFailure={handlePaymentFailure}
-          amount={price}
-          currency={plan.price.currency}
-          customerEmail={user.email || ''}
-          customerName={`${user.firstName || ''} ${user.lastName || ''}`.trim()}
-          customerPhone={user.phone}
-          paymentReference={paymentReference}
-          description={`${plan.name} Plan - ${billingPeriod} subscription`}
-          planName={plan.name}
-          metadata={{
-            planId: plan.id,
-            billingPeriod,
-            userId: user._id
-          }}
+          onPaymentError={handlePaymentFailure}
         />
       )}
     </Container>

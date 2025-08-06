@@ -1,4 +1,4 @@
-import { connectToDatabase } from '@/lib/database/mongoose-connection';
+import { connectToDatabase } from '@/lib/database/connection';
 import { seedProductivityData, hasExistingProductivityData } from '@/lib/database/seeders/productivity-seeder';
 import { seedFinancialCategoriesForUser } from '@/lib/database/seeders/financial-seeder';
 
@@ -229,6 +229,92 @@ export async function checkOnboardingStatus(userId: string): Promise<{
       recommendations: ['Complete initial setup']
     };
   }
+}
+
+/**
+ * Initialize user productivity data
+ */
+export const initializeUserProductivityData = initializeNewUser;
+
+/**
+ * Check if user should show onboarding
+ */
+export async function shouldShowOnboarding(userId: string): Promise<boolean> {
+  const status = await checkOnboardingStatus(userId);
+  return status.needsOnboarding;
+}
+
+/**
+ * Get onboarding recommendations
+ */
+export async function getOnboardingRecommendations(userId: string): Promise<string[]> {
+  const status = await checkOnboardingStatus(userId);
+  return status.recommendations;
+}
+
+/**
+ * Generate onboarding checklist
+ */
+export async function generateOnboardingChecklist(userId: string): Promise<{
+  items: Array<{ id: string; title: string; completed: boolean; description: string }>;
+  completionPercentage: number;
+}> {
+  const progress = await getOnboardingProgress(userId);
+
+  const items = [
+    {
+      id: 'productivity_setup',
+      title: 'Set up productivity features',
+      completed: progress.completedSteps.includes('productivity_setup'),
+      description: 'Initialize notes, calendar, and kanban features'
+    },
+    {
+      id: 'financial_setup',
+      title: 'Set up financial categories',
+      completed: progress.completedSteps.includes('financial_setup'),
+      description: 'Create income and expense categories'
+    },
+    {
+      id: 'first_note',
+      title: 'Create your first note',
+      completed: progress.completedSteps.includes('first_note'),
+      description: 'Start organizing your thoughts'
+    },
+    {
+      id: 'first_event',
+      title: 'Add a calendar event',
+      completed: progress.completedSteps.includes('first_event'),
+      description: 'Schedule your first appointment'
+    },
+    {
+      id: 'first_kanban_board',
+      title: 'Create a Kanban board',
+      completed: progress.completedSteps.includes('first_kanban_board'),
+      description: 'Organize your tasks visually'
+    }
+  ];
+
+  return {
+    items,
+    completionPercentage: progress.completionPercentage
+  };
+}
+
+/**
+ * Generate welcome message
+ */
+export async function generateWelcomeMessage(userId: string): Promise<string> {
+  const status = await checkOnboardingStatus(userId);
+
+  if (!status.needsOnboarding) {
+    return "Welcome back! You're all set up and ready to go.";
+  }
+
+  if (status.recommendations.length === 0) {
+    return "Welcome to Boami! Let's get you started with setting up your workspace.";
+  }
+
+  return `Welcome to Boami! To get the most out of your experience, we recommend: ${status.recommendations[0]}.`;
 }
 
 /**

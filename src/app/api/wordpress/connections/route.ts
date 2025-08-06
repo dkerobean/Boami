@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import * as yup from 'yup';
-import { connectToDatabase } from '@/lib/database/mongoose-connection';
+import { connectToDatabase } from '@/lib/database/connection';
 import WordPressConnection from '@/lib/database/models/WordPressConnection';
 
 // Validation schemas

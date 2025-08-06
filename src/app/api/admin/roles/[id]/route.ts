@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { connectDB } from '@/lib/database/mongoose-connection';
+import { connectDB } from '@/lib/database/connection';
 import { Role, Permission, User } from '@/lib/database/models';
 import { Types } from 'mongoose';
 
@@ -98,7 +98,7 @@ export async function PUT(
     }
 
     // Prevent modification of system roles
-    if (role.isSystemRole) {
+    if (role.isSystem) {
       return NextResponse.json(
         {
           success: false,
@@ -204,7 +204,7 @@ export async function DELETE(
     }
 
     // Prevent deletion of system roles
-    if (role.isSystemRole) {
+    if (role.isSystem) {
       return NextResponse.json(
         {
           success: false,

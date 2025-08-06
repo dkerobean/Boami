@@ -32,7 +32,7 @@ export async function GET(request: NextRequest) {
     // Get scheduler status
     const schedulerStats = cronScheduler.getStats();
     const allJobs = cronScheduler.getAllJobsStatus();
-    const systemStatus = SystemStartup.getStatus();
+    const systemStatus = await SystemStartup.getSystemStatus();
 
     return NextResponse.json({
       success: true,

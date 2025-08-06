@@ -3,7 +3,7 @@
  * These tests simulate real user interactions across multiple features
  */
 
-import { connectDB } from '@/lib/database/mongoose-connection';
+import { connectDB } from '@/lib/database/connection';
 import Note from '@/lib/database/models/Note';
 import CalendarEvent from '@/lib/database/models/CalendarEvent';
 import KanbanBoard from '@/lib/database/models/KanbanBoard';
@@ -13,7 +13,7 @@ import { initializeNewUser, getOnboardingProgress } from '@/lib/utils/user-onboa
 import { CacheManager } from '@/lib/utils/productivity-cache';
 
 // Mock database connection
-jest.mock('@/lib/database/mongoose-connection');
+jest.mock('@/lib/database/connection');
 const mockConnectDB = connectDB as jest.MockedFunction<typeof connectDB>;
 
 // Mock models

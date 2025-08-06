@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { connectDB } from '@/lib/database/mongoose-connection';
+import { connectDB } from '@/lib/database/connection';
 import ExpenseCategory from '@/lib/database/models/ExpenseCategory';
 import { authenticateApiRequest, createApiResponse } from '@/lib/auth/nextauth-middleware';
 import { ensureDefaultCategories } from '@/lib/database/seeders/default-categories';

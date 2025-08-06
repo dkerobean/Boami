@@ -7,7 +7,7 @@ import { RecurringPaymentProcessor } from '@/lib/services/RecurringPaymentProces
 import { cronScheduler } from '@/lib/utils/cron-scheduler';
 import { paymentMonitor } from '@/lib/utils/payment-monitor';
 import { SystemStartup } from '@/lib/utils/system-startup';
-import { connectDB } from '@/lib/database/mongoose-connection';
+import { connectDB } from '@/lib/database/connection';
 import RecurringPayment from '@/lib/database/models/RecurringPayment';
 import Income from '@/lib/database/models/Income';
 import Expense from '@/lib/database/models/Expense';
@@ -16,7 +16,7 @@ import ExpenseCategory from '@/lib/database/models/ExpenseCategory';
 import Vendor from '@/lib/database/models/Vendor';
 
 // Mock the database connection
-jest.mock('@/lib/database/mongoose-connection');
+jest.mock('@/lib/database/connection');
 jest.mock('@/lib/utils/payment-monitor');
 
 describe('Recurring Payment Automation', () => {

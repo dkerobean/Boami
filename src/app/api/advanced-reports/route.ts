@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createFeatureProtectedRoute } from '@/lib/auth/feature-access-middleware';
 import { FEATURES } from '@/hooks/useFeatureAccess';
-import { connectToDatabase } from '@/lib/database/mongoose-connection';
+import { connectToDatabase } from '@/lib/database/connection';
 
 /**
  * GET /api/advanced-reports

@@ -27,7 +27,7 @@ export function generateSubscriptionReference(
 
 /**
  * Format currency amount for display
- * @pa- Amount to format
+ * @param amount - Amount to format
  * @param currency - Currency code
  * @param locale - Locale for formatting
  * @returns string - Formatted currency string

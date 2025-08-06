@@ -44,8 +44,8 @@ export default function RoleManagementPage() {
   }>>([]);
 
   // Permission checks
-  const canManageRoles = usePermission('manage_roles');
-  const canViewRoles = usePermission('view_roles');
+  const canManageRoles = usePermission('roles', 'manage');
+  const canViewRoles = usePermission('roles', 'view');
 
   // Notification helper
   const addNotification = useCallback((type: 'success' | 'error' | 'info', message: string) => {

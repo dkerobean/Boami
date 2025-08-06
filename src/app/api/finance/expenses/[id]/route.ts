@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { connectDB } from '@/lib/database/mongoose-connection';
+import { connectDB } from '@/lib/database/connection';
 import Expense from '@/lib/database/models/Expense';
 import ExpenseCategory from '@/lib/database/models/ExpenseCategory';
 import Vendor from '@/lib/database/models/Vendor';

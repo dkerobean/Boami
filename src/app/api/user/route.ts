@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import * as yup from 'yup';
 import { JWTManager } from '@/lib/auth/jwt';
 import User from '@/lib/database/models/User';
-import { connectToDatabase } from '@/lib/database/mongoose-connection';
+import { connectToDatabase } from '@/lib/database/connection';
 
 const userUpdateSchema = yup.object({
   firstName: yup.string().max(50, 'First name cannot exceed 50 characters'),

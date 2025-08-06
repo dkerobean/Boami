@@ -1,4 +1,4 @@
-import { connectDB } from '@/lib/database/mongoose-connection';
+import { connectDB } from '@/lib/database/connection';
 import Product from '@/lib/database/models/Product';
 import Sale from '@/lib/database/models/Sale';
 

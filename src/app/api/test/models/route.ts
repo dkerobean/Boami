@@ -8,7 +8,7 @@ export async function GET(request: NextRequest) {
     console.log('Testing model imports...');
 
     // Test database connection import
-    const { connectDB } = await import('@/lib/database/mongoose-connection');
+    const { connectDB } = await import('@/lib/database/connection');
     console.log('✅ Database connection import successful');
 
     // Test User model import

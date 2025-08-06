@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { RateLimiter } from '@/lib/auth/rate-limiter';
 import { PasswordManager } from '@/lib/auth/password';
 import { JWTManager } from '@/lib/auth/jwt';
-import { connectToDatabase } from '@/lib/database/mongoose-connection';
+import { connectToDatabase } from '@/lib/database/connection';
 import { User } from '@/lib/database/models/User';
 import { Role } from '@/lib/database/models/Role';
 import * as yup from 'yup';

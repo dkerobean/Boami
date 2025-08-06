@@ -470,4 +470,15 @@ export class SubscriptionLogger {
   }
 }
 
+// Export log categories enum
+export enum LogCategory {
+  SUBSCRIPTION = 'subscription',
+  PAYMENT = 'payment',
+  SECURITY = 'security',
+  ACCESS = 'access'
+}
+
+// Export the main logger instance
+export const subscriptionLogger = SubscriptionLogger;
+
 export { AuditLog };

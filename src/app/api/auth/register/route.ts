@@ -3,7 +3,7 @@ import { RateLimiter } from '@/lib/auth/rate-limiter';
 import { PasswordManager } from '@/lib/auth/password';
 import { VerificationCodeManager } from '@/lib/auth/verification';
 import { EmailSender } from '@/lib/email/sender';
-import { connectToDatabase } from '@/lib/database/mongoose-connection';
+import { connectToDatabase } from '@/lib/database/connection';
 import { User } from '@/lib/database/models/User';
 import { getDefaultRoleId } from '@/lib/database/seeders/rbac-seeder';
 import * as yup from 'yup';

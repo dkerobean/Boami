@@ -5,7 +5,7 @@ import { stockAlertMonitor } from '@/lib/notifications/monitors/stock-alert-moni
 import { taskMonitor } from '@/lib/notifications/monitors/task-monitor';
 import { invoiceMonitor } from '@/lib/notifications/monitors/invoice-monitor';
 import { subscriptionMonitor } from '@/lib/notifications/monitors/subscription-monitor';
-import { connectToDatabase } from '@/lib/database/mongoose-connection';
+import { connectToDatabase } from '@/lib/database/connection';
 
 export async function POST(request: NextRequest) {
   try {

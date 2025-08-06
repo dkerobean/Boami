@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { SubscriptionService } from '@/lib/services/SubscriptionService';
-import { connectToDatabase } from '@/lib/database/mongoose-connection';
+import { connectToDatabase } from '@/lib/database/connection';
 import { createFeatureAccessError, ERROR_CODES } from '@/lib/errors/SubscriptionErrors';
 import { subscriptionLogger, LogCategory } from '@/lib/utils/subscription-logger';
 import { handleApiError } from '@/lib/utils/error-recovery';

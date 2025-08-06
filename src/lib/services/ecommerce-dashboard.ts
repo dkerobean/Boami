@@ -1,4 +1,4 @@
-import { connectDB } from '@/lib/database/mongoose-connection';
+import { connectDB } from '@/lib/database/connection';
 import mongoose from 'mongoose';
 
 export interface DashboardStats {

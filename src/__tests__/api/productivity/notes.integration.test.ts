@@ -1,7 +1,7 @@
 import { NextRequest } from 'next/server';
 import { GET, POST } from '@/app/api/productivity/notes/route';
 import { GET as GET_BY_ID, PUT, DELETE } from '@/app/api/productivity/notes/[id]/route';
-import { connectDB } from '@/lib/database/mongoose-connection';
+import { connectDB } from '@/lib/database/connection';
 import Note from '@/lib/database/models/Note';
 import { authenticateRequest } from '@/lib/auth/api-auth';
 import { CacheManager } from '@/lib/utils/productivity-cache';
@@ -11,7 +11,7 @@ jest.mock('@/lib/auth/api-auth');
 const mockAuthenticateRequest = authenticateRequest as jest.MockedFunction<typeof authenticateRequest>;
 
 // Mock database connection
-jest.mock('@/lib/database/mongoose-connection');
+jest.mock('@/lib/database/connection');
 const mockConnectDB = connectDB as jest.MockedFunction<typeof connectDB>;
 
 // Mock Note model

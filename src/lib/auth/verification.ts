@@ -1,6 +1,6 @@
 import crypto from 'crypto';
 import VerificationCode, { IVerificationCodeDocument } from '@/lib/database/models/VerificationCode';
-import { connectDB } from '@/lib/database/mongoose-connection';
+import { connectDB } from '@/lib/database/connection';
 
 /**
  * Verification code types

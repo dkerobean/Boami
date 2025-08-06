@@ -74,8 +74,7 @@ const SubscriptionManagePage: React.FC = () => {
         <Grid item xs={12}>
           <div className="bg-white rounded-lg shadow-sm border border-gray-200">
             <SubscriptionStatus
-              userId={user?._id || ''}
-              className="border-0 shadow-none"
+              subscription={subscription}
             />
           </div>
         </Grid>

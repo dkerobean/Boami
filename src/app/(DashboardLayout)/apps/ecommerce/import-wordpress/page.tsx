@@ -458,7 +458,7 @@ const WooCommerceImportPage = () => {
                 <Button
                   variant="contained"
                   onClick={handleNext}
-                  disabled={loading || (currentJob && currentJob.status === 'processing')}
+                  disabled={loading || (currentJob?.status === 'processing')}
                   endIcon={<IconArrowRight size={18} />}
                 >
                   {activeStep === 1 ? 'Start Import' : 'Next'}

@@ -266,7 +266,18 @@ const AdminPlansPage: React.FC = () => {
       sortOrder: plan.sortOrder,
       popular: plan.popular,
       isActive: plan.isActive,
-      features: plan.features
+      features: {
+        advanced_analytics: plan.features.advanced_analytics || { enabled: false, description: 'Advanced Analytics' },
+        bulk_operations: plan.features.bulk_operations || { enabled: false, description: 'Bulk Operations' },
+        api_access: plan.features.api_access || { enabled: false, description: 'API Access' },
+        priority_support: plan.features.priority_support || { enabled: false, description: 'Priority Support' },
+        custom_branding: plan.features.custom_branding || { enabled: false, description: 'Custom Branding' },
+        advanced_reporting: plan.features.advanced_reporting || { enabled: false, description: 'Advanced Reporting' },
+        team_collaboration: plan.features.team_collaboration || { enabled: false, description: 'Team Collaboration' },
+        automated_workflows: plan.features.automated_workflows || { enabled: false, description: 'Automated Workflows' },
+        integrations: plan.features.integrations || { enabled: false, description: 'Third-party Integrations' },
+        unlimited_storage: plan.features.unlimited_storage || { enabled: false, description: 'Unlimited Storage' }
+      }
     });
     setEditDialogOpen(true);
   };
@@ -277,8 +288,8 @@ const AdminPlansPage: React.FC = () => {
       features: {
         ...prev.features,
         [featureKey]: {
-          ...prev.features[featureKey],
-          enabled: !prev.features[featureKey].enabled
+          ...(prev.features as Record<string, PlanFeature>)[featureKey],
+          enabled: !(prev.features as Record<string, PlanFeature>)[featureKey].enabled
         }
       }
     }));

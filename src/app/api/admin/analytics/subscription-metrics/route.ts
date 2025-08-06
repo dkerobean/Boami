@@ -16,7 +16,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    if (session.user.role !== 'admin') {
+    if (session.user.role?.name !== 'admin') {
       return NextResponse.json(
         { success: false, error: 'Admin access required' },
         { status: 403 }
@@ -37,11 +37,14 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    subscriptionLogger.info('Fetching subscription metrics', {
+    await subscriptionLogger.logAccessActivity('admin_fetch_subscription_metrics', {
       adminId: session.user.id,
       dateRange,
       includeChurn,
       includeTrends
+    }, {
+      userId: session.user.id,
+      severity: 'info'
     });
 
     // Get subscription metrics
@@ -58,9 +61,12 @@ export async function GET(request: NextRequest) {
       additionalData.trends = await SubscriptionMetricsService.getSubscriptionTrends(dateRange);
     }
 
-    subscriptionLogger.info('Subscription metrics fetched successfully', {
+    await subscriptionLogger.logAccessActivity('admin_subscription_metrics_success', {
       adminId: session.user.id,
       metricsCount: Object.keys(metrics).length
+    }, {
+      userId: session.user.id,
+      severity: 'info'
     });
 
     return NextResponse.json({
@@ -74,15 +80,23 @@ export async function GET(request: NextRequest) {
     });
 
   } catch (error: any) {
-    subscriptionLogger.error('Error fetching subscription metrics', {
+    await subscriptionLogger.logAccessActivity('admin_subscription_metrics_error', {
       error: error.message,
       stack: error.stack
+    }, {
+      severity: 'error'
     });
 
     const handledError = errorHandler.handleError(error);
+    const statusCode = handledError.severity === 'critical' ? 500 :
+                      handledError.severity === 'high' ? 500 :
+                      handledError.category === 'authentication' ? 401 :
+                      handledError.category === 'authorization' ? 403 :
+                      handledError.category === 'validation' ? 400 : 500;
+
     return NextResponse.json(
       { success: false, error: handledError.message },
-      { status: handledError.statusCode }
+      { status: statusCode }
     );
   }
 }
@@ -98,7 +112,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (session.user.role !== 'admin') {
+    if (session.user.role?.name !== 'admin') {
       return NextResponse.json(
         { success: false, error: 'Admin access required' },
         { status: 403 }
@@ -128,12 +142,15 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    subscriptionLogger.info('Generating subscription metrics report', {
+    await subscriptionLogger.logAccessActivity('admin_generate_subscription_report', {
       adminId: session.user.id,
       dateRange,
       includeChurn,
       includeTrends,
       exportFormat
+    }, {
+      userId: session.user.id,
+      severity: 'info'
     });
 
     // Get comprehensive metrics
@@ -165,9 +182,12 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    subscriptionLogger.info('Subscription metrics report generated successfully', {
+    await subscriptionLogger.logAccessActivity('admin_subscription_report_success', {
       adminId: session.user.id,
       reportSize: JSON.stringify(reportData).length
+    }, {
+      userId: session.user.id,
+      severity: 'info'
     });
 
     return NextResponse.json({
@@ -176,15 +196,23 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (error: any) {
-    subscriptionLogger.error('Error generating subscription metrics report', {
+    await subscriptionLogger.logAccessActivity('admin_subscription_report_error', {
       error: error.message,
       stack: error.stack
+    }, {
+      severity: 'error'
     });
 
     const handledError = errorHandler.handleError(error);
+    const statusCode = handledError.severity === 'critical' ? 500 :
+                      handledError.severity === 'high' ? 500 :
+                      handledError.category === 'authentication' ? 401 :
+                      handledError.category === 'authorization' ? 403 :
+                      handledError.category === 'validation' ? 400 : 500;
+
     return NextResponse.json(
       { success: false, error: handledError.message },
-      { status: handledError.statusCode }
+      { status: statusCode }
     );
   }
 }

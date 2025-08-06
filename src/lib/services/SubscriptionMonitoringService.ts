@@ -1,4 +1,4 @@
-import { connectToDatabase } from '@/lib/database/mongoose-connection';
+import { connectToDatabase } from '@/lib/database/connection';
 import { Subscription } from '@/lib/database/models/Subscription';
 import { Transaction } from '@/lib/database/models/Transaction';
 import { subscriptionLogger } from '@/lib/utils/subscription-logger';

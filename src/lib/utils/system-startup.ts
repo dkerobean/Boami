@@ -8,14 +8,19 @@ import { connectToDatabase } from '../database/mongoose-connection';
  * System startup utilities for performance optimization
  */
 export class SystemStartup {
+  private static initialized = false;
+  private static config: any = null;
 
   /**
    * Initialize system on startup
    */
-  static async initialize(): Promise<void> {
+  static async initialize(config?: any): Promise<void> {
     console.log('🚀 Initializing subscription system...');
 
     try {
+      // Store config
+      this.config = config;
+
       // Connect to database
       await this.initializeDatabase();
 
@@ -27,6 +32,9 @@ export class SystemStartup {
 
       // Warm up cache
       await this.warmUpCache();
+
+      // Mark as initialized
+      this.initialized = true;
 
       console.log('✅ Subscription system initialized successfully');
     } catch (error) {
@@ -176,6 +184,10 @@ export class SystemStartup {
       const mongoose = await import('mongoose');
       await mongoose.connection.close();
 
+      // Mark as not initialized
+      this.initialized = false;
+      this.config = null;
+
       console.log('✅ Subscription system shut down gracefully');
     } catch (error) {
       console.error('❌ Error during shutdown:', error);
@@ -241,6 +253,24 @@ export class SystemStartup {
     }, 15 * 60 * 1000); // 15 minutes
 
     console.log('✅ Maintenance tasks set up');
+  }
+
+  /**
+   * Check if system is initialized
+   */
+  static isInitialized(): boolean {
+    return this.initialized;
+  }
+
+  /**
+   * Get initialization status and config
+   */
+  static getStatus(): any {
+    return {
+      initialized: this.initialized,
+      config: this.config,
+      timestamp: new Date()
+    };
   }
 
   /**

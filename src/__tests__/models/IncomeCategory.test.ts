@@ -1,4 +1,4 @@
-import { connectDB, disconnectDB } from '@/lib/database/mongoose-connection';
+import { connectDB, disconnectDB } from '@/lib/database/connection';
 import IncomeCategory, { IIncomeCategoryDocument } from '@/lib/database/models/IncomeCategory';
 
 describe('IncomeCategory Model', () => {

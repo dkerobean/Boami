@@ -4,14 +4,14 @@ import {
   clearProductivityData,
   SeedingOptions
 } from '@/lib/database/seeders/productivity-seeder';
-import { connectDB } from '@/lib/database/mongoose-connection';
+import { connectDB } from '@/lib/database/connection';
 import Note from '@/lib/database/models/Note';
 import CalendarEvent from '@/lib/database/models/CalendarEvent';
 import KanbanBoard from '@/lib/database/models/KanbanBoard';
 import KanbanTask from '@/lib/database/models/KanbanTask';
 
 // Mock the database connection
-jest.mock('@/lib/database/mongoose-connection');
+jest.mock('@/lib/database/connection');
 const mockConnectDB = connectDB as jest.MockedFunction<typeof connectDB>;
 
 // Mock the models

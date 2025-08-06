@@ -1,10 +1,10 @@
 import { SubscriptionService } from '@/lib/services/SubscriptionService';
-import { connectToDatabase } from '@/lib/database/mongoose-connection';
+import { connectToDatabase } from '@/lib/database/connection';
 import { User, Subscription, Plan, Transaction } from '@/lib/database/models';
 import mongoose from 'mongoose';
 
 // Mock the database connection
-jest.mock('@/lib/database/mongoose-connection');
+jest.mock('@/lib/database/connection');
 jest.mock('@/lib/database/models');
 
 describe('SubscriptionService', () => {

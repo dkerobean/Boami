@@ -1,5 +1,5 @@
 import * as XLSX from 'xlsx';
-import { connectToDatabase } from '@/lib/database/mongoose-connection';
+import { connectToDatabase } from '@/lib/database/connection';
 import Product from '@/lib/database/models/Product';
 import ProductVariant from '@/lib/database/models/ProductVariant';
 import Sale from '@/lib/database/models/Sale';

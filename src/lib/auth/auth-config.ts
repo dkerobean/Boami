@@ -559,5 +559,19 @@ export type {
   Environment,
 };
 
+// Export authOptions for NextAuth compatibility
+export const authOptions = {
+  providers: [],
+  callbacks: {},
+  pages: {
+    signIn: '/auth/auth1/login',
+    signUp: '/auth/auth1/register',
+    error: '/auth/auth1/error',
+  },
+  session: {
+    strategy: 'jwt' as const,
+  },
+};
+
 // Export default instance
 export default AuthConfigManager.getInstance();

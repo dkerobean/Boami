@@ -53,8 +53,8 @@ const Profile = () => {
   const { subscription, isSubscriptionActive } = useSubscription();
 
   // Check permissions for user management features
-  const { hasPermission: canManageUsers } = usePermission('users', 'read');
-  const { hasPermission: canManageRoles } = usePermission('roles', 'read');
+  const canManageUsers = usePermission('users', 'read');
+  const canManageRoles = usePermission('roles', 'read');
 
   const handleClick2 = (event: any) => {
     setAnchorEl2(event.currentTarget);
@@ -137,7 +137,7 @@ const Profile = () => {
         />
           <Box>
             <Typography variant="subtitle2" color="textPrimary" fontWeight={600}>
-              {user?.name || user?.firstName && user?.lastName ? `${user.firstName} ${user.lastName}` : 'Mathew Anderson'}
+              {user?.firstName && user?.lastName ? `${user.firstName} ${user.lastName}` : 'Mathew Anderson'}
             </Typography>
             <Typography variant="subtitle2" color="textSecondary">
               {user?.designation || 'Designer'}
@@ -209,14 +209,14 @@ const Profile = () => {
         ))}
 
         {/* User Management Section */}
-        {(canManageUsers.hasPermission || canManageRoles.hasPermission) && (
+        {(canManageUsers || canManageRoles) && (
           <>
             <Divider sx={{ my: 1 }} />
             <Typography variant="subtitle2" color="textSecondary" sx={{ px: 0, py: 1, fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
               Administration
             </Typography>
 
-            {canManageUsers.hasPermission && (
+            {canManageUsers && (
               <Box sx={{ py: 2, px: 0 }} className="hover-text-primary">
                 <Link href="/admin/user-management">
                   <Stack direction="row" spacing={2}>
@@ -259,7 +259,7 @@ const Profile = () => {
               </Box>
             )}
 
-            {canManageRoles.hasPermission && (
+            {canManageRoles && (
               <Box sx={{ py: 2, px: 0 }} className="hover-text-primary">
                 <Link href="/admin/role-management">
                   <Stack direction="row" spacing={2}>

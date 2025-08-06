@@ -1,13 +1,13 @@
 import { NextRequest } from 'next/server'
 import { GET, POST } from '@/app/api/finance/income/route'
-import { connectToDatabase } from '@/lib/database/mongoose-connection'
+import { connectToDatabase } from '@/lib/database/connection'
 import { Income } from '@/lib/database/models/Income'
 import { IncomeCategory } from '@/lib/database/models/IncomeCategory'
 import { User } from '@/lib/database/models/User'
 import jwt from 'jsonwebtoken'
 
 // Mock the database connection
-jest.mock('@/lib/database/mongoose-connection')
+jest.mock('@/lib/database/connection')
 
 describe('/api/finance/income', () => {
   let mockUser: any

@@ -4,7 +4,7 @@ import { join } from 'path';
 import { existsSync } from 'fs';
 import { JWTManager } from '@/lib/auth/jwt';
 import User from '@/lib/database/models/User';
-import { connectToDatabase } from '@/lib/database/mongoose-connection';
+import { connectToDatabase } from '@/lib/database/connection';
 
 /**
  * POST /api/user/profile-image - Upload user profile image

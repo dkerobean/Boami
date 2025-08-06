@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import * as yup from 'yup';
 import { JWTManager } from '@/lib/auth/jwt';
-import { connectToDatabase } from '@/lib/database/mongoose-connection';
+import { connectToDatabase } from '@/lib/database/connection';
 import Invoice from '@/lib/database/models/Invoice';
 import mongoose from 'mongoose';
 

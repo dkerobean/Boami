@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { connectDB } from '@/lib/database/mongoose-connection';
+import { connectDB } from '@/lib/database/connection';
 import { authenticateRequest } from '@/lib/auth/api-auth';
 import { FinanceImportService } from '@/lib/services/financeImportService';
 

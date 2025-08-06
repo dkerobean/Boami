@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { testRealNotifications } from '@/lib/notifications/test-real-notifications';
-import { connectToDatabase } from '@/lib/database/mongoose-connection';
+import { connectToDatabase } from '@/lib/database/connection';
 
 export async function GET(request: NextRequest) {
   try {

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { connectDB } from '@/lib/database/mongoose-connection';
+import { connectDB } from '@/lib/database/connection';
 import { RecurringPaymentProcessor } from '@/lib/services/RecurringPaymentProcessor';
 import { verifyJWT } from '@/lib/auth/jwt';
 

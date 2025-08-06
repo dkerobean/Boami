@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import Product from '@/lib/database/models/Product';
-import { connectToDatabase } from '@/lib/database/mongoose-connection';
+import { connectToDatabase } from '@/lib/database/connection';
 
 // Import job data schema
 const importDataSchema = z.object({
@@ -134,7 +134,7 @@ export async function POST(request: NextRequest) {
       options: body.options 
     });
     
-    const { data, fieldMapping, options = {} } = importDataSchema.parse(body);
+    const { data, fieldMapping, options } = importDataSchema.parse(body);
     
     // Debug: Check if fieldMapping is empty
     if (Object.keys(fieldMapping).length === 0) {
@@ -194,13 +194,13 @@ export async function POST(request: NextRequest) {
           existingProduct = await Product.findBySku(productData.sku);
         }
         
-        if (existingProduct && options.updateExisting) {
+        if (existingProduct && options?.updateExisting) {
           // Update existing product
           console.log(`Updating existing product: ${existingProduct._id}`);
           Object.assign(existingProduct, productData);
           await existingProduct.save();
           results.updated++;
-        } else if (existingProduct && !options.updateExisting) {
+        } else if (existingProduct && !options?.updateExisting) {
           // Skip existing product
           console.log(`Skipping existing product: ${existingProduct._id}`);
           results.skipped++;

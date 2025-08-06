@@ -5,7 +5,7 @@
  * Comprehensive tests to verify system is ready for production deployment
  */
 
-import { connectToDatabase } from '@/lib/database/mongoose-connection';
+import { connectToDatabase } from '@/lib/database/connection';
 import { User } from '@/lib/database/models/User';
 import { Plan } from '@/lib/database/models/Plan';
 import { Subscription } from '@/lib/database/models/Subscription';

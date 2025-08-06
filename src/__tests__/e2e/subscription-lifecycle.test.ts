@@ -1,4 +1,4 @@
-import { connectToDatabase } from '@/lib/database/mongoose-connection';
+import { connectToDatabase } from '@/lib/database/connection';
 import { User, Plan, Subscription, Transaction } from '@/lib/database/models';
 import { SubscriptionService } from '@/lib/services/SubscriptionService';
 import { PaymentService } from '@/lib/services/PaymentService';

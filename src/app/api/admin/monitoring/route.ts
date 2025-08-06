@@ -158,7 +158,7 @@ async function verifyAdminAuth(request: NextRequest): Promise<{
     }
 
     // Check if user is admin
-    const user = await User.findById(decoded.userId);
+    const user = await User.findById(decoded.userId).populate('role');
 
     if (!user) {
       return {
@@ -168,7 +168,7 @@ async function verifyAdminAuth(request: NextRequest): Promise<{
       };
     }
 
-    if (user.role !== 'admin') {
+    if ((user.role as any)?.name !== 'admin') {
       return {
         success: false,
         error: 'Admin access required',
@@ -178,7 +178,7 @@ async function verifyAdminAuth(request: NextRequest): Promise<{
 
     return {
       success: true,
-      userId: user._id.toString()
+      userId: (user._id as any).toString()
     };
 
   } catch (error) {

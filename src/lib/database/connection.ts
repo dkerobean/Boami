@@ -41,3 +41,6 @@ export async function connectDB() {
 
   return cached.conn;
 }
+
+// Export alias for compatibility
+export const connectToDatabase = connectDB;

@@ -1,7 +1,7 @@
 import { FlutterwaveService } from '@/lib/services/FlutterwaveService';
 import { PaymentService } from '@/lib/services/PaymentService';
 import { SubscriptionService } from '@/lib/services/SubscriptionService';
-import { connectToDatabase } from '@/lib/database/mongoose-connection';
+import { connectToDatabase } from '@/lib/database/connection';
 import { User, Plan, Subscription, Transaction } from '@/lib/database/models';
 import mongoose from 'mongoose';
 

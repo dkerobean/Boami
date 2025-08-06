@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { connectDB } from '@/lib/database/mongoose-connection';
+import { connectDB } from '@/lib/database/connection';
 import KanbanBoard from '@/lib/database/models/KanbanBoard';
 import KanbanTask from '@/lib/database/models/KanbanTask';
 import { authenticateApiRequest, createApiResponse } from '@/lib/auth/nextauth-middleware';

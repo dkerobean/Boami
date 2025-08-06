@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { preferenceManager } from '@/lib/notifications/preference-manager';
-import { connectToDatabase } from '@/lib/database/mongoose-connection';
+import { connectToDatabase } from '@/lib/database/connection';
 
 export async function GET(request: NextRequest) {
   try {

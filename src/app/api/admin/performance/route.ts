@@ -41,7 +41,7 @@ export async function GET(request: NextRequest) {
 
       case 'health':
         result = await getHealthMetrics();
-        bk;
+        break;
 
       case 'overview':
       default:
@@ -175,7 +175,7 @@ async function getDatabaseMetrics(): Promise<any> {
   } catch (error) {
     console.error('Error getting database metrics:', error);
     return {
-      error: error.message,
+      error: (error as Error).message,
       timestamp: new Date()
     };
   }
@@ -203,7 +203,7 @@ async function getCacheMetrics(): Promise<any> {
   } catch (error) {
     console.error('Error getting cache metrics:', error);
     return {
-      error: error.message,
+      error: (error as Error).message,
       timestamp: new Date()
     };
   }
@@ -251,7 +251,7 @@ async function getQueryMetrics(): Promise<any> {
             name: q.name,
             collection: q.collection,
             query: q.query,
-            error: error.message
+            error: (error as Error).message
           };
         }
       })
@@ -264,7 +264,7 @@ async function getQueryMetrics(): Promise<any> {
   } catch (error) {
     console.error('Error getting query metrics:', error);
     return {
-      error: error.message,
+      error: (error as Error).message,
       timestamp: new Date()
     };
   }
@@ -320,7 +320,7 @@ async function getHealthMetrics(): Promise<any> {
     return {
       overall: {
         healthy: false,
-        error: error.message
+        error: (error as Error).message
       },
       timestamp: new Date()
     };
@@ -342,7 +342,7 @@ async function testSubscriptionService(): Promise<any> {
   } catch (error) {
     return {
       success: false,
-      error: error.message
+      error: (error as Error).message
     };
   }
 }
@@ -379,7 +379,7 @@ async function verifyAdminAuth(request: NextRequest): Promise<{
     }
 
     // Check if user is admin
-    const user = await User.findById(decoded.userId);
+    const user = await User.findById(decoded.userId).populate('role');
 
     if (!user) {
       return {
@@ -389,7 +389,7 @@ async function verifyAdminAuth(request: NextRequest): Promise<{
       };
     }
 
-    if (user.role !== 'admin') {
+    if ((user.role as any)?.name !== 'admin') {
       return {
         success: false,
         error: 'Admin access required',
@@ -399,7 +399,7 @@ async function verifyAdminAuth(request: NextRequest): Promise<{
 
     return {
       success: true,
-      userId: user._id.toString()
+      userId: (user._id as any).toString()
     };
 
   } catch (error) {

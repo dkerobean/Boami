@@ -43,7 +43,7 @@ const EcomProductList = () => {
     }
 
     if (searchValue.trim()) {
-      const filtered = getProducts.filter((product) => {
+      const filtered = getProducts.filter((product: any) => {
         const title = product.title || '';
         const description = product.description || '';
         const category = Array.isArray(product.category) 

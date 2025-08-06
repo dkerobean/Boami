@@ -1,4 +1,4 @@
-import { connectDB } from '@/lib/database/mongoose-connection';
+import { connectDB } from '@/lib/database/connection';
 import RecurringPayment from '@/lib/database/models/RecurringPayment';
 import Income from '@/lib/database/models/Income';
 import Expense from '@/lib/database/models/Expense';

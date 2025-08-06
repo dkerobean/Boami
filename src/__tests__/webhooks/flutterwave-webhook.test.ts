@@ -1,11 +1,11 @@
 import { NextRequest } from 'next/server';
 import { POST as flutterwaveWebhookHandler } from '@/app/api/webhooks/flutterwave/route';
-import { connectToDatabase } from '@/lib/database/mongoose-connection';
+import { connectToDatabase } from '@/lib/database/connection';
 import { User, Subscription, Plan, Transaction } from '@/lib/database/models';
 import mongoose from 'mongoose';
 
 // Mock database connection
-jest.mock('@/lib/database/mongoose-connection');
+jest.mock('@/lib/database/connection');
 
 describe('Flutterwave Webhook Handler', () => {
   let testUser: any;

@@ -3,7 +3,7 @@
  * Provides productivity-specific database utilities using MCP patterns
  */
 
-import { connectToDatabase } from '@/lib/database/mongoose-connection';
+import { connectToDatabase } from '@/lib/database/connection';
 import Note from '@/lib/database/models/Note';
 import CalendarEvent from '@/lib/database/models/CalendarEvent';
 import KanbanBoard from '@/lib/database/models/KanbanBoard';
