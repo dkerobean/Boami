@@ -1,4 +1,4 @@
-import { connectToDatabase } from '../database/mongoose-connection';
+import { connectToDatabase } from '../database/connection';
 import mongoose from 'mongoose';
 
 /**
@@ -467,6 +467,55 @@ export class SubscriptionLogger {
       console.error('Failed to get audit stats:', error);
       throw error;
     }
+  }
+
+  /**
+   * Logger-like warn method
+   * Logs as security activity with warning severity
+   */
+  static async warn(message: string, details?: any, options: {
+    userId?: string;
+    ipAddress?: string;
+    userAgent?: string;
+  } = {}) {
+    await this.logSecurityActivity(message, details, {
+      ...options,
+      severity: 'warning'
+    });
+  }
+
+  /**
+   * Logger-like info method
+   * Logs as subscription activity with info severity
+   */
+  static async info(message: string, details?: any, options: {
+    userId?: string;
+    subscriptionId?: string;
+    transactionId?: string;
+    ipAddress?: string;
+    userAgent?: string;
+  } = {}) {
+    await this.logSubscriptionActivity(message, details, {
+      ...options,
+      severity: 'info'
+    });
+  }
+
+  /**
+   * Logger-like error method
+   * Logs as subscription activity with error severity
+   */
+  static async error(message: string, details?: any, options: {
+    userId?: string;
+    subscriptionId?: string;
+    transactionId?: string;
+    ipAddress?: string;
+    userAgent?: string;
+  } = {}) {
+    await this.logSubscriptionActivity(message, details, {
+      ...options,
+      severity: 'error'
+    });
   }
 }
 

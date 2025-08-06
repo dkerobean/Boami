@@ -75,7 +75,7 @@ describe('UserInvitationService', () => {
 
   describe('inviteUser', () => {
     it('should successfully create and send invitation', async () => {
-      const result = await invitationService.inviteUser(
+      const result = await UserInvitationService.inviteUser(
         'newuser@example.com',
         testRole._id.toString(),
         testUser._id.toString(),
@@ -109,7 +109,7 @@ describe('UserInvitationService', () => {
         isEmailVerified: true
       });
 
-      const result = await invitationService.inviteUser(
+      const result = await UserInvitationService.inviteUser(
         'existing@example.com',
         testRole._id.toString(),
         testUser._id.toString()
@@ -122,7 +122,7 @@ describe('UserInvitationService', () => {
     it('should fail if role does not exist', async () => {
       const fakeRoleId = new mongoose.Types.ObjectId().toString();
 
-      const result = await invitationService.inviteUser(
+      const result = await UserInvitationService.inviteUser(
         'newuser@example.com',
         fakeRoleId,
         testUser._id.toString()
@@ -135,7 +135,7 @@ describe('UserInvitationService', () => {
     it('should fail if inviter does not exist', async () => {
       const fakeInviterId = new mongoose.Types.ObjectId().toString();
 
-      const result = await invitationService.inviteUser(
+      const result = await UserInvitationService.inviteUser(
         'newuser@example.com',
         testRole._id.toString(),
         fakeInviterId
@@ -148,7 +148,7 @@ describe('UserInvitationService', () => {
     it('should fail if inviter is not active', async () => {
       await User.findByIdAndUpdate(testUser._id, { isActive: false });
 
-      const result = await invitationService.inviteUser(
+      const result = await UserInvitationService.inviteUser(
         'newuser@example.com',
         testRole._id.toString(),
         testUser._id.toString()
@@ -159,13 +159,13 @@ describe('UserInvitationService', () => {
     });
 
     it('should generate unique tokens for different invitations', async () => {
-      const result1 = await invitationService.inviteUser(
+      const result1 = await UserInvitationService.inviteUser(
         'user1@example.com',
         testRole._id.toString(),
         testUser._id.toString()
       );
 
-      const result2 = await invitationService.inviteUser(
+      const result2 = await UserInvitationService.inviteUser(
         'user2@example.com',
         testRole._id.toString(),
         testUser._id.toString()
@@ -179,7 +179,7 @@ describe('UserInvitationService', () => {
     it('should set expiration date 48 hours from now', async () => {
       const beforeInvite = new Date();
 
-      const result = await invitationService.inviteUser(
+      const result = await UserInvitationService.inviteUser(
         'newuser@example.com',
         testRole._id.toString(),
         testUser._id.toString()
@@ -465,7 +465,7 @@ describe('UserInvitationService', () => {
         testInvitation.token
       );
 
-      expect(invitation.role.name).toBe('Test Role');
+      expect((invitation.role as any)?.name).toBe('Test Role');
       expect(invitation.invitedBy.email).toBe('inviter@example.com');
     });
   });
@@ -475,7 +475,7 @@ describe('UserInvitationService', () => {
       // Close database connection to simulate error
       await mongoose.connection.close();
 
-      const result = await invitationService.inviteUser(
+      const result = await UserInvitationService.inviteUser(
         'test@example.com',
         testRole._id.toString(),
         testUser._id.toString()
@@ -493,7 +493,7 @@ describe('UserInvitationService', () => {
       const { EmailService } = require('@/lib/services/email.service');
       EmailService.sendInvitationEmail.mockRejectedValueOnce(new Error('Email service down'));
 
-      const result = await invitationService.inviteUser(
+      const result = await UserInvitationService.inviteUser(
         'test@example.com',
         testRole._id.toString(),
         testUser._id.toString()
@@ -513,7 +513,7 @@ describe('UserInvitationService', () => {
 
       // Generate multiple invitations and check token uniqueness
       for (let i = 0; i < 100; i++) {
-        const result = await invitationService.inviteUser(
+        const result = await UserInvitationService.inviteUser(
           `user${i}@example.com`,
           testRole._id.toString(),
           testUser._id.toString()

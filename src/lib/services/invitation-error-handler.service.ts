@@ -241,7 +241,7 @@ export class InvitationErrorHandler {
 
       // Create new invitation
       const invitationService = new UserInvitationService();
-      const newInvitation = await invitationService.inviteUser(
+      const newInvitation = await UserInvitationService.inviteUser(
         invitation.email,
         invitation.role._id.toString(),
         invitation.invitedBy._id.toString(),

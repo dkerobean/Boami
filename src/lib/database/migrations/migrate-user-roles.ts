@@ -46,7 +46,7 @@ export async function migrateUserRoles() {
           role: newRoleId,
           status: user.isActive ? 'active' : 'disabled',
           // Set default values for new fields if they don't exist
-          ...(user.invitedBy === undefined && { invitedBy: null }),
+          ...(user.invitedBy === undefined && { invitedBy: undefined }),
           ...(user.invitedAt === undefined && { invitedAt: null })
         });
 

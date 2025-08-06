@@ -144,7 +144,7 @@ export function handleProductivityError(error: any, requestId?: string): NextRes
   }
 
   // Handle MongoDB duplicate key errors
-  if (error.code === 11000) {
+  if ((error as any)?.code === 11000) {
     const field = Object.keys(error.keyPattern || {})[0] || 'field';
     return createErrorResponse(
       ProductivityErrorCode.RESOURCE_CONFLICT,

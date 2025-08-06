@@ -40,8 +40,8 @@ export class EmailService {
       const emailHtml = renderInvitationEmail({
         inviteeEmail: invitation.email,
         inviterName: `${invitation.invitedBy.firstName} ${invitation.invitedBy.lastName}`,
-        roleName: invitation.role.name,
-        roleDescription: invitation.role.description,
+        roleName: (invitation.role as any)?.name,
+        roleDescription: (invitation.role as any)?.description,
         invitationUrl,
         expiresAt: invitation.expiresAt,
         customMessage,

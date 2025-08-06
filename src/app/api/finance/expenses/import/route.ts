@@ -255,7 +255,7 @@ export async function PUT(request: NextRequest) {
     });
 
     // Get sample data for preview
-    const sampleData = data.slice(0, 10).map((row, index) => {
+    const sampleData = data.slice(0, 10).map((row: any, index: number) => {
       const processed: any = {
         rowNumber: index + 2,
         originalData: row

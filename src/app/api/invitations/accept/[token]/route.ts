@@ -111,7 +111,7 @@ export async function POST(
     });
 
     // Log the successful account creation
-    console.log(`User account created successfully for ${invitation.email} with role ${invitation.role.name}`);
+    console.log(`User account created successfully for ${invitation.email} with role ${(invitation.role as any)?.name}`);
 
     return NextResponse.json({
       message: 'Account created successfully',
@@ -121,8 +121,8 @@ export async function POST(
         name: newUser.name,
         role: {
           id: invitation.role._id,
-          name: invitation.role.name,
-          description: invitation.role.description
+          name: (invitation.role as any)?.name,
+          description: (invitation.role as any)?.description
         },
         status: newUser.status
       }
@@ -132,7 +132,7 @@ export async function POST(
     console.error('Error accepting invitation:', error);
 
     // Handle specific MongoDB errors
-    if (error.code === 11000) {
+    if ((error as any)?.code === 11000) {
       return NextResponse.json(
         { error: 'A user with this email address already exists' },
         { status: 409 }

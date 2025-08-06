@@ -77,7 +77,7 @@ export async function GET(
     // Find invoice and ensure it belongs to the current user
     const invoice = await Invoice.findOne({ 
       _id: id, 
-      userId: currentUser.id 
+      userId: (currentUser as any)?.id 
     }).lean();
 
     if (!invoice) {
@@ -136,7 +136,7 @@ export async function PUT(
 
     // Find and update invoice, ensuring it belongs to the current user
     const invoice = await Invoice.findOneAndUpdate(
-      { _id: id, userId: currentUser.id },
+      { _id: id, userId: (currentUser as any)?.id },
       { 
         ...validatedData,
         updatedBy: currentUser.email
@@ -208,7 +208,7 @@ export async function DELETE(
     // Find and delete invoice, ensuring it belongs to the current user
     const invoice = await Invoice.findOneAndDelete({ 
       _id: id, 
-      userId: currentUser.id 
+      userId: (currentUser as any)?.id 
     });
 
     if (!invoice) {

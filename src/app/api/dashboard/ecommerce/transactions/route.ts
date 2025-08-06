@@ -12,7 +12,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json(response, { status });
     }
 
-    const userId = authResult.user.id || authResult.user.userId;
+    const userId = authResult.user.id;
 
     // Get recent transactions
     const transactions = await EcommerceDashboardService.getRecentTransactions(userId);

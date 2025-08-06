@@ -112,13 +112,17 @@ export async function GET(request: NextRequest) {
 
     // Get category breakdowns
     const incomeByCategory = currentIncomes.reduce((acc, income) => {
-      const categoryName = income.categoryId?.name || 'Uncategorized';
+      const categoryName = (income.categoryId && typeof income.categoryId === 'object' && 'name' in income.categoryId) 
+        ? (income.categoryId as any).name 
+        : 'Uncategorized';
       acc[categoryName] = (acc[categoryName] || 0) + income.amount;
       return acc;
     }, {} as Record<string, number>);
 
     const expensesByCategory = currentExpenses.reduce((acc, expense) => {
-      const categoryName = expense.categoryId?.name || 'Uncategorized';
+      const categoryName = (expense.categoryId && typeof expense.categoryId === 'object' && 'name' in expense.categoryId) 
+        ? (expense.categoryId as any).name 
+        : 'Uncategorized';
       acc[categoryName] = (acc[categoryName] || 0) + expense.amount;
       return acc;
     }, {} as Record<string, number>);
@@ -144,7 +148,9 @@ export async function GET(request: NextRequest) {
         description: income.description,
         amount: income.amount,
         date: income.date.toISOString(),
-        category: income.categoryId?.name || 'Uncategorized'
+        category: (income.categoryId && typeof income.categoryId === 'object' && 'name' in income.categoryId) 
+          ? (income.categoryId as any).name 
+          : 'Uncategorized'
       })),
       ...currentExpenses.map(expense => ({
         id: expense._id.toString(),
@@ -152,12 +158,14 @@ export async function GET(request: NextRequest) {
         description: expense.description,
         amount: expense.amount,
         date: expense.date.toISOString(),
-        category: expense.categoryId?.name || 'Uncategorized'
+        category: (expense.categoryId && typeof expense.categoryId === 'object' && 'name' in expense.categoryId) 
+          ? (expense.categoryId as any).name 
+          : 'Uncategorized'
       })),
       ...currentSales.map(sale => ({
         id: sale._id.toString(),
         type: 'sale' as const,
-        description: `Sale: ${sale.productId?.title || 'Product'} (${sale.quantity}x)`,
+        description: `Sale: ${(sale.productId && typeof sale.productId === 'object' && 'title' in sale.productId) ? (sale.productId as any).title : 'Product'} (${sale.quantity}x)`,
         amount: sale.totalAmount,
         date: sale.date.toISOString(),
         category: 'Product Sales'
@@ -175,7 +183,7 @@ export async function GET(request: NextRequest) {
       id: payment._id.toString(),
       description: payment.description,
       amount: payment.amount,
-      dueDate: payment.nextPaymentDate.toISOString(),
+      dueDate: (payment as any).nextPaymentDate?.toISOString() || new Date().toISOString(),
       type: payment.type
     }));
 

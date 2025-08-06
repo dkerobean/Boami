@@ -17,7 +17,7 @@ export async function GET(request: NextRequest) {
     console.log('✅ User authenticated:', authResult.user.email);
 
     // Get dashboard statistics
-    const stats = await EcommerceDashboardService.getDashboardStats(authResult.user.id || authResult.user.userId);
+    const stats = await EcommerceDashboardService.getDashboardStats(authResult.user.id);
 
     return NextResponse.json({
       success: true,

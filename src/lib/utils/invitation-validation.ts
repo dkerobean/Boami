@@ -289,8 +289,8 @@ export class InvitationValidator {
       email: invitation.email,
       role: {
         id: invitation.role._id,
-        name: invitation.role.name,
-        description: invitation.role.description,
+        name: (invitation.role as any)?.name,
+        description: (invitation.role as any)?.description,
         isSystem: invitation.role.isSystem
       },
       invitedBy: {

@@ -78,7 +78,7 @@ export async function POST(
     };
 
     InvitationErrorHandler.logInvitationError(invitationError, {
-      invitedBy: session?.user?.id,
+      invitedBy: undefined,
       operation: 'renew_invitation'
     });
 

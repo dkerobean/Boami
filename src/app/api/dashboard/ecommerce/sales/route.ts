@@ -12,7 +12,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json(response, { status });
     }
 
-    const userId = authResult.user.id || authResult.user.userId;
+    const userId = authResult.user.id;
 
     // Get sales data
     const salesData = await EcommerceDashboardService.getSalesData(userId);

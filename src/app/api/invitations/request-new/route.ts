@@ -57,7 +57,7 @@ export async function POST(request: NextRequest) {
     const invitationService = new UserInvitationService();
 
     try {
-      await invitationService.inviteUser(
+      await UserInvitationService.inviteUser(
         body.email,
         existingInvitation.role._id.toString(),
         existingInvitation.invitedBy._id.toString(),
