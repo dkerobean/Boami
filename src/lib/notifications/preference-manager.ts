@@ -70,7 +70,7 @@ export class PreferenceManager {
 
     booleanFields.forEach(field => {
       if (updates[field] !== undefined) {
-        validated[field] = Boolean(updates[field]);
+        (validated as any)[field] = Boolean(updates[field]);
       }
     });
 
@@ -213,21 +213,21 @@ export class PreferenceManager {
       for (const user of users) {
         try {
           // Check if preferences already exist
-          const existingPrefs = await notificationDb.getEmailPreferences(user._id.toString());
+          const existingPrefs = await notificationDb.getEmailPreferences((user._id as any).toString());
 
           if (!existingPrefs) {
             // Create default preferences
-            await this.createDefaultPreferences(user._id.toString());
+            await this.createDefaultPreferences((user._id as any).toString());
             result.migrated++;
             result.details.push({
-              userId: user._id.toString(),
+              userId: (user._id as any).toString(),
               success: true
             });
           }
         } catch (error) {
           result.errors++;
           result.details.push({
-            userId: user._id.toString(),
+            userId: (user._id as any).toString(),
             success: false,
             error: error instanceof Error ? error.message : 'Unknown error'
           });
@@ -263,9 +263,9 @@ export class PreferenceManager {
       }
 
       // Get current preferences
-      let preferences = await this.getUserPreferences(user._id.toString());
+      let preferences = await this.getUserPreferences((user._id as any).toString());
       if (!preferences) {
-        preferences = await this.createDefaultPreferences(user._id.toString());
+        preferences = await this.createDefaultPreferences((user._id as any).toString());
       }
 
       // Update preferences based on unsubscribe type
@@ -313,7 +313,7 @@ export class PreferenceManager {
         // Keep security alerts enabled for safety
       }
 
-      const updatedPreferences = await this.updateUserPreferences(user._id.toString(), updates);
+      const updatedPreferences = await this.updateUserPreferences((user._id as any).toString(), updates);
 
       return {
         success: true,

@@ -31,7 +31,7 @@ export interface IImportJob extends Document {
   createdAt: Date;
   completedAt?: Date;
   userId: string;
-  
+
   // Additional metadata
   originalFileName?: string;
   mapping?: Record<string, string>;
@@ -44,145 +44,155 @@ export interface IImportJob extends Document {
   };
 }
 
+export interface IImportJobModel extends mongoose.Model<IImportJob> {
+  findUserJobs(userId: string, limit?: number): Promise<IImportJob[]>;
+  findActiveJobs(userId?: string): Promise<IImportJob[]>;
+  findByJobId(jobId: string): Promise<IImportJob | null>;
+  updateProgress(jobId: string, progress: any): Promise<IImportJob | null>;
+  markCompleted(jobId: string, results: any): Promise<IImportJob | null>;
+  markFailed(jobId: string, error: string): Promise<IImportJob | null>;
+  cleanupOldJobs(olderThanDays?: number): Promise<number>;
+}
+
 const ImportJobSchema = new Schema<IImportJob>({
-  jobId: { 
-    type: String, 
-    required: true, 
+  jobId: {
+    type: String,
+    required: true,
     unique: true
   },
-  status: { 
-    type: String, 
+  status: {
+    type: String,
     required: true,
     enum: ['pending', 'processing', 'completed', 'failed'],
     default: 'pending'
   },
-  type: { 
-    type: String, 
+  type: {
+    type: String,
     required: true,
-    enum: ['income', 'expense'] 
+    enum: ['income', 'expense']
   },
-  totalRows: { 
-    type: Number, 
+  totalRows: {
+    type: Number,
     required: true,
-    min: 0 
+    min: 0
   },
-  processedRows: { 
-    type: Number, 
+  processedRows: {
+    type: Number,
     default: 0,
-    min: 0 
+    min: 0
   },
-  successfulRows: { 
-    type: Number, 
+  successfulRows: {
+    type: Number,
     default: 0,
-    min: 0 
+    min: 0
   },
-  failedRows: { 
-    type: Number, 
+  failedRows: {
+    type: Number,
     default: 0,
-    min: 0 
+    min: 0
   },
   progress: {
-    percentage: { 
-      type: Number, 
+    percentage: {
+      type: Number,
       default: 0,
       min: 0,
-      max: 100 
+      max: 100
     },
-    estimatedTimeRemaining: { 
+    estimatedTimeRemaining: {
       type: Number,
-      min: 0 
+      min: 0
     }
   },
   results: {
-    created: { 
-      type: Number, 
+    created: {
+      type: Number,
       default: 0,
-      min: 0 
+      min: 0
     },
-    updated: { 
-      type: Number, 
+    updated: {
+      type: Number,
       default: 0,
-      min: 0 
+      min: 0
     },
-    skipped: { 
-      type: Number, 
+    skipped: {
+      type: Number,
       default: 0,
-      min: 0 
+      min: 0
     },
-    failed: { 
-      type: Number, 
+    failed: {
+      type: Number,
       default: 0,
-      min: 0 
+      min: 0
     }
   },
   importErrors: [{
-    row: { 
-      type: Number, 
+    row: {
+      type: Number,
       required: true,
-      min: 1 
+      min: 1
     },
-    field: { 
-      type: String, 
-      required: true 
+    field: {
+      type: String,
+      required: true
     },
-    message: { 
-      type: String, 
-      required: true 
+    message: {
+      type: String,
+      required: true
     }
   }],
   warnings: [{
-    row: { 
-      type: Number, 
+    row: {
+      type: Number,
       required: true,
-      min: 1 
+      min: 1
     },
-    field: { 
-      type: String, 
-      required: true 
+    field: {
+      type: String,
+      required: true
     },
-    message: { 
-      type: String, 
-      required: true 
+    message: {
+      type: String,
+      required: true
     }
   }],
-  createdAt: { 
-    type: Date, 
+  createdAt: {
+    type: Date,
     default: Date.now
   },
-  completedAt: { 
-    type: Date 
+  completedAt: {
+    type: Date
   },
-  userId: { 
-    type: String, 
+  userId: {
+    type: String,
     required: true
   },
-  
+
   // Additional metadata
-  originalFileName: { 
-    type: String 
+  originalFileName: {
+    type: String
   },
   mapping: {
     type: Schema.Types.Mixed
   },
   options: {
-    updateExisting: { 
-      type: Boolean, 
-      default: false 
+    updateExisting: {
+      type: Boolean,
+      default: false
     },
-    createCategories: { 
-      type: Boolean, 
-      default: true 
+    createCategories: {
+      type: Boolean,
+      default: true
     },
-    createVendors: { 
-      type: Boolean, 
-      default: true 
+    createVendors: {
+      type: Boolean,
+      default: true
     },
-    skipInvalidRows: { 
-      type: Boolean, 
-      default: true 
+    skipInvalidRows: {
+      type: Boolean,
+      default: true
     },
-    dateFormat: { 
-      type: String 
+    dateFormat: {
+      type: String
     }
   }
 }, {
@@ -197,11 +207,11 @@ ImportJobSchema.index({ status: 1, createdAt: 1 }); // Cleanup old jobs
 
 // Auto-expire completed/failed jobs after 7 days
 ImportJobSchema.index(
-  { completedAt: 1 }, 
-  { 
+  { completedAt: 1 },
+  {
     expireAfterSeconds: 7 * 24 * 60 * 60, // 7 days
-    partialFilterExpression: { 
-      status: { $in: ['completed', 'failed'] } 
+    partialFilterExpression: {
+      status: { $in: ['completed', 'failed'] }
     }
   }
 );

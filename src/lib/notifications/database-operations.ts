@@ -221,6 +221,7 @@ export class NotificationDatabaseOperations {
     subject: string;
     sentAt: Date;
     resendId?: string;
+    errorMessage?: string;
     metadata?: any;
   }): Promise<INotificationLogDocument> {
     return await NotificationLog.create({
@@ -232,6 +233,7 @@ export class NotificationDatabaseOperations {
       subject: data.subject,
       sentAt: data.sentAt,
       resendId: data.resendId,
+      errorMessage: data.errorMessage,
       metadata: data.metadata
     });
   }

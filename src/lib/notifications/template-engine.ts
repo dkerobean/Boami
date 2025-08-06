@@ -40,7 +40,7 @@ export class TemplateEngine {
   /**
    * Render template by notification type
    */
-  async renderTemplateByType(type: NotificationType, variableVariables): Promise<RenderedTemplate> {
+  async renderTemplateByType(type: NotificationType, variables: any): Promise<RenderedTemplate> {
     const template = await notificationDb.getEmailTemplateByType(type);
     if (!template) {
       throw new Error(`Template not found for type: ${type}`);

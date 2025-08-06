@@ -296,17 +296,17 @@ export class NotificationService {
       const results: Array<{ success: boolean; error?: string }> = [];
 
       for (const result of bulkResult.results) {
-        const notification = notifications.find(n => n._id.toString() === result.id);
+        const notification = notifications.find(n => (n._id as any).toString() === result.id);
         if (!notification) continue;
 
         if (result.success) {
           // Update status to sent
-          await notificationDb.updateNotificationStatus(notification._id.toString(), 'sent');
+          await notificationDb.updateNotificationStatus((notification._id as any).toString(), 'sent');
 
           // Log successful delivery
           await notificationDb.createNotificationLog({
             userId: notification.userId,
-            notificationId: notification._id.toString(),
+            notificationId: (notification._id as any).toString(),
             type: notification.templateId as NotificationType,
             status: 'sent',
             email: notification.email,
@@ -341,7 +341,7 @@ export class NotificationService {
    */
   private async handleNotificationFailure(notification: IQueuedNotificationDocument, error: string): Promise<void> {
     // Increment attempts
-    const updated = await notificationDb.incrementNotificationAttempts(notification._id.toString());
+    const updated = await notificationDb.incrementNotificationAttempts((notification._id as any).toString());
     if (!updated) return;
 
     const config = NOTIFICATION_CONFIGS[notification.templateId as NotificationType];
@@ -349,7 +349,7 @@ export class NotificationService {
     if (updated.attempts >= updated.maxAttempts) {
       // Max attempts reached, mark as failed
       await notificationDb.updateNotificationStatus(
-        notification._id.toString(),
+        (notification._id as any).toString(),
         'failed',
         error
       );
@@ -357,7 +357,7 @@ export class NotificationService {
       // Log failure
       await notificationDb.createNotificationLog({
         userId: notification.userId,
-        notificationId: notification._id.toString(),
+        notificationId: (notification._id as any).toString(),
         type: notification.templateId as NotificationType,
         status: 'failed',
         email: notification.email,
@@ -370,7 +370,7 @@ export class NotificationService {
       const retryDelay = config.retryDelay * Math.pow(2, updated.attempts - 1); // Exponential backoff
       const retryTime = new Date(Date.now() + retryDelay);
 
-      await notificationDb.updateQueuedNotification(notification._id.toString(), {
+      await notificationDb.updateQueuedNotification((notification._id as any).toString(), {
         status: 'pending',
         scheduledFor: retryTime,
         errorMessage: error

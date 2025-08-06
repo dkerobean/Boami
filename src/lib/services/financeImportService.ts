@@ -291,7 +291,7 @@ export class FinanceImportService {
         const value = row[csvColumn];
         return value && value.toString().trim() !== '';
       });
-      
+
       // Keep row if at least one mapped field has a value
       return mappedValues.some(hasValue => hasValue);
     });
@@ -309,7 +309,7 @@ export class FinanceImportService {
             row: rowNumber,
             field,
             message: `${field} is required`,
-            value: row[csvColumn]
+            value: csvColumn ? row[csvColumn] : undefined
           });
         }
       });
@@ -489,7 +489,7 @@ export class FinanceImportService {
         try {
           await ImportJob.findOneAndUpdate(
             { jobId },
-            { 
+            {
               status: 'failed',
               completedAt: new Date(),
               $push: {
@@ -528,33 +528,33 @@ export class FinanceImportService {
 
     const categoryCache = new Map<string, any>();
     const vendorCache = new Map<string, any>();
-    
+
     // Pre-cache all existing categories and vendors to avoid database queries during processing
     console.log(`🔄 [Import Performance] Pre-caching categories and vendors for user ${userId}`);
     const preCacheStartTime = Date.now();
-    
+
     const CategoryModel = type === 'income' ? IncomeCategory : ExpenseCategory;
     const existingCategories = await CategoryModel.find({ userId }).lean();
     existingCategories.forEach(category => {
       const cacheKey = `${type}_${category.name.toLowerCase()}`;
-      categoryCache.set(cacheKey, category._id.toString());
+      categoryCache.set(cacheKey, (category._id as any).toString());
     });
-    
+
     if (type === 'expense') {
       const existingVendors = await Vendor.find({ userId }).lean();
       existingVendors.forEach(vendor => {
-        vendorCache.set(vendor.name.toLowerCase(), vendor._id.toString());
+        vendorCache.set(vendor.name.toLowerCase(), (vendor._id as any).toString());
       });
       console.log(`📝 [Import Performance] Pre-cached ${existingVendors.length} vendors`);
     }
-    
+
     const preCacheTime = Date.now() - preCacheStartTime;
     console.log(`✅ [Import Performance] Pre-caching completed in ${preCacheTime}ms (${existingCategories.length} categories, ${vendorCache.size} vendors)`);
-    
+
     // Performance optimization: Process in batches
     const BATCH_SIZE = 100;
     const batches = [];
-    
+
     console.log(`🚀 [Import Performance] Starting batch processing for ${data.length} rows with batch size ${BATCH_SIZE}`);
     const startTime = Date.now();
 
@@ -564,38 +564,38 @@ export class FinanceImportService {
     }
 
     let processedCount = 0;
-    
+
     for (let batchIndex = 0; batchIndex < batches.length; batchIndex++) {
       const batch = batches[batchIndex];
       const batchStartTime = Date.now();
-      
+
       console.log(`📦 [Import Performance] Processing batch ${batchIndex + 1}/${batches.length} (${batch.length} rows)`);
 
       // Process batch concurrently
       const batchPromises = batch.map(async (row, indexInBatch) => {
         const rowNumber = processedCount + indexInBatch + 2; // +2 for header row
-        
+
         try {
           // Extract and validate data
           const recordData = await this.extractRecordData(row, mapping, type, userId, options, categoryCache, vendorCache);
-          
+
           return { success: true, recordData, rowNumber };
         } catch (error) {
-          return { 
-            success: false, 
+          return {
+            success: false,
             error: error instanceof Error ? error.message : 'Unknown error',
-            rowNumber 
+            rowNumber
           };
         }
       });
 
       // Wait for all rows in batch to be processed
       const batchResults = await Promise.all(batchPromises);
-      
+
       // Separate successful and failed records
       const successfulRecords = batchResults.filter(result => result.success).map(result => result.recordData);
       const failedRecords = batchResults.filter(result => !result.success);
-      
+
       // Bulk create successful records
       if (successfulRecords.length > 0) {
         try {
@@ -604,7 +604,7 @@ export class FinanceImportService {
           } else {
             await this.createExpenseRecordsBulk(successfulRecords, userId);
           }
-          
+
           job.successfulRows += successfulRecords.length;
           job.results.created += successfulRecords.length;
         } catch (error) {
@@ -631,7 +631,7 @@ export class FinanceImportService {
           }
         }
       }
-      
+
       // Handle failed records
       for (const failedRecord of failedRecords) {
         job.failedRows++;
@@ -649,14 +649,14 @@ export class FinanceImportService {
 
       processedCount += batch.length;
       job.processedRows = processedCount;
-      
+
       // Update job progress every 5 batches to reduce overhead
       if (batchIndex % 5 === 0 || batchIndex === batches.length - 1) {
         job.progress.percentage = Math.round((job.processedRows / job.totalRows) * 100);
         await job.save();
         console.log(`📊 [Progress Update] Batch ${batchIndex + 1}/${batches.length} - ${job.processedRows}/${job.totalRows} rows processed`);
       }
-      
+
       const batchTime = Date.now() - batchStartTime;
       console.log(`✅ [Import Performance] Batch ${batchIndex + 1} completed in ${batchTime}ms (${successfulRecords.length} success, ${failedRecords.length} failed)`);
     }
@@ -765,7 +765,7 @@ export class FinanceImportService {
     // If not in cache and createCategories is enabled, create new category
     if (options.createCategories) {
       const CategoryModel = type === 'income' ? IncomeCategory : ExpenseCategory;
-      
+
       const category = new CategoryModel({
         name: categoryName,
         description: `Auto-created during import`,
@@ -773,13 +773,13 @@ export class FinanceImportService {
         userId
       });
       await category.save();
-      
-      const categoryId = category._id.toString();
+
+      const categoryId = (category._id as any).toString();
       cache.set(cacheKey, categoryId);
-      
+
       const resolveTime = Date.now() - resolveStartTime;
       console.log(`📝 [Performance] Created new category "${categoryName}" in ${resolveTime}ms`);
-      
+
       return categoryId;
     }
 
@@ -798,7 +798,7 @@ export class FinanceImportService {
   ): Promise<string | null> {
     const resolveStartTime = Date.now();
     const cacheKey = vendorName.toLowerCase();
-    
+
     // Check pre-cached vendors first
     if (cache.has(cacheKey)) {
       return cache.get(cacheKey);
@@ -814,13 +814,13 @@ export class FinanceImportService {
         userId
       });
       await vendor.save();
-      
-      const vendorId = vendor._id.toString();
+
+      const vendorId = (vendor._id as any).toString();
       cache.set(cacheKey, vendorId);
-      
+
       const resolveTime = Date.now() - resolveStartTime;
       console.log(`📝 [Performance] Created new vendor "${vendorName}" in ${resolveTime}ms`);
-      
+
       return vendorId;
     }
 
@@ -849,19 +849,19 @@ export class FinanceImportService {
    */
   private static async createIncomeRecordsBulk(dataArray: any[], userId: string): Promise<void> {
     if (dataArray.length === 0) return;
-    
+
     console.log(`💾 [Bulk Operation] Creating ${dataArray.length} income records`);
     const startTime = Date.now();
-    
+
     try {
-      const result = await Income.insertMany(dataArray, { 
+      const result = await Income.insertMany(dataArray, {
         ordered: false, // Continue processing even if some documents fail
-        rawResult: true 
+        rawResult: true
       });
-      
+
       const bulkTime = Date.now() - startTime;
       console.log(`✅ [Bulk Operation] Income bulk insert completed in ${bulkTime}ms (${result.insertedCount} inserted)`);
-      
+
       // Handle partial failures in unordered bulk insert
       if (result.insertedCount < dataArray.length) {
         const failedCount = dataArray.length - result.insertedCount;
@@ -869,23 +869,23 @@ export class FinanceImportService {
       }
     } catch (error: any) {
       const bulkTime = Date.now() - startTime;
-      
+
       // Handle MongoDB bulk write errors
       if (error.name === 'BulkWriteError' && error.result) {
         const insertedCount = error.result.insertedCount || 0;
         const failedCount = dataArray.length - insertedCount;
-        
+
         console.warn(`⚠️ [Bulk Operation] Income bulk insert partially completed in ${bulkTime}ms (${insertedCount} inserted, ${failedCount} failed)`);
-        
+
         // Log specific errors if available
         if (error.writeErrors && error.writeErrors.length > 0) {
           console.error(`❌ [Bulk Operation] First few write errors:`, error.writeErrors.slice(0, 3));
         }
-        
+
         // Don't throw error for partial success in unordered operations
         return;
       }
-      
+
       console.error(`❌ [Bulk Operation] Income bulk insert failed after ${bulkTime}ms:`, error);
       throw error;
     }
@@ -896,19 +896,19 @@ export class FinanceImportService {
    */
   private static async createExpenseRecordsBulk(dataArray: any[], userId: string): Promise<void> {
     if (dataArray.length === 0) return;
-    
+
     console.log(`💾 [Bulk Operation] Creating ${dataArray.length} expense records`);
     const startTime = Date.now();
-    
+
     try {
-      const result = await Expense.insertMany(dataArray, { 
+      const result = await Expense.insertMany(dataArray, {
         ordered: false, // Continue processing even if some documents fail
-        rawResult: true 
+        rawResult: true
       });
-      
+
       const bulkTime = Date.now() - startTime;
       console.log(`✅ [Bulk Operation] Expense bulk insert completed in ${bulkTime}ms (${result.insertedCount} inserted)`);
-      
+
       // Handle partial failures in unordered bulk insert
       if (result.insertedCount < dataArray.length) {
         const failedCount = dataArray.length - result.insertedCount;
@@ -916,23 +916,23 @@ export class FinanceImportService {
       }
     } catch (error: any) {
       const bulkTime = Date.now() - startTime;
-      
+
       // Handle MongoDB bulk write errors
       if (error.name === 'BulkWriteError' && error.result) {
         const insertedCount = error.result.insertedCount || 0;
         const failedCount = dataArray.length - insertedCount;
-        
+
         console.warn(`⚠️ [Bulk Operation] Expense bulk insert partially completed in ${bulkTime}ms (${insertedCount} inserted, ${failedCount} failed)`);
-        
+
         // Log specific errors if available
         if (error.writeErrors && error.writeErrors.length > 0) {
           console.error(`❌ [Bulk Operation] First few write errors:`, error.writeErrors.slice(0, 3));
         }
-        
+
         // Don't throw error for partial success in unordered operations
         return;
       }
-      
+
       console.error(`❌ [Bulk Operation] Expense bulk insert failed after ${bulkTime}ms:`, error);
       throw error;
     }
@@ -977,16 +977,16 @@ export class FinanceImportService {
   static async cancelJob(jobId: string): Promise<boolean> {
     try {
       const result = await ImportJob.findOneAndUpdate(
-        { 
+        {
           jobId,
           status: { $in: ['pending', 'processing'] }
         },
-        { 
+        {
           status: 'failed',
           completedAt: new Date()
         }
       );
-      
+
       return result !== null;
     } catch (error) {
       console.error(`Failed to cancel import job ${jobId}:`, error);

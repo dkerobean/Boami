@@ -62,7 +62,7 @@ class ResendService {
         subject: emailData.subject,
         html: emailData.html,
         text: emailData.text,
-        replyTo: emailData.replyTo || EMAIL_CONFIG.REPLY_TO,
+        reply_to: emailData.replyTo || EMAIL_CONFIG.REPLY_TO,
         headers: {
           'X-Entity-Ref-ID': this.generateTrackingId(),
           ...emailData.headers

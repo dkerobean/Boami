@@ -66,6 +66,10 @@ export class EcommerceDashboardService {
       await connectDB();
       const db = mongoose.connection.db;
 
+      if (!db) {
+        throw new Error('Database connection not established');
+      }
+
       // Get current month data
       const currentMonth = new Date();
       currentMonth.setDate(1);
@@ -83,18 +87,18 @@ export class EcommerceDashboardService {
 
       // Revenue growth (current vs last month) from sales
       const currentMonthRevenue = await db.collection('sales').aggregate([
-        { 
-          $match: { 
+        {
+          $match: {
             userId,
             createdAt: { $gte: currentMonth },
             status: 'completed'
-          } 
+          }
         },
         { $group: { _id: null, total: { $sum: '$totalAmount' } } }
       ]).toArray();
 
       const lastMonthRevenue = await db.collection('sales').aggregate([
-        { 
+        {
           $match: {
             userId,
             createdAt: {
@@ -165,21 +169,21 @@ export class EcommerceDashboardService {
 
       // Calculate additional metrics
       const averageOrderValue = totalOrders > 0 ? totalRevenue / totalOrders : 0;
-      
+
       // Order status counts
       const pendingOrders = await db.collection('sales').countDocuments({ userId, status: 'pending' });
       const completedOrders = await db.collection('sales').countDocuments({ userId, status: 'completed' });
-      
+
       // Total expenses
       const totalExpensesResult = await db.collection('expenses').aggregate([
         { $match: { userId } },
         { $group: { _id: null, total: { $sum: '$amount' } } }
       ]).toArray();
       const totalExpenses = totalExpensesResult[0]?.total || 0;
-      
+
       // Net profit (revenue - expenses)
       const netProfit = totalRevenue - totalExpenses;
-      
+
       // Low stock products (stock <= lowStockThreshold or qty <= 5)
       const lowStockProducts = await db.collection('products').countDocuments({
         userId,
@@ -235,6 +239,10 @@ export class EcommerceDashboardService {
       await connectDB();
       const db = mongoose.connection.db;
 
+      if (!db) {
+        throw new Error('Database connection not established');
+      }
+
       // Get last 30 days
       const thirtyDaysAgo = new Date();
       thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
@@ -275,17 +283,17 @@ export class EcommerceDashboardService {
       const filledData: SalesData[] = [];
       const currentDate = new Date(thirtyDaysAgo);
       const endDate = new Date();
-      
+
       while (currentDate <= endDate) {
         const dateStr = currentDate.toISOString().split('T')[0];
         const existingData = salesData.find(d => d.date === dateStr);
-        
+
         filledData.push({
           date: dateStr,
           revenue: existingData?.revenue || 0,
           orders: existingData?.orders || 0
         });
-        
+
         currentDate.setDate(currentDate.getDate() + 1);
       }
 
@@ -303,6 +311,10 @@ export class EcommerceDashboardService {
     try {
       await connectDB();
       const db = mongoose.connection.db;
+
+      if (!db) {
+        throw new Error('Database connection not established');
+      }
 
       const products = await db.collection('products').aggregate([
         {
@@ -381,6 +393,10 @@ export class EcommerceDashboardService {
       await connectDB();
       const db = mongoose.connection.db;
 
+      if (!db) {
+        throw new Error('Database connection not established');
+      }
+
       // Get recent sales as transactions
       const transactions = await db.collection('sales').aggregate([
         {
@@ -434,6 +450,10 @@ export class EcommerceDashboardService {
     try {
       await connectDB();
       const db = mongoose.connection.db;
+
+      if (!db) {
+        throw new Error('Database connection not established');
+      }
 
       // Get payment method statistics from sales
       const paymentStats = await db.collection('sales').aggregate([

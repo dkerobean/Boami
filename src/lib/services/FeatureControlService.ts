@@ -122,6 +122,55 @@ export class FeatureControlService {
   }
 
   /**
+   * Get suggested plan for a feature
+   * @param feature - Feature name
+   * @param requiredLimit - Required limit (optional)
+   * @returns Promise<string | undefined> - Suggested plan name
+   */
+  private async getSuggestedPlanForFeature(feature: string, requiredLimit?: number): Promise<string | undefined> {
+    try {
+      const plans = await Plan.findActivePlans();
+
+      for (const plan of plans) {
+        const featureConfig = plan.features[feature];
+        if (featureConfig && featureConfig.enabled) {
+          if (!requiredLimit || !featureConfig.limit || featureConfig.limit > requiredLimit) {
+            return plan.name;
+          }
+        }
+      }
+
+      return undefined;
+
+    } catch (error) {
+      console.error('Get suggested plan error:', error);
+      return undefined;
+    }
+  }
+
+  /**
+   * Get current usage for a feature
+   * @param userId - User ID
+   * @param feature - Feature name
+   * @returns Promise<number> - Current usage
+   */
+  async getCurrentUsage(userId: string, feature: string): Promise<number> {
+    const cacheKey = `${userId}:${feature}`;
+    const usage = this.featureUsageCache.get(cacheKey);
+
+    if (!usage) {
+      return 0;
+    }
+
+    // Check if usage should be reset
+    if (usage.resetDate && new Date() > usage.resetDate) {
+      return 0;
+    }
+
+    return usage.currentUsage;
+  }
+
+  /**
    * Get all available features for a user's current plan
    * @param userId - User ID
    * @returns Promise<IFeatureConfig> - Available features
@@ -144,7 +193,8 @@ export class FeatureControlService {
       // Filter only enabled features
       const availableFeatures: IFeatureConfig = {};
 
-      Object.keys(plan.features).forEach(featureName      const feature = plan.features[featureName];
+      Object.keys(plan.features).forEach(featureName => {
+        const feature = plan.features[featureName];
         if (feature.enabled) {
           availableFeatures[featureName] = feature;
         }
@@ -237,27 +287,7 @@ export class FeatureControlService {
     }
   }
 
-  /**
-   * Get current usage for a feature
-   * @param userId - User ID
-   * @param feature - Feature name
-   * @returns Promise<number> - Current usage
-   */
-  async getCurrentUsage(userId: string, feature: string): Promise<number> {
-    const cacheKey = `${userId}:${feature}`;
-    const usage = this.featureUsageCache.get(cacheKey);
 
-    if (!usage) {
-      return 0;
-    }
-
-    // Check if usage should be reset
-    if (usage.resetDate && new Date() > usage.resetDate) {
-      return 0;
-    }
-
-    return usage.currentUsage;
-  }
 
   /**
    * Get usage statistics for a user
@@ -310,7 +340,7 @@ export class FeatureControlService {
         }
       } else {
         // Reset all features for user
-        for (const [key, usage] of this.featureUsageCache.entries()) {
+        for (const [key, usage] of Array.from(this.featureUsageCache.entries())) {
           if (usage.userId === userId) {
             usage.currentUsage = 0;
             usage.resetDate = this.getUsageResetDate();
@@ -325,32 +355,7 @@ export class FeatureControlService {
     }
   }
 
-  /**
-   * Get suggested plan for a feature
-   * @param feature - Feature name
-   * @param requiredLimit - Required limit (optional)
-   * @returns Promise<string | undefined> - Suggested plan name
-   */
-  private async getSuggestedPlanForFeature(feature: string, requiredLimit?: number): Promise<string | undefined> {
-    try {
-      const plans = await Plan.findActivePlans();
 
-      for (const plan of plans) {
-        const featureConfig = plan.features[feature];
-        if (featureConfig && featureConfig.enabled) {
-          if (!requiredLimit || !featureConfig.limit || featureConfig.limit > requiredLimit) {
-            return plan.name;
-          }
-        }
-      }
-
-      return undefined;
-
-    } catch (error) {
-      console.error('Get suggested plan error:', error);
-      return undefined;
-    }
-  }
 
   /**
    * Get usage reset date (next month)
@@ -454,7 +459,7 @@ export class FeatureControlService {
       const usageStats: Record<string, { totalUsers: number, averageUsage: number, topUsers: any[] }> = {};
 
       // Analyze cached usage data
-      for (const [key, usage] of this.featureUsageCache.entries()) {
+      for (const [key, usage] of Array.from(this.featureUsageCache.entries())) {
         const feature = usage.feature;
 
         if (!usageStats[feature]) {

@@ -14,10 +14,10 @@ import path from 'path';
  */
 function stripHtmlTags(html: string): string {
   if (!html || typeof html !== 'string') return '';
-  
+
   // Remove HTML tags
   const stripped = html.replace(/<[^>]*>/g, '');
-  
+
   // Decode common HTML entities
   const entities: Record<string, string> = {
     '&amp;': '&',
@@ -28,12 +28,12 @@ function stripHtmlTags(html: string): string {
     '&apos;': "'",
     '&nbsp;': ' ',
   };
-  
+
   let decoded = stripped;
   for (const [entity, replacement] of Object.entries(entities)) {
     decoded = decoded.replace(new RegExp(entity, 'g'), replacement);
   }
-  
+
   // Remove extra whitespace and trim
   return decoded.replace(/\s+/g, ' ').trim();
 }
@@ -98,18 +98,18 @@ export class ExportService {
 
   private async getProductData(filters: ExportFilters = {}) {
     await connectToDatabase();
-    
+
     const query: any = {};
-    
+
     // Apply filters
     if (filters.category) {
       query.category = { $in: [filters.category] };
     }
-    
+
     if (filters.status) {
       query.status = filters.status;
     }
-    
+
     if (filters.search) {
       query.$or = [
         { title: { $regex: filters.search, $options: 'i' } },
@@ -117,7 +117,7 @@ export class ExportService {
         { description: { $regex: filters.search, $options: 'i' } }
       ];
     }
-    
+
     if (filters.dateRange?.start || filters.dateRange?.end) {
       query.createdAt = {};
       if (filters.dateRange.start) {
@@ -129,7 +129,7 @@ export class ExportService {
     }
 
     const products = await Product.find(query).lean();
-    
+
     return products.map(product => ({
       id: product._id.toString(),
       title: stripHtmlTags(product.title || ''),
@@ -159,9 +159,9 @@ export class ExportService {
 
   private async getSalesData(filters: ExportFilters = {}) {
     await connectToDatabase();
-    
+
     const query: any = {};
-    
+
     if (filters.dateRange?.start || filters.dateRange?.end) {
       query.date = {};
       if (filters.dateRange.start) {
@@ -176,36 +176,36 @@ export class ExportService {
       .populate('productId', 'title sku category')
       .populate('userId', 'firstName lastName email')
       .lean();
-    
+
     return sales.map(sale => ({
       id: sale._id.toString(),
-      productTitle: stripHtmlTags(sale.productId?.title || 'Unknown Product'),
-      productSku: sale.productId?.sku || '',
-      productCategory: Array.isArray(sale.productId?.category) 
-        ? sale.productId.category.join(', ') 
-        : sale.productId?.category || '',
-      quantity: sale.quantity,
-      unitPrice: sale.unitPrice,
-      totalAmount: sale.totalAmount,
-      date: new Date(sale.date).toISOString(),
-      notes: stripHtmlTags(sale.notes || ''),
-      salesPerson: sale.userId 
-        ? `${sale.userId.firstName} ${sale.userId.lastName}` 
+      productTitle: stripHtmlTags((sale.productId as any)?.title || 'Unknown Product'),
+      productSku: (sale.productId as any)?.sku || '',
+      productCategory: Array.isArray((sale.productId as any)?.category)
+        ? (sale.productId as any).category.join(', ')
+        : (sale.productId as any)?.category || '',
+      quantity: (sale as any).quantity,
+      unitPrice: (sale as any).unitPrice,
+      totalAmount: (sale as any).totalAmount,
+      date: new Date((sale as any).date).toISOString(),
+      notes: stripHtmlTags((sale as any).notes || ''),
+      salesPerson: (sale.userId as any)
+        ? `${(sale.userId as any).firstName} ${(sale.userId as any).lastName}`
         : 'Unknown',
-      salesPersonEmail: sale.userId?.email || '',
-      createdAt: new Date(sale.createdAt).toISOString(),
+      salesPersonEmail: (sale.userId as any)?.email || '',
+      createdAt: new Date((sale as any).createdAt).toISOString(),
     }));
   }
 
   private async getExpensesData(filters: ExportFilters = {}) {
     await connectToDatabase();
-    
+
     const query: any = {};
-    
+
     if (filters.category) {
       query.category = filters.category;
     }
-    
+
     if (filters.dateRange?.start || filters.dateRange?.end) {
       query.date = {};
       if (filters.dateRange.start) {
@@ -219,28 +219,28 @@ export class ExportService {
     const expenses = await Expense.find(query)
       .populate('userId', 'firstName lastName email')
       .lean();
-    
+
     return expenses.map(expense => ({
       id: expense._id.toString(),
-      title: stripHtmlTags(expense.title || ''),
-      amount: expense.amount,
-      category: stripHtmlTags(expense.category || ''),
-      date: new Date(expense.date).toISOString(),
-      description: stripHtmlTags(expense.description || ''),
-      isRecurring: expense.isRecurring ? 'Yes' : 'No',
-      recurringFrequency: expense.recurringFrequency || '',
-      nextDueDate: expense.nextDueDate ? new Date(expense.nextDueDate).toISOString() : '',
-      attachments: Array.isArray(expense.attachments) ? expense.attachments.join(', ') : '',
-      createdBy: expense.userId 
-        ? `${expense.userId.firstName} ${expense.userId.lastName}` 
+      title: stripHtmlTags((expense as any).title || ''),
+      amount: (expense as any).amount,
+      category: stripHtmlTags((expense as any).category || ''),
+      date: new Date((expense as any).date).toISOString(),
+      description: stripHtmlTags((expense as any).description || ''),
+      isRecurring: (expense as any).isRecurring ? 'Yes' : 'No',
+      recurringFrequency: (expense as any).recurringFrequency || '',
+      nextDueDate: (expense as any).nextDueDate ? new Date((expense as any).nextDueDate).toISOString() : '',
+      attachments: Array.isArray((expense as any).attachments) ? (expense as any).attachments.join(', ') : '',
+      createdBy: (expense.userId as any)
+        ? `${(expense.userId as any).firstName} ${(expense.userId as any).lastName}`
         : 'Unknown',
-      createdAt: new Date(expense.createdAt).toISOString(),
+      createdAt: new Date((expense as any).createdAt).toISOString(),
     }));
   }
 
   private async getFinancialSummaryData(filters: ExportFilters = {}) {
     await connectToDatabase();
-    
+
     const dateQuery: any = {};
     if (filters.dateRange?.start || filters.dateRange?.end) {
       if (filters.dateRange.start) {
@@ -310,10 +310,10 @@ export class ExportService {
 
   private async generateCSV(data: any[]): Promise<string> {
     if (data.length === 0) return '';
-    
+
     const headers = Object.keys(data[0]);
     const csvRows = [headers.join(',')];
-    
+
     for (const row of data) {
       const values = headers.map(header => {
         const value = row[header];
@@ -325,7 +325,7 @@ export class ExportService {
       });
       csvRows.push(values.join(','));
     }
-    
+
     return csvRows.join('\n');
   }
 
@@ -333,7 +333,7 @@ export class ExportService {
     const worksheet = XLSX.utils.json_to_sheet(data);
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, 'Export Data');
-    
+
     return XLSX.write(workbook, { type: 'buffer', bookType: 'xlsx' });
   }
 
@@ -389,7 +389,7 @@ export class ExportService {
       exportJobs.set(jobId, job);
 
       let data: any[] = [];
-      
+
       // Validate job type and get data
       switch (job.type) {
         case 'products':
@@ -467,15 +467,15 @@ export class ExportService {
       exportJobs.set(jobId, job);
 
       console.log(`Export job ${jobId} completed successfully. File: ${job.fileName}, Size: ${job.fileSize} bytes`);
-      
+
     } catch (error) {
       console.error(`Export job ${jobId} failed:`, error);
-      
+
       job.status = 'failed';
       job.error = error instanceof Error ? error.message : 'Unknown error occurred during export';
       job.completedAt = new Date();
       exportJobs.set(jobId, job);
-      
+
       throw error;
     }
   }
@@ -485,7 +485,7 @@ export class ExportService {
   }
 
   getAllExportJobs(): ExportJob[] {
-    return Array.from(exportJobs.values()).sort((a, b) => 
+    return Array.from(exportJobs.values()).sort((a, b) =>
       new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
     );
   }
@@ -515,7 +515,7 @@ export class ExportService {
 
     try {
       const fileBuffer = await fs.readFile(job.filePath);
-      const contentType = job.format === 'excel' 
+      const contentType = job.format === 'excel'
         ? 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
         : job.format === 'csv'
         ? 'text/csv'
