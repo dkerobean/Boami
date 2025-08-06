@@ -51,7 +51,7 @@ export async function GET(
       .limit(10); // Limit to first 10 users for preview
 
     // Get role impact analysis
-    const impactAnalysis = await RoleUtils.getRoleImpactAnalysis(role._id);
+    const impactAnalysis = await RoleUtils.getRoleImpactAnalysis(role._id.toString());
 
     return NextResponse.json({
       id: role._id,
