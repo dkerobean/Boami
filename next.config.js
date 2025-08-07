@@ -9,6 +9,8 @@ const nextConfig = {
   },
   experimental: {
     optimizePackageImports: ['@mui/material', '@mui/icons-material'],
+    // Ensure proper server components handling
+    serverComponentsExternalPackages: ['mongoose', 'bcryptjs'],
   },
   // Improve build performance
   swcMinify: true,

@@ -1,7 +1,7 @@
-'use client'
-import Box from '@mui/material/Box'
-import Grid from '@mui/material/Grid'
+'use client';
 import { useEffect, useState } from 'react';
+import Box from '@mui/material/Box';
+import Grid from '@mui/material/Grid';
 
 import PageContainer from '@/app/components/container/PageContainer';
 // components
