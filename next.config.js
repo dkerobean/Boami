@@ -10,10 +10,10 @@ const nextConfig = {
   experimental: {
     optimizePackageImports: ['@mui/material', '@mui/icons-material'],
   },
-  // Optimize build output
-  output: 'standalone',
   // Improve build performance
   swcMinify: true,
+  // Ensure proper handling of client components
+  transpilePackages: ['@mui/material', '@mui/icons-material'],
   webpack: (config, { isServer, webpack }) => {
     // Add polyfill for 'self' global to prevent build errors
     if (isServer) {
