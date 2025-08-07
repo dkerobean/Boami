@@ -24,7 +24,7 @@ import {
   InvoiceTaxConfig, 
   InvoiceItem, 
   InvoiceDiscount 
-} from "@/app/(DashboardLayout)/types/apps/invoice";
+} from "@/app/(dashboard)/types/apps/invoice";
 
 interface TabPanelProps {
   children?: React.ReactNode;

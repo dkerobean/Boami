@@ -4,7 +4,7 @@ import Grid from '@mui/material/Grid';
 import Typography from '@mui/material/Typography';
 import { styled } from '@mui/material/styles';
 import { useDispatch, useSelector } from '@/store/hooks';
-import { TicketType } from '../../../(DashboardLayout)/types/apps/ticket';
+import { TicketType } from '../../../(dashboard)/types/apps/ticket';
 import { setVisibilityFilter } from '@/store/apps/tickets/TicketSlice';
 
 const BoxStyled = styled(Box)(() => ({

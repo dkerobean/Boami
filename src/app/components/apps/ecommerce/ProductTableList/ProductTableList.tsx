@@ -34,7 +34,7 @@ import { fetchProducts, deleteProduct } from '@/store/apps/eCommerce/ECommerceSl
 import CustomCheckbox from '../../../forms/theme-elements/CustomCheckbox';
 import CustomSwitch from '../../../forms/theme-elements/CustomSwitch';
 import { IconDotsVertical, IconSearch, IconTrash, IconEdit, IconEye } from '@tabler/icons-react';
-import { ProductType } from '../../../../(DashboardLayout)/types/apps/eCommerce';
+import { ProductType } from '../../../../(dashboard)/types/apps/eCommerce';
 import ProductImage from '../../../shared/ProductImage';
 import { getImageSource, createImageAltText, shouldPrioritizeImage, IMAGE_SIZES } from '@/lib/utils/image-utils';
 import { ToastProvider, useToast } from '../../../shared/ToastContext';

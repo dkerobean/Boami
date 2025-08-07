@@ -1,5 +1,5 @@
 import axios, { AxiosInstance, AxiosResponse } from 'axios';
-import { WordPressProduct, WordPressConnectionConfig } from '../../app/(DashboardLayout)/types/apps/eCommerce';
+import { WordPressProduct, WordPressConnectionConfig } from '../../app/(dashboard)/types/apps/eCommerce';
 
 /**
  * WordPress WooCommerce API Integration Service

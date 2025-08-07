@@ -16,7 +16,7 @@ import {
   SearchNotes,
 } from "@/store/apps/notes/NotesSlice";
 import { IconTrash } from "@tabler/icons-react";
-import { NotesType } from '../../../(DashboardLayout)/types/apps/notes';
+import { NotesType } from '../../../(dashboard)/types/apps/notes';
 
 const NoteList = () => {
   const dispatch = useDispatch();

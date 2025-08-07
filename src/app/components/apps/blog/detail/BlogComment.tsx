@@ -8,7 +8,7 @@ import TextField from '@mui/material/TextField';
 import Tooltip from '@mui/material/Tooltip';
 import Typography from '@mui/material/Typography';
 import { IconArrowBackUp, IconCircle } from '@tabler/icons-react';
-import { BlogType } from '../../../../(DashboardLayout)/types/apps/blog';
+import { BlogType } from '../../../../(dashboard)/types/apps/blog';
 
 const BlogComment = ({ comment }: BlogType | any) => {
   const [showReply, setShowReply] = React.useState(false);

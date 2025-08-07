@@ -21,7 +21,7 @@ import {
   InvoiceItem, 
   InvoiceDiscount, 
   InvoiceTaxConfig 
-} from "@/app/(DashboardLayout)/types/apps/invoice";
+} from "@/app/(dashboard)/types/apps/invoice";
 
 interface PricingBreakdownProps {
   items: InvoiceItem[];

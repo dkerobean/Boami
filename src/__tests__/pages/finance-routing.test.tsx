@@ -37,13 +37,13 @@ jest.mock('@/app/components/apps/finance/recurring', () => ({
 }));
 
 // Import page components
-import FinanceDashboardPage from '@/app/(DashboardLayout)/apps/finance/dashboard/page';
-import IncomePage from '@/app/(DashboardLayout)/apps/finance/income/page';
-import ExpensesPage from '@/app/(DashboardLayout)/apps/finance/expenses/page';
-import SalesPage from '@/app/(DashboardLayout)/apps/finance/sales/page';
-import CategoriesPage from '@/app/(DashboardLayout)/apps/finance/categories/page';
-import VendorsPage from '@/app/(DashboardLayout)/apps/finance/vendors/page';
-import RecurringPaymentsPage from '@/app/(DashboardLayout)/apps/finance/recurring/page';
+import FinanceDashboardPage from '@/app/(dashboard)/apps/finance/dashboard/page';
+import IncomePage from '@/app/(dashboard)/apps/finance/income/page';
+import ExpensesPage from '@/app/(dashboard)/apps/finance/expenses/page';
+import SalesPage from '@/app/(dashboard)/apps/finance/sales/page';
+import CategoriesPage from '@/app/(dashboard)/apps/finance/categories/page';
+import VendorsPage from '@/app/(dashboard)/apps/finance/vendors/page';
+import RecurringPaymentsPage from '@/app/(dashboard)/apps/finance/recurring/page';
 
 describe('Finance Page Routing', () => {
   const mockPush = jest.fn();

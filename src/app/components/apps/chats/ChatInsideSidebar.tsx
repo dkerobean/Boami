@@ -9,7 +9,7 @@ import { Theme } from '@mui/material/styles';
 import Typography from '@mui/material/Typography'
 import useMediaQuery from '@mui/material/useMediaQuery'
 import { styled } from '@mui/material/styles'
-import { ChatsType } from '../../../(DashboardLayout)/types/apps/chat';
+import { ChatsType } from '../../../(dashboard)/types/apps/chat';
 import { uniq, flatten } from "lodash";
 import { IconDownload } from "@tabler/icons-react";
 

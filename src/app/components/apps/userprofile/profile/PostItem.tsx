@@ -18,7 +18,7 @@ import { useDispatch, useSelector } from'@/store/hooks';
 import { likePosts, addComment } from '@/store/apps/userProfile/UserProfileSlice';
 import PostComments from './PostComments';
 import BlankCard from '../../../shared/BlankCard';
-import { Comment as CommentType, PostType } from '../../../../(DashboardLayout)/types/apps/userProfile';
+import { Comment as CommentType, PostType } from '../../../../(dashboard)/types/apps/userProfile';
 
 interface Props {
   post: PostType;

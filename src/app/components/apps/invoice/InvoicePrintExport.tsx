@@ -17,7 +17,7 @@ import {
 } from "@tabler/icons-react";
 import { useReactToPrint } from "react-to-print";
 // Dynamic imports for browser-only libraries
-import { InvoiceList, TemplateType } from "@/app/(DashboardLayout)/types/apps/invoice";
+import { InvoiceList, TemplateType } from "@/app/(dashboard)/types/apps/invoice";
 import ModernBusinessTemplate from "./templates/ModernBusinessTemplate";
 import CorporateTemplate from "./templates/CorporateTemplate";
 import CreativeTemplate from "./templates/CreativeTemplate";

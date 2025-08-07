@@ -14,7 +14,7 @@ import BlankCard from '../../../../components/shared/BlankCard';
 import { useSelector, useDispatch } from'@/store/hooks';
 import { fetchFollwores, onToggleFollow } from '@/store/apps/userProfile/UserProfileSlice';
 import { IconMapPin, IconSearch } from '@tabler/icons-react';
-import { userType } from '../../../../(DashboardLayout)/types/apps/users';
+import { userType } from '../../../../(dashboard)/types/apps/users';
 
 const FollowerCard = () => {
   const dispatch = useDispatch();

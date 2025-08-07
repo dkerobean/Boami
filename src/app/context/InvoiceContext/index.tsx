@@ -1,7 +1,7 @@
 'use client'
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { usePathname } from 'next/navigation';
-import { InvoiceList } from '@/app/(DashboardLayout)/types/apps/invoice';
+import { InvoiceList } from '@/app/(dashboard)/types/apps/invoice';
 import axios from '@/utils/axios';
 import toast from 'react-hot-toast';
 import { useAuthContext } from '../AuthContext';

@@ -34,8 +34,8 @@ import {
   IconX,
   IconCheck,
 } from "@tabler/icons-react";
-import { ProductType } from "@/app/(DashboardLayout)/types/apps/eCommerce";
-import { InvoiceItem } from "@/app/(DashboardLayout)/types/apps/invoice";
+import { ProductType } from "@/app/(dashboard)/types/apps/eCommerce";
+import { InvoiceItem } from "@/app/(dashboard)/types/apps/invoice";
 import axios from 'axios';
 import toast from 'react-hot-toast';
 

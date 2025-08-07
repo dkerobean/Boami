@@ -32,7 +32,7 @@ import {
   IconAd2,
 } from '@tabler/icons-react';
 import { Stack } from '@mui/system';
-import { ProductFiterType } from '../../../../(DashboardLayout)/types/apps/eCommerce';
+import { ProductFiterType } from '../../../../(dashboard)/types/apps/eCommerce';
 
 const ProductFilter = () => {
   const dispatch = useDispatch();

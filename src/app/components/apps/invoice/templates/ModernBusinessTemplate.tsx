@@ -16,8 +16,8 @@ import {
   Stack,
 } from "@mui/material";
 import { format, isValid, parseISO } from "date-fns";
-import Logo from "@/app/(DashboardLayout)/layout/shared/logo/Logo";
-import { InvoiceList } from "@/app/(DashboardLayout)/types/apps/invoice";
+import Logo from "@/app/(dashboard)/layout/shared/logo/Logo";
+import { InvoiceList } from "@/app/(dashboard)/types/apps/invoice";
 
 interface ModernBusinessTemplateProps {
   invoice: InvoiceList;

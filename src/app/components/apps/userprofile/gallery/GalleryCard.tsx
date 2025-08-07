@@ -15,7 +15,7 @@ import { useSelector, useDispatch } from "@/store/hooks";
 import { fetchPhotos } from "@/store/apps/userProfile/UserProfileSlice";
 import { IconDotsVertical, IconSearch } from "@tabler/icons-react";
 import { format } from "date-fns";
-import { GallaryType } from "../../../../(DashboardLayout)/types/apps/users";
+import { GallaryType } from "../../../../(dashboard)/types/apps/users";
 
 import FsLightbox from "fslightbox-react";
 

@@ -12,7 +12,7 @@ import { IconCheck, IconMenu2 } from '@tabler/icons-react';
 
 import { updateNote } from '@/store/apps/notes/NotesSlice';
 import AddNotes from './AddNotes';
-import { NotesType } from '../../../(DashboardLayout)/types/apps/notes';
+import { NotesType } from '../../../(dashboard)/types/apps/notes';
 
 interface colorsType {
   lineColor: string;

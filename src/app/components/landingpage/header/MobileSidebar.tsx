@@ -5,7 +5,7 @@ import Stack from '@mui/material/Stack';
 import Divider from '@mui/material/Divider';
 import { styled } from '@mui/material/styles';
 import { motion } from 'framer-motion';
-import Logo from "@/app/(DashboardLayout)/layout/shared/logo/Logo";
+import Logo from "@/app/(dashboard)/layout/shared/logo/Logo";
 import CTAButton from '@/app/components/shared/CTAButton';
 
 const MobileSidebar = () => {

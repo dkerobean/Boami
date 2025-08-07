@@ -15,7 +15,7 @@ import { IconEye, IconMessage2, IconPoint } from '@tabler/icons-react';
 import { format } from 'date-fns';
 import { fetchBlogPost } from '@/store/apps/blog/BlogSlice';
 import BlankCard from '../../shared/BlankCard';
-import { BlogPostType } from '../../../(DashboardLayout)/types/apps/blog';
+import { BlogPostType } from '../../../(dashboard)/types/apps/blog';
 
 const CoverImgStyle = styled(CardContent)({
   position: 'absolute',

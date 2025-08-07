@@ -32,7 +32,7 @@ import {
   IconEdit,
   IconInfoCircle,
 } from "@tabler/icons-react";
-import { InvoiceTaxConfig, InvoiceItem } from "@/app/(DashboardLayout)/types/apps/invoice";
+import { InvoiceTaxConfig, InvoiceItem } from "@/app/(dashboard)/types/apps/invoice";
 
 interface TaxCalculatorProps {
   taxConfig: InvoiceTaxConfig;

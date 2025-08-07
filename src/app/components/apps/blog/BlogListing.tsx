@@ -7,7 +7,7 @@ import { orderBy } from 'lodash';
 import { useSelector, useDispatch } from '@/store/hooks';
 import { fetchBlogPosts } from '@/store/apps/blog/BlogSlice';
 import BlogFeaturedCard from './BlogFeaturedCard';
-import { BlogPostType } from '../../../(DashboardLayout)/types/apps/blog';
+import { BlogPostType } from '../../../(dashboard)/types/apps/blog';
 
 const BlogListing = () => {
   const dispatch = useDispatch();

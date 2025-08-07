@@ -10,7 +10,7 @@ import { useSelector, useDispatch } from "@/store/hooks";
 import { fetchProducts } from "@/store/apps/eCommerce/ECommerceSlice";
 import Link from "next/link";
 import BlankCard from "../../../shared/BlankCard";
-import { ProductType } from "../../../../(DashboardLayout)/types/apps/eCommerce";
+import { ProductType } from "../../../../(dashboard)/types/apps/eCommerce";
 import Image from "next/image";
 
 const ProductRelated = () => {

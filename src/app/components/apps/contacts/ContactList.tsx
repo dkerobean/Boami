@@ -10,7 +10,7 @@ import {
 
 import Scrollbar from "../../../components/custom-scroll/Scrollbar";
 import ContactListItem from "./ContactListItem";
-import type { ContactType } from '../../../(DashboardLayout)/types/apps/contact';
+import type { ContactType } from '../../../(dashboard)/types/apps/contact';
 
 type Props = {
   showrightSidebar: () => void;

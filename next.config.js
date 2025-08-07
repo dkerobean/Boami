@@ -30,7 +30,7 @@ const nextConfig = {
       );
     }
 
-    // Optimize build performance
+    // Optimize build performance and fix route group issues
     if (!isServer) {
       config.optimization = {
         ...config.optimization,
@@ -46,6 +46,7 @@ const nextConfig = {
         },
       };
     }
+
 
     // Ignore Node.js modules that are not needed in the browser
     if (!isServer) {

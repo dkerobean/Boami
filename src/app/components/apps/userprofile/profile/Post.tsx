@@ -5,7 +5,7 @@ import { useSelector, useDispatch } from'@/store/hooks';
 import { fetchPosts } from '@/store/apps/userProfile/UserProfileSlice';
 import PostItem from './PostItem';
 import { PostTextBox } from './PostTextBox';
-import { PostType } from '../../../../(DashboardLayout)/types/apps/userProfile';
+import { PostType } from '../../../../(dashboard)/types/apps/userProfile';
 
 const Post = () => {
   const dispatch = useDispatch();

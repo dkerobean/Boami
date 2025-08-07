@@ -10,7 +10,7 @@ import Toolbar from '@mui/material/Toolbar';
 import useMediaQuery from '@mui/material/useMediaQuery';
 import { styled } from '@mui/material/styles';
 import { motion } from 'framer-motion';
-import Logo from "@/app/(DashboardLayout)/layout/shared/logo/Logo";
+import Logo from "@/app/(dashboard)/layout/shared/logo/Logo";
 import Navigations from "./Navigations";
 import MobileSidebar from "./MobileSidebar";
 import { IconMenu2 } from "@tabler/icons-react";

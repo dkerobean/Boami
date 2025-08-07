@@ -20,7 +20,7 @@ import Typography from '@mui/material/Typography';
 import { useTheme } from '@mui/material/styles';
 import { fetchTickets, DeleteTicket, SearchTicket } from '@/store/apps/tickets/TicketSlice';
 import { IconTrash } from '@tabler/icons-react';
-import { TicketType } from '../../../(DashboardLayout)/types/apps/ticket';
+import { TicketType } from '../../../(dashboard)/types/apps/ticket';
 
 const TicketListing = () => {
   const dispatch = useDispatch();

@@ -20,7 +20,7 @@ import {
   deleteCart,
   decrement,
 } from "@/store/apps/eCommerce/ECommerceSlice";
-import { ProductType } from "../../../../(DashboardLayout)/types/apps/eCommerce";
+import { ProductType } from "../../../../(dashboard)/types/apps/eCommerce";
 import Image from "next/image";
 
 const AddToCart = () => {

@@ -8,7 +8,7 @@ import WordPressImportJob from '@/lib/database/models/WordPressImportJob';
 import { WordPressAPI } from '@/lib/utils/wordpress-api';
 import { SKUGenerator } from '@/lib/utils/sku-generator';
 import { InventoryManager } from '@/lib/utils/inventory-manager';
-import { WordPressProduct } from '@/app/(DashboardLayout)/types/apps/eCommerce';
+import { WordPressProduct } from '@/app/(dashboard)/types/apps/eCommerce';
 
 const importRequestSchema = yup.object({
   connectionId: yup.string().required('Connection ID is required'),

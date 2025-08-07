@@ -11,7 +11,7 @@ import Stack from '@mui/material/Stack';
 import Tooltip from '@mui/material/Tooltip';
 import Typography from '@mui/material/Typography';
 import { useTheme } from '@mui/material/styles';
-import { EmailType } from '../../../(DashboardLayout)/types/apps/email';
+import { EmailType } from '../../../(dashboard)/types/apps/email';
 import { IconStar, IconAlertCircle, IconTrash } from "@tabler/icons-react";
 import { useSelector, useDispatch } from "@/store/hooks";
 import {

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { ProductType } from '@/app/(DashboardLayout)/types/apps/eCommerce';
+import { ProductType } from '@/app/(dashboard)/types/apps/eCommerce';
 
 interface UseProductDetailState {
   product: ProductType | null;

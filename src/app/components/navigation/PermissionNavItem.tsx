@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { useAuthContext } from '@/app/context/AuthContext';
-import NavItem from '@/app/(DashboardLayout)/layout/vertical/sidebar/NavItem';
+import NavItem from '@/app/(dashboard)/layout/vertical/sidebar/NavItem';
 
 type NavGroup = {
   [x: string]: any;

@@ -12,7 +12,7 @@ import {
 } from "@/store/apps/email/EmailSlice";
 
 import Scrollbar from "../../../components/custom-scroll/Scrollbar";
-import { EmailType } from '../../../(DashboardLayout)/types/apps/email';
+import { EmailType } from '../../../(dashboard)/types/apps/email';
 
 interface Props {
   showrightSidebar: any;

@@ -17,7 +17,7 @@ export const useDashboardLoading = () => {
   // Configure dashboard-specific loading (linear animation covering full screen)
   useEffect(() => {
     // Check if we're in dashboard routes
-    const isDashboardRoute = pathname.startsWith('/(DashboardLayout)') ||
+    const isDashboardRoute = pathname.startsWith('/(dashboard)') ||
                             pathname.includes('/apps/') ||
                             pathname.includes('/dashboard');
 

@@ -16,7 +16,7 @@ import Alert from '@mui/material/Alert'
 import { useTheme } from '@mui/material/styles'
 
 import { IconCheck, IconAlertCircle } from "@tabler/icons-react";
-import { ProductType } from "../../../../(DashboardLayout)/types/apps/eCommerce";
+import { ProductType } from "../../../../(dashboard)/types/apps/eCommerce";
 import { useProductDetail } from "@/hooks/useProductDetail";
 import { htmlToPlainText } from "@/lib/utils/html-utils";
 

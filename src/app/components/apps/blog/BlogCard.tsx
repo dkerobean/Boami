@@ -14,7 +14,7 @@ import Typography from '@mui/material/Typography';
 import { IconEye, IconMessage2, IconPoint } from '@tabler/icons-react';
 import { fetchBlogPost } from '@/store/apps/blog/BlogSlice';
 import BlankCard from '../../shared/BlankCard';
-import { BlogPostType } from '../../../(DashboardLayout)/types/apps/blog';
+import { BlogPostType } from '../../../(dashboard)/types/apps/blog';
 
 interface Btype {
   post: BlogPostType;

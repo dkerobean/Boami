@@ -23,7 +23,7 @@ import { SelectChangeEvent } from "@mui/material/Select";
 import ModernBusinessTemplate from "./ModernBusinessTemplate";
 import CorporateTemplate from "./CorporateTemplate";
 import CreativeTemplate from "./CreativeTemplate";
-import { InvoiceList } from "@/app/(DashboardLayout)/types/apps/invoice";
+import { InvoiceList } from "@/app/(dashboard)/types/apps/invoice";
 
 export type TemplateType = "modern" | "corporate" | "creative";
 

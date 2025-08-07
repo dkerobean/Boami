@@ -1,5 +1,5 @@
 
-import {TodoCategory } from '@/app/(DashboardLayout)/types/apps/kanban'
+import {TodoCategory } from '@/app/(dashboard)/types/apps/kanban'
 import mock from '../mock';
 
 const KanbanData : TodoCategory[] =  [

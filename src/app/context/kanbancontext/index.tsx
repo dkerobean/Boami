@@ -1,7 +1,7 @@
 "use client"
 import React, { createContext, useState, useEffect, ReactNode } from 'react';
 import axios from '@/utils/axios';
-import { TodoCategory, TodoTask } from '@/app/(DashboardLayout)/types/apps/kanban';
+import { TodoCategory, TodoTask } from '@/app/(dashboard)/types/apps/kanban';
 
 interface KanbanDataContextProps {
     children: ReactNode;

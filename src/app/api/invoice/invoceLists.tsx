@@ -1,4 +1,4 @@
-import { InvoiceList } from '@/app/(DashboardLayout)/types/apps/invoice';
+import { InvoiceList } from '@/app/(dashboard)/types/apps/invoice';
 import mock from '../mock';
 
 

@@ -10,7 +10,7 @@ import toast, { Toaster } from "react-hot-toast";
 import CustomTextField from "@/app/components/forms/theme-elements/CustomTextField";
 import CustomFormLabel from "@/app/components/forms/theme-elements/CustomFormLabel";
 import { Stack } from "@mui/system";
-import { registerType } from "@/app/(DashboardLayout)/types/auth/auth";
+import { registerType } from "@/app/(dashboard)/types/auth/auth";
 import AuthSocialButtons from "./AuthSocialButtons";
 import PasswordRequirements from "@/app/components/forms/PasswordRequirements";
 import { useLoadingContext } from "@/app/components/shared/loading/LoadingContext";

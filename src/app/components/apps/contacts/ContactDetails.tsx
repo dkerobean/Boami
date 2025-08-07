@@ -17,7 +17,7 @@ import {
   toggleStarredContact,
 } from '@/store/apps/contacts/ContactSlice';
 import BlankCard from '../../shared/BlankCard';
-import { ContactType } from '../../../(DashboardLayout)/types/apps/contact';
+import { ContactType } from '../../../(dashboard)/types/apps/contact';
 import { IconPencil, IconStar, IconTrash, IconDeviceFloppy } from '@tabler/icons-react';
 import Scrollbar from '../../../components/custom-scroll/Scrollbar';
 import Image from 'next/image';

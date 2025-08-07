@@ -18,7 +18,7 @@ import { useState } from "react";
 import { Formik, Form } from "formik";
 import * as yup from "yup";
 import toast, { Toaster } from "react-hot-toast";
-import { loginType } from "@/app/(DashboardLayout)/types/auth/auth";
+import { loginType } from "@/app/(dashboard)/types/auth/auth";
 import CustomCheckbox from "@/app/components/forms/theme-elements/CustomCheckbox";
 import CustomTextField from "@/app/components/forms/theme-elements/CustomTextField";
 import CustomFormLabel from "@/app/components/forms/theme-elements/CustomFormLabel";

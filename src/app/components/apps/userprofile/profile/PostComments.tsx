@@ -19,7 +19,7 @@ import {
   CommentDataType,
   Reply,
   ProfileType,
-} from '../../../../(DashboardLayout)/types/apps/userProfile';
+} from '../../../../(dashboard)/types/apps/userProfile';
 
 interface CommentProps {
   comment: CommentType | any;

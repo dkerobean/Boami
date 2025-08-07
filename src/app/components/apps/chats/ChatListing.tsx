@@ -20,7 +20,7 @@ import {
   fetchChats,
   SearchChat,
 } from "@/store/apps/chat/ChatSlice";
-import { ChatsType } from '../../../(DashboardLayout)/types/apps/chat';
+import { ChatsType } from '../../../(dashboard)/types/apps/chat';
 import { last } from "lodash";
 import { formatDistanceToNowStrict } from "date-fns";
 import { IconChevronDown, IconSearch } from "@tabler/icons-react";

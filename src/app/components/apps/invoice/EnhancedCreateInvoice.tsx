@@ -30,7 +30,7 @@ import {
 } from "@tabler/icons-react";
 import CustomFormLabel from "@/app/components/forms/theme-elements/CustomFormLabel";
 import CustomTextField from "@/app/components/forms/theme-elements/CustomTextField";
-import { InvoiceList, InvoiceItem, InvoiceDiscount, InvoiceTaxConfig } from "@/app/(DashboardLayout)/types/apps/invoice";
+import { InvoiceList, InvoiceItem, InvoiceDiscount, InvoiceTaxConfig } from "@/app/(dashboard)/types/apps/invoice";
 import LogoUpload from "./LogoUpload";
 import ProductSelector from "./ProductSelector";
 import DiscountManager from "./DiscountManager";

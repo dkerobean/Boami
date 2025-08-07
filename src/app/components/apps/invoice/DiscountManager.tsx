@@ -29,7 +29,7 @@ import {
   IconTag,
   IconEdit,
 } from "@tabler/icons-react";
-import { InvoiceDiscount } from "@/app/(DashboardLayout)/types/apps/invoice";
+import { InvoiceDiscount } from "@/app/(dashboard)/types/apps/invoice";
 
 interface DiscountManagerProps {
   discounts: InvoiceDiscount[];

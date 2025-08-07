@@ -24,7 +24,7 @@ export const LoadingOverlay: React.FC<LoadingOverlayProps> = React.memo(({
   const reducedMotion = prefersReducedMotion();
 
   // Check if we're in dashboard routes
-  const isDashboardRoute = pathname.includes('/apps/') || pathname.includes('/dashboard') || pathname.startsWith('/(DashboardLayout)');
+  const isDashboardRoute = pathname.includes('/apps/') || pathname.includes('/dashboard') || pathname.startsWith('/(dashboard)');
 
   // Handle visibility changes with proper timing
   useEffect(() => {

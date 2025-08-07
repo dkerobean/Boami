@@ -30,7 +30,7 @@ import {
   IconMapPin,
   IconFileText,
 } from "@tabler/icons-react";
-import { CompanySettings as CompanySettingsType } from "@/app/(DashboardLayout)/types/apps/invoice";
+import { CompanySettings as CompanySettingsType } from "@/app/(dashboard)/types/apps/invoice";
 
 const CompanySettings: React.FC = () => {
   const [showSnackbar, setShowSnackbar] = useState(false);
