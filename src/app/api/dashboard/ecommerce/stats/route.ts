@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { EcommerceDashboardService } from '@/lib/services/ecommerce-dashboard';
 import { authenticateApiRequest, createApiResponse } from '@/lib/auth/nextauth-middleware';
 
+// Force dynamic rendering for this route
+export const dynamic = 'force-dynamic';
+
 export async function GET(request: NextRequest) {
   try {
     console.log('📊 Dashboard stats API called');

@@ -6,6 +6,9 @@ import { authenticateApiRequest, createApiResponse } from '@/lib/auth/nextauth-m
 /**
  * GET /api/products - Get products for invoice creation
  */
+// Force dynamic rendering for this route
+export const dynamic = 'force-dynamic';
+
 export async function GET(req: NextRequest) {
   try {
     console.log('🛍️ Products API called');

@@ -8,6 +8,9 @@ import { Types } from 'mongoose';
  * POST /api/subscriptions/cancel
  * Cancel user's subscription
  */
+// Force dynamic rendering for this route
+export const dynamic = 'force-dynamic';
+
 export async function POST(request: NextRequest) {
   try {
     await connectDB();

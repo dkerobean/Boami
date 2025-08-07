@@ -7,6 +7,9 @@ import { PermissionService } from '@/lib/services/permission.service';
  * Get user permissions and role
  * GET /api/auth/permissions/user
  */
+// Force dynamic rendering for this route
+export const dynamic = 'force-dynamic';
+
 export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);

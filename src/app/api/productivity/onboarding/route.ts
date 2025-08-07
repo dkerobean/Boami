@@ -16,6 +16,9 @@ import {
   ProductivityErrorCode
 } from '@/lib/utils/productivity-error-handler';
 
+// Force dynamic rendering for this route
+export const dynamic = 'force-dynamic';
+
 /**
  * GET /api/productivity/onboarding
  * Get onboarding status and recommendations for the user

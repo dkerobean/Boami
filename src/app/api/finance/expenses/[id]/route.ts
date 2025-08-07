@@ -9,6 +9,9 @@ import { verifyJWT } from '@/lib/auth/jwt';
  * GET /api/finance/expenses/[id]
  * Retrieves a specific expense record
  */
+// Force dynamic rendering for this route
+export const dynamic = 'force-dynamic';
+
 export async function GET(
   request: NextRequest,
   { params }: { params: { id: string } }

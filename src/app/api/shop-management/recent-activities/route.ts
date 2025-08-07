@@ -17,6 +17,9 @@ interface ActivityItem {
  * GET /api/shop-management/recent-activities
  * Get recent shop activities from various collections
  */
+// Force dynamic rendering for this route
+export const dynamic = 'force-dynamic';
+
 export async function GET(request: NextRequest) {
   try {
     await connectDB();

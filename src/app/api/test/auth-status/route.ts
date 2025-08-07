@@ -4,6 +4,9 @@ import { authenticateApiRequest, createApiResponse } from '@/lib/auth/nextauth-m
 /**
  * Test endpoint to check authentication status
  */
+// Force dynamic rendering for this route
+export const dynamic = 'force-dynamic';
+
 export async function GET(request: NextRequest) {
   try {
     console.log('🧪 Auth status test called');

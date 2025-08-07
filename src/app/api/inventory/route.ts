@@ -37,6 +37,9 @@ const inventoryStatsSchema = yup.object({
 /**
  * GET /api/inventory - Get inventory statistics and data
  */
+// Force dynamic rendering for this route
+export const dynamic = 'force-dynamic';
+
 export async function GET(request: NextRequest) {
   try {
     await connectToDatabase();

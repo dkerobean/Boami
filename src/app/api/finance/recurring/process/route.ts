@@ -8,6 +8,9 @@ import { verifyJWT } from '@/lib/auth/jwt';
  * Processes due recurring payments
  * Can be called manually or by scheduled jobs
  */
+// Force dynamic rendering for this route
+export const dynamic = 'force-dynamic';
+
 export async function POST(request: NextRequest) {
   try {
     // Check for cron job authentication or user authentication

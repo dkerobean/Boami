@@ -8,6 +8,9 @@ import { Types } from 'mongoose';
  * GET /api/subscriptions/current
  * Get current user's subscription
  */
+// Force dynamic rendering for this route
+export const dynamic = 'force-dynamic';
+
 export async function GET(request: NextRequest) {
   try {
     await connectDB();

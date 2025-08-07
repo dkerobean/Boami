@@ -6,6 +6,9 @@ import { User, Role } from '@/lib/database/models';
  * GET /api/admin/users
  * Get all users with pagination and filtering
  */
+// Force dynamic rendering for this route
+export const dynamic = 'force-dynamic';
+
 export async function GET(request: NextRequest) {
   try {
     await connectDB();

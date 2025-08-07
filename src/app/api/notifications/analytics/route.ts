@@ -3,6 +3,9 @@ import { getServerSession } from 'next-auth';
 import { notificationAnalytics } from '@/lib/notifications/analytics';
 import { connectToDatabase } from '@/lib/database/connection';
 
+// Force dynamic rendering for this route
+export const dynamic = 'force-dynamic';
+
 export async function GET(request: NextRequest) {
   try {
     await connectToDatabase();

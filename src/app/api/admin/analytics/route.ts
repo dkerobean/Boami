@@ -7,6 +7,9 @@ import { User } from '@/lib/database/models';
  * GET /api/admin/analytics
  * Get subscription analytics (admin only)
  */
+// Force dynamic rendering for this route
+export const dynamic = 'force-dynamic';
+
 export async function GET(request: NextRequest) {
   try {
     // Verify admin authentication

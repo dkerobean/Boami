@@ -13,6 +13,9 @@ import { authenticateApiRequest, createApiResponse } from '@/lib/auth/nextauth-m
  * GET /api/finance/dashboard
  * Retrieves financial dashboard data for the authenticated user
  */
+// Force dynamic rendering for this route
+export const dynamic = 'force-dynamic';
+
 export async function GET(request: NextRequest) {
   try {
     console.log('💰 Finance dashboard API called');

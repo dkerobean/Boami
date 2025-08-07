@@ -10,6 +10,9 @@ import { verifyJWT } from '@/lib/auth/jwt';
  * GET /api/finance/recurring
  * Retrieves recurring payments for the authenticated user
  */
+// Force dynamic rendering for this route
+export const dynamic = 'force-dynamic';
+
 export async function GET(request: NextRequest) {
   try {
     // Verify authentication

@@ -5,6 +5,9 @@ import { TemplateService } from '@/lib/services/templateService';
  * GET /api/finance/templates/expense
  * Download expense import template CSV file
  */
+// Force dynamic rendering for this route
+export const dynamic = 'force-dynamic';
+
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);

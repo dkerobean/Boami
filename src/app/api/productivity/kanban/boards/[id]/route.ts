@@ -8,6 +8,9 @@ import { authenticateRequest } from '@/lib/auth/api-auth';
  * GET /api/productivity/kanban/boards/[id]
  * Retrieves a specific kanban board by ID
  */
+// Force dynamic rendering for this route
+export const dynamic = 'force-dynamic';
+
 export async function GET(
   request: NextRequest,
   { params }: { params: { id: string } }

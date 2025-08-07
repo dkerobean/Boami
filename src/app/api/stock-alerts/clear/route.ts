@@ -6,6 +6,9 @@ import { StockAlertsService } from '@/lib/services/stock-alerts';
  * DELETE /api/stock-alerts/clear
  * Clear all stock alerts or specific types
  */
+// Force dynamic rendering for this route
+export const dynamic = 'force-dynamic';
+
 export async function DELETE(request: NextRequest) {
   try {
     const session = await getServerSession();

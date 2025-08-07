@@ -3,6 +3,9 @@ import { createFeatureProtectedRoute } from '@/lib/auth/feature-access-middlewar
 import { FEATURES } from '@/hooks/useFeatureAccess';
 import { connectToDatabase } from '@/lib/database/connection';
 
+// Force dynamic rendering for this route
+export const dynamic = 'force-dynamic';
+
 /**
  * GET /api/advanced-reports
  * Generates advanced analytics reports - Premium feature

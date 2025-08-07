@@ -13,6 +13,9 @@ import {
   handleProductivityError
 } from '@/lib/utils/productivity-error-handler';
 
+// Force dynamic rendering for this route
+export const dynamic = 'force-dynamic';
+
 /**
  * Enhanced Notes API with comprehensive authentication and permissions
  * GET /api/productivity/notes/enhanced

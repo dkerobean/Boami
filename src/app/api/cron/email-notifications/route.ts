@@ -6,6 +6,9 @@ import { SubscriptionEmailIntegration } from '@/lib/services/SubscriptionEmailIn
  * GET /api/cron/email-notifications
  * Cron job endpoint for sending subscription email notifications
  */
+// Force dynamic rendering for this route
+export const dynamic = 'force-dynamic';
+
 export async function GET(request: NextRequest) {
   try {
     // Verify cron job secret

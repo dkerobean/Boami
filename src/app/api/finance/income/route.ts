@@ -8,6 +8,9 @@ import { authenticateApiRequest, createApiResponse } from '@/lib/auth/nextauth-m
  * GET /api/finance/income
  * Retrieves income records for the authenticated user
  */
+// Force dynamic rendering for this route
+export const dynamic = 'force-dynamic';
+
 export async function GET(request: NextRequest) {
   try {
     // Verify authentication

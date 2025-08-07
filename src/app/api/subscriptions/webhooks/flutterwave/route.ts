@@ -97,6 +97,9 @@ function isRetryableError(error: any): boolean {
 /**
  * Handle POST requests to webhook endpoint
  */
+// Force dynamic rendering for this route
+export const dynamic = 'force-dynamic';
+
 export async function POST(request: NextRequest) {
   const startTime = Date.now();
   let webhookId: string | undefined;

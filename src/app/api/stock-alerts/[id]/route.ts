@@ -17,6 +17,9 @@ const updateStockAlertSchema = z.object({
  * GET /api/stock-alerts/[id]
  * Retrieves a specific stock alert by ID
  */
+// Force dynamic rendering for this route
+export const dynamic = 'force-dynamic';
+
 export async function GET(
   request: NextRequest,
   { params }: { params: { id: string } }

@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { SubscriptionMonitoringService } from '@/lib/services/SubscriptionMonitoringService';
 import { subscriptionLogger } from '@/lib/utils/subscription-logger';
 
+// Force dynamic rendering for this route
+export const dynamic = 'force-dynamic';
+
 export async function GET(request: NextRequest) {
   try {
     // Verify cron job authorization

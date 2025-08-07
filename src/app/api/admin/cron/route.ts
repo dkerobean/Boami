@@ -7,6 +7,9 @@ import { verifyJWT } from '@/lib/auth/jwt';
  * GET /api/admin/cron
  * Get cron scheduler status and job information
  */
+// Force dynamic rendering for this route
+export const dynamic = 'force-dynamic';
+
 export async function GET(request: NextRequest) {
   try {
     // Verify admin authentication

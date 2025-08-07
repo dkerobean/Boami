@@ -5,6 +5,9 @@ import { UserInvitationService } from '@/lib/services/user-invitation.service';
  * Validate invitation token
  * GET /api/auth/invitations/validate?token=xxx
  */
+// Force dynamic rendering for this route
+export const dynamic = 'force-dynamic';
+
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);

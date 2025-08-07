@@ -22,6 +22,9 @@ import { NotesCache } from '@/lib/utils/productivity-cache';
  * GET /api/productivity/notes
  * Retrieves notes for the authenticated user
  */
+// Force dynamic rendering for this route
+export const dynamic = 'force-dynamic';
+
 export async function GET(request: NextRequest) {
   const requestId = generateRequestId();
 

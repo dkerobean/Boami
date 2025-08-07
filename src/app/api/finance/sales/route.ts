@@ -10,6 +10,9 @@ import { authenticateRequest } from '@/lib/auth/api-auth';
  * GET /api/finance/sales
  * Retrieves sales records for the authenticated user
  */
+// Force dynamic rendering for this route
+export const dynamic = 'force-dynamic';
+
 export async function GET(request: NextRequest) {
   try {
     // Verify authentication

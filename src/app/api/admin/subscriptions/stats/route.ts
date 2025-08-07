@@ -8,6 +8,9 @@ import { authOptions } from '@/lib/auth/auth-config';
  * GET /api/admin/subscriptions/stats
  * Get subscription statistics (Admin only)
  */
+// Force dynamic rendering for this route
+export const dynamic = 'force-dynamic';
+
 export async function GET(request: NextRequest) {
   try {
     // Check admin authentication

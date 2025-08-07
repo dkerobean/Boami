@@ -6,6 +6,9 @@ import { Role, User } from '@/lib/database/models';
  * GET /api/roles
  * Get roles with optional parameters
  */
+// Force dynamic rendering for this route
+export const dynamic = 'force-dynamic';
+
 export async function GET(request: NextRequest) {
   try {
     await connectDB();

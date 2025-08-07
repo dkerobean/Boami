@@ -7,6 +7,9 @@ import { formatCurrency, formatSubscriptionPeriod } from '../../../../../../lib/
  * GET /api/subscriptions/billing/invoice/[id]
  * Get specific invoice/transaction details
  */
+// Force dynamic rendering for this route
+export const dynamic = 'force-dynamic';
+
 export async function GET(
   request: NextRequest,
   { params }: { params: { id: string } }
