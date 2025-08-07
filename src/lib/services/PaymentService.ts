@@ -452,6 +452,20 @@ export class PaymentService {
   }
 }
 
-// Export singleton instance
-export const paymentService = new PaymentService();
+// Export lazy singleton instance
+let paymentServiceInstance: PaymentService | null = null;
+
+export const getPaymentService = (): PaymentService => {
+  if (!paymentServiceInstance) {
+    paymentServiceInstance = new PaymentService();
+  }
+  return paymentServiceInstance;
+};
+
+export const paymentService = {
+  get instance() {
+    return getPaymentService();
+  }
+};
+
 export default PaymentService;

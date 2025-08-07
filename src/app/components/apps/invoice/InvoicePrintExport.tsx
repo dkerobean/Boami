@@ -16,8 +16,7 @@ import {
   IconShare,
 } from "@tabler/icons-react";
 import { useReactToPrint } from "react-to-print";
-import html2canvas from "html2canvas";
-import jsPDF from "jspdf";
+// Dynamic imports for browser-only libraries
 import { InvoiceList, TemplateType } from "@/app/(DashboardLayout)/types/apps/invoice";
 import ModernBusinessTemplate from "./templates/ModernBusinessTemplate";
 import CorporateTemplate from "./templates/CorporateTemplate";
@@ -44,6 +43,12 @@ const InvoicePrintExport: React.FC<InvoicePrintExportProps> = ({
     if (!printRef.current) return;
 
     try {
+      // Dynamic imports for client-side only
+      const [{ default: html2canvas }, { default: jsPDF }] = await Promise.all([
+        import("html2canvas"),
+        import("jspdf")
+      ]);
+
       const canvas = await html2canvas(printRef.current, {
         scale: 2,
         useCORS: true,

@@ -593,6 +593,20 @@ export class SubscriptionService {
   }
 }
 
-// Export singleton instance
-export const subscriptionService = new SubscriptionService();
+// Export lazy singleton instance
+let subscriptionServiceInstance: SubscriptionService | null = null;
+
+export const getSubscriptionService = (): SubscriptionService => {
+  if (!subscriptionServiceInstance) {
+    subscriptionServiceInstance = new SubscriptionService();
+  }
+  return subscriptionServiceInstance;
+};
+
+export const subscriptionService = {
+  get instance() {
+    return getSubscriptionService();
+  }
+};
+
 export default SubscriptionService;

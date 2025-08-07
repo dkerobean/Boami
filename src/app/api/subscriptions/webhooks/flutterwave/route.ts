@@ -247,7 +247,7 @@ export async function GET(request: NextRequest) {
     {
       message: 'Flutterwave webhook endpoint is active',
       timestamp: new Date().toISOString(),
-      environment: flutterwaveConfig.environment
+      environment: flutterwaveConfig.instance.environment
     },
     { status: 200 }
   );

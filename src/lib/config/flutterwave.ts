@@ -253,5 +253,14 @@ export const LOGGING_CONFIG = {
   MASK_SENSITIVE_DATA: true
 } as const;
 
-// Export the configuration instance
-export const flutterwaveConfig = getFlutterwaveConfig();
+// Export lazy configuration getter
+let flutterwaveConfigInstance: FlutterwaveEnvironmentConfig | null = null;
+
+export const flutterwaveConfig = {
+  get instance(): FlutterwaveEnvironmentConfig {
+    if (!flutterwaveConfigInstance) {
+      flutterwaveConfigInstance = getFlutterwaveConfig();
+    }
+    return flutterwaveConfigInstance;
+  }
+};

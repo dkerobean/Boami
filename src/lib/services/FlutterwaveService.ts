@@ -403,6 +403,20 @@ export class FlutterwaveService {
   }
 }
 
-// Export singleton instance
-export const flutterwaveService = new FlutterwaveService();
+// Export lazy singleton instance
+let flutterwaveServiceInstance: FlutterwaveService | null = null;
+
+export const getFlutterwaveService = (): FlutterwaveService => {
+  if (!flutterwaveServiceInstance) {
+    flutterwaveServiceInstance = new FlutterwaveService();
+  }
+  return flutterwaveServiceInstance;
+};
+
+export const flutterwaveService = {
+  get instance() {
+    return getFlutterwaveService();
+  }
+};
+
 export default FlutterwaveService;
