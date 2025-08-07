@@ -109,7 +109,7 @@
     "lucide-react": "^0.525.0",
     "moment": "^2.29.4",
     "mongoose": "^8.0.0",
-    "next": "14.2.7",
+    "next": "^14.2.31",
     "next-auth": "^4.24.5",
     "nodemailer": "^7.0.5",
     "papaparse": "^5.5.3",
