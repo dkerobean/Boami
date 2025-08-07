@@ -103,7 +103,7 @@ class ProductivityQueryBuilder<T> {
    * Add user filter (always required for productivity data)
    */
   forUser(userId: string): this {
-    this.query.userId = userId;
+    (this.query as any).userId = userId;
     return this;
   }
 
@@ -154,7 +154,7 @@ class ProductivityQueryBuilder<T> {
     const { page, limit, sortBy, sortOrder } = validatePagination(options);
 
     // Set default sorting if not specified
-    if (Object.keys(this.sortOptions).length === 0) {
+    if (Object.keys(this.sortOptions).length === 0 && sortBy && sortOrder) {
       this.sort(sortBy, sortOrder);
     }
 
@@ -300,8 +300,8 @@ class CachedProductivityQuery<T> {
 
     // Try cache first
     const cached = CountsCache.get(this.userId, cacheKey);
-    if (cached !== null) {
-      return cached;
+    if (cached !== null && cached !== undefined) {
+      return cached as number;
     }
 
     // Execute query

@@ -80,7 +80,7 @@ export class SystemStartup {
         console.warn('⚠️ Cache system not available - running without cache');
       }
     } catch (error) {
-      console.warn('⚠️ Cache initialization failed - running without cache:', error.message);
+      console.warn('⚠️ Cache initialization failed - running without cache:', error instanceof Error ? error instanceof Error ? error.message : String(error) : String(error));
       // Don't throw error - system can run without cache
     }
   }
@@ -97,7 +97,7 @@ export class SystemStartup {
 
       console.log('✅ Database optimized');
     } catch (error) {
-      console.warn('⚠️ Database optimization failed:', error.message);
+      console.warn('⚠️ Database optimization failed:', error instanceof Error ? error.message : String(error));
       // Don't throw error - system can run without optimization
     }
   }
@@ -123,7 +123,7 @@ export class SystemStartup {
 
       console.log('✅ Cache warmed up');
     } catch (error) {
-      console.warn('⚠️ Cache warm-up failed:', error.message);
+      console.warn('⚠️ Cache warm-up failed:', error instanceof Error ? error.message : String(error));
       // Don't throw error - system can run without cache
     }
   }
@@ -135,8 +135,8 @@ export class SystemStartup {
     console.log('🏥 Performing health checks...');
 
     const results = {
-      database: { healthy: false, error: null },
-      cache: { healthy: false, error: null },
+      database: { healthy: false, error: null as string | null },
+      cache: { healthy: false, error: null as string | null },
       overall: { healthy: false }
     };
 
@@ -148,14 +148,14 @@ export class SystemStartup {
         results.database.error = dbHealth.error;
       }
     } catch (error) {
-      results.database.error = error.message;
+      results.database.error = error instanceof Error ? error.message : String(error);
     }
 
     try {
       // Cache health check
       results.cache.healthy = await RedisClient.testConnection();
     } catch (error) {
-      results.cache.error = error.message;
+      results.cache.error = error instanceof Error ? error.message : String(error);
     }
 
     // Overall health
@@ -299,7 +299,7 @@ export class SystemStartup {
     } catch (error) {
       return {
         healthy: false,
-        error: error.message,
+        error: error instanceof Error ? error.message : String(error),
         timestamp: new Date()
       };
     }

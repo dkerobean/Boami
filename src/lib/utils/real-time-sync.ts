@@ -3,6 +3,7 @@
  * Handles optimistic updates, error rollback, and real-time inventory updates
  */
 
+import React from 'react';
 import { toast } from 'react-hot-toast';
 
 export interface OptimisticUpdate<T> {

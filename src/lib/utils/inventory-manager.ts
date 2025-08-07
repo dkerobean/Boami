@@ -45,7 +45,7 @@ export class InventoryManager {
   ): Promise<{ success: boolean; inventoryUpdate?: InventoryUpdate; error?: string }> {
     try {
       // First validate stock availability
-      const stockValidation = await InventoryService.validateStock(
+      const stockValidation = await InventoryService.validateInventoryForSale(
         saleData.productId,
         saleData.quantity
       );
@@ -74,12 +74,9 @@ export class InventoryManager {
       this.notifyInventoryChange(optimisticUpdate);
 
       // Perform actual inventory update
-      const inventoryResult = await InventoryService.updateInventory(
+      const inventoryResult = await InventoryService.updateInventoryForSale(
         saleData.productId,
-        -saleData.quantity,
-        `Sale: ${saleData.quantity} units`,
-        saleData.userId,
-        `sale-${Date.now()}`
+        saleData.quantity
       );
 
       if (!inventoryResult.success) {
@@ -141,12 +138,9 @@ export class InventoryManager {
   ): Promise<{ success: boolean; inventoryUpdate?: InventoryUpdate; error?: string }> {
     try {
       // Perform inventory restoration
-      const inventoryResult = await InventoryService.updateInventory(
+      const inventoryResult = await InventoryService.restoreInventoryFromSale(
         saleData.productId,
-        saleData.quantity, // Positive to restore inventory
-        `Sale reversal: ${saleData.quantity} units`,
-        saleData.userId,
-        `sale-reversal-${Date.now()}`
+        saleData.quantity
       );
 
       if (!inventoryResult.success) {

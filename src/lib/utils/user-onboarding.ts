@@ -161,7 +161,7 @@ export async function createDefaultKanbanBoard(userId: string): Promise<{
 
     return {
       success: true,
-      boardId: board._id.toString(),
+      boardId: (board._id as any).toString(),
       message: 'Default Kanban board created successfully'
     };
 

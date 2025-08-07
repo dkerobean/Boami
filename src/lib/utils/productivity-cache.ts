@@ -128,7 +128,7 @@ class ProductivityCache {
   invalidateUser(userId: string): number {
     let deletedCount = 0;
 
-    for (const [key] of this.cache) {
+    for (const key of Array.from(this.cache.keys())) {
       if (key.includes(`:${userId}`)) {
         this.cache.delete(key);
         deletedCount++;
@@ -148,7 +148,7 @@ class ProductivityCache {
     let deletedCount = 0;
     const prefix = `${type}:${userId}`;
 
-    for (const [key] of this.cache) {
+    for (const key of Array.from(this.cache.keys())) {
       if (key.startsWith(prefix)) {
         this.cache.delete(key);
         deletedCount++;
@@ -167,7 +167,7 @@ class ProductivityCache {
   clearExpired(): number {
     let deletedCount = 0;
 
-    for (const [key, entry] of this.cache) {
+    for (const [key, entry] of Array.from(this.cache.entries())) {
       if (this.isExpired(entry)) {
         this.cache.delete(key);
         deletedCount++;

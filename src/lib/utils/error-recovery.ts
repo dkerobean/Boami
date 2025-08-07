@@ -32,9 +32,10 @@ class ErrorRecoveryService {
     const supportReference = this.generateSupportReference();
 
     // Log the error with support reference
-    subscriptionLogger.error('Error handled by recovery service', error, undefined, {
+    subscriptionLogger.error('Error handled by recovery service', {
+      error: error.message,
       supportReference,
-      metadata: context
+      ...context
     });
 
     if (error instanceof PaymentError) {

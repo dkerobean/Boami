@@ -264,15 +264,15 @@ export class DatabaseOptimization {
   static enableQueryCaching(): void {
     // Add query caching middleware
     mongoose.plugin(function(schema: any) {
-      schema.pre(['find', 'findOne', 'findOneAndUpdate'], function() {
-        // Enable caching for read operations
-        if (this.getOptions().cache !== false) {
-          this.cache(true, 300); // Cache for 5 minutes
+      schema.pre(['find', 'findOne', 'findOneAndUpdate'], function(this: mongoose.Query<any, any>) {
+        // Enable lean queries for better performance
+        if (!this.getOptions().lean) {
+          this.lean();
         }
       });
     });
 
-    console.log('✅ Query caching enabled');
+    console.log('✅ Query optimization enabled');
   }
 
   /**
@@ -311,7 +311,7 @@ export class DatabaseOptimization {
       console.error('Database health check failed:', error);
       return {
         isConnected: false,
-        error: error.message
+        error: error instanceof Error ? error.message : String(error)
       };
     }
   }
@@ -390,10 +390,10 @@ export class DatabaseOptimization {
         db.admin().serverStatus(),
         db.stats(),
         Promise.all([
-          db.collection('subscriptions').stats(),
-          db.collection('transactions').stats(),
-          db.collection('plans').stats(),
-          db.collection('users').stats()
+          db.command({ collStats: 'subscriptions' }),
+          db.command({ collStats: 'transactions' }),
+          db.command({ collStats: 'plans' }),
+          db.command({ collStats: 'users' })
         ])
       ]);
 

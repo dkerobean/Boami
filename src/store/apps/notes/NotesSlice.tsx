@@ -13,8 +13,8 @@ interface StateType {
   error: string | null;
 }
 
-const initialState = {
-  notes: [],
+const initialState: StateType = {
+  notes: [] as any[],
   notesContent: 0,
   noteSearch: '',
   loading: false,

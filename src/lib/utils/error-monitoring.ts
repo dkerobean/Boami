@@ -3,7 +3,7 @@
  */
 
 import { SubscriptionError, PaymentError, WebhookError, ERROR_CODES } from '../errors/SubscriptionErrors';
-import { subscriptionLogger, LogLevel, LogCategory } from './subscription-logger';
+import { subscriptionLogger, LogCategory } from './subscription-logger';
 
 export interface AlertRule {
   id: string;
@@ -90,7 +90,7 @@ class ErrorMonitoringService {
           type: 'error_count',
           threshold: 10,
           timeWindowMinutes: 5,
-          categories: [LogCategory.WEBHOOK]
+          categories: [LogCategory.SUBSCRIPTION]
         },
         actions: [
           {
@@ -180,7 +180,9 @@ class ErrorMonitoringService {
     this.errorCounts.get(errorKey)!.push({ count: 1, timestamp: now });
 
     // Log the error
-    subscriptionLogger.error('Error recorded for monitoring', error, LogCategory.SUBSCRIPTION, {
+    subscriptionLogger.error('Error recorded for monitoring', {
+      error: error.message,
+      category: LogCategory.SUBSCRIPTION,
       metadata: { errorKey, ...context }
     });
   }
@@ -235,7 +237,7 @@ class ErrorMonitoringService {
   private checkErrorCount(condition: AlertCondition, windowStart: Date, windowEnd: Date): boolean {
     let totalCount = 0;
 
-    for (const [errorKey, counts] of this.errorCounts.entries()) {
+    for (const [errorKey, counts] of Array.from(this.errorCounts.entries())) {
       // Filter by error codes if specified
       if (condition.errorCodes && condition.errorCodes.length > 0) {
         const matchesErrorCode = condition.errorCodes.some(code => errorKey.includes(code));
@@ -260,7 +262,7 @@ class ErrorMonitoringService {
     if (!condition.errorCodes || condition.errorCodes.length === 0) return false;
 
     for (const errorCode of condition.errorCodes) {
-      for (const [errorKey, counts] of this.errorCounts.entries()) {
+      for (const [errorKey, counts] of Array.from(this.errorCounts.entries())) {
         if (errorKey.includes(errorCode)) {
           const windowCounts = counts.filter(c => c.timestamp >= windowStart && c.timestamp <= windowEnd);
           const totalCount = windowCounts.reduce((sum, c) => sum + c.count, 0);
@@ -306,7 +308,8 @@ class ErrorMonitoringService {
     this.lastAlertTimes.set(rule.id, new Date());
 
     // Log the alert
-    subscriptionLogger.critical(`Alert triggered: ${rule.name}`, undefined, LogCategory.SUBSCRIPTION, {
+    subscriptionLogger.error(`Alert triggered: ${rule.name}`, {
+      category: LogCategory.SUBSCRIPTION,
       metadata: { alertId, ruleId: rule.id, severity: rule.severity }
     });
 
@@ -335,12 +338,14 @@ class ErrorMonitoringService {
           break;
       }
 
-      subscriptionLogger.info(`Alert action executed: ${action.type}`, LogCategory.SUBSCRIPTION, {
-        metadata: { alertId: alert.id, actionType: action.type, target: action.target }
+      subscriptionLogger.info(`Alert action executed: ${action.type}`, {
+        alertId: alert.id, actionType: action.type, target: action.target
       });
     } catch (error) {
-      subscriptionLogger.error(`Failed to execute alert action: ${action.type}`, error, LogCategory.SUBSCRIPTION, {
-        metadata: { alertId: alert.id, actionType: action.type }
+      subscriptionLogger.error(`Failed to execute alert action: ${action.type}`, {
+        error: error instanceof Error ? error.message : String(error),
+        alertId: alert.id,
+        actionType: action.type
       });
     }
   }
@@ -420,7 +425,7 @@ class ErrorMonitoringService {
   private cleanupOldErrorCounts(): void {
     const cutoffTime = new Date(Date.now() - 24 * 60 * 60 * 1000); // 24 hours ago
 
-    for (const [errorKey, counts] of this.errorCounts.entries()) {
+    for (const [errorKey, counts] of Array.from(this.errorCounts.entries())) {
       const recentCounts = counts.filter(c => c.timestamp > cutoffTime);
       if (recentCounts.length === 0) {
         this.errorCounts.delete(errorKey);
@@ -448,8 +453,8 @@ class ErrorMonitoringService {
     if (alert) {
       alert.status = 'resolved';
       alert.resolvedAt = new Date();
-      subscriptionLogger.info(`Alert resolved: ${alert.ruleName}`, LogCategory.SUBSCRIPTION, {
-        metadata: { alertId, resolvedAt: alert.resolvedAt }
+      subscriptionLogger.info(`Alert resolved: ${alert.ruleName}`, {
+        alertId, resolvedAt: alert.resolvedAt
       });
     }
   }
@@ -465,7 +470,7 @@ class ErrorMonitoringService {
       timeWindow: `${timeWindowMinutes} minutes`
     };
 
-    for (const [errorKey, counts] of this.errorCounts.entries()) {
+    for (const [errorKey, counts] of Array.from(this.errorCounts.entries())) {
       const windowCounts = counts.filter(c => c.timestamp >= windowStart && c.timestamp <= now);
       const totalCount = windowCounts.reduce((sum, c) => sum + c.count, 0);
 

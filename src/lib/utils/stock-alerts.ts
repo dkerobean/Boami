@@ -456,10 +456,10 @@ export class StockAlertsManager {
       for (const user of users) {
         await notificationService.triggerNotification({
           type: 'stock_alert',
-          userId: user._id.toString(),
+          userId: (user._id as any).toString(),
           data: {
             product: {
-              _id: product._id.toString(),
+              _id: (product._id as any).toString(),
               title: product.title,
               sku: product.sku,
               qty: alert.currentStock,

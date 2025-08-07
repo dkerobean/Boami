@@ -138,11 +138,11 @@ export class SubscriptionDataMigration {
             filter: { _id: user._id },
             update: {
               $set: {
-                'subscription.cancelAtPeriodEnd': user.subscription?.cancelAtPeriodEnd ?? false,
-                'subscription.lastPaymentDate': user.subscription?.lastPaymentDate ?? null,
-                'subscription.lastPaymentAmount': user.subscription?.lastPaymentAmount ?? null,
-                'subscription.lastPaymentCurrency': user.subscription?.lastPaymentCurrency ?? null,
-                'subscription.lastPaymentTransactionId': user.subscription?.lastPaymentTransactionId ?? null
+                'subscription.cancelAtPeriodEnd': (user.subscription as any)?.cancelAtPeriodEnd ?? false,
+                'subscription.lastPaymentDate': (user.subscription as any)?.lastPaymentDate ?? null,
+                'subscription.lastPaymentAmount': (user.subscription as any)?.lastPaymentAmount ?? null,
+                'subscription.lastPaymentCurrency': (user.subscription as any)?.lastPaymentCurrency ?? null,
+                'subscription.lastPaymentTransactionId': (user.subscription as any)?.lastPaymentTransactionId ?? null
               }
             }
           }
@@ -206,7 +206,7 @@ export class SubscriptionDataMigration {
           const updates: any = {};
 
           // Add missing billingPeriod
-          if (!subscription.billingPeriod) {
+          if (!(subscription as any).billingPeriod) {
             updates.billingPeriod = 'monthly'; // Default to monthly
           }
 
@@ -216,7 +216,7 @@ export class SubscriptionDataMigration {
           }
 
           // Add missing cancelReason
-          if (!subscription.cancelReason && subscription.status === 'cancelled') {
+          if (!(subscription as any).cancelReason && (subscription as any).status === 'cancelled') {
             updates.cancelReason = 'user_cancelled';
           }
 

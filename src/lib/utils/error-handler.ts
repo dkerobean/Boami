@@ -437,7 +437,7 @@ export class ErrorHandler {
         recoverable: true,
         retryable: false
       },
-      { ...context, type: 'validation_error' }
+      { ...context, additionalData: { ...context?.additionalData, type: 'validation_error' } }
     );
   }
 

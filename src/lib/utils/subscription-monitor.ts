@@ -17,7 +17,7 @@ export class SubscriptionMonitor {
   };
 
   private static monitoringInterval: NodeJS.Timeout | null = null;
-  private sistory: any[] = [];
+  private static alertHistory: any[] = [];
 
   /**
    * Start monitoring system
@@ -62,7 +62,7 @@ export class SubscriptionMonitor {
         subscriptions: { healthy: true, metrics: {}, issues: [] },
         payments: { healthy: true, metrics: {}, issues: [] }
       },
-      alerts: [],
+      alerts: [] as any[],
       recommendations: []
     };
 
@@ -96,7 +96,7 @@ export class SubscriptionMonitor {
       healthReport.alerts.push({
         type: 'critical',
         message: 'Health check system failure',
-        details: error.message
+        details: error instanceof Error ? error instanceof Error ? error.message : String(error) : String(error)
       });
 
       return healthReport;
@@ -143,7 +143,7 @@ export class SubscriptionMonitor {
 
     } catch (error) {
       report.components.database.healthy = false;
-      report.components.database.issues.push(`Database check failed: ${error.message}`);
+      report.components.database.issues.push(`Database check failed: ${error instanceof Error ? error instanceof Error ? error.message : String(error) : String(error)}`);
     }
   }
 
@@ -198,7 +198,7 @@ export class SubscriptionMonitor {
 
     } catch (error) {
       report.components.cache.healthy = false;
-      report.components.cache.issues.push(`Cache check failed: ${error.message}`);
+      report.components.cache.issues.push(`Cache check failed: ${error instanceof Error ? error.message : String(error)}`);
     }
   }
 
@@ -250,7 +250,7 @@ export class SubscriptionMonitor {
 
     } catch (error) {
       report.components.subscriptions.healthy = false;
-      report.components.subscriptions.issues.push(`Subscription check failed: ${error.message}`);
+      report.components.subscriptions.issues.push(`Subscription check failed: ${error instanceof Error ? error.message : String(error)}`);
     }
   }
 
@@ -303,7 +303,7 @@ export class SubscriptionMonitor {
 
     } catch (error) {
       report.components.payments.healthy = false;
-      report.components.payments.issues.push(`Payment check failed: ${error.message}`);
+      report.components.payments.issues.push(`Payment check failed: ${error instanceof Error ? error.message : String(error)}`);
     }
   }
 

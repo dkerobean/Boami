@@ -76,7 +76,7 @@ export async function retryWithBackoff<T>(
   };
 
   const startTime = Date.now();
-  let lastError: Error;
+  let lastError: Error = new Error('No error recorded');
 
   for (let attempt = 1; attempt <= config.maxRetries + 1; attempt++) {
     try {

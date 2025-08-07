@@ -179,7 +179,7 @@ export class WebhookMonitor {
           endpoint: webhook.endpoint,
           success: false,
           retryCount: webhook.retryCount,
-          error: error.message
+          error: error instanceof Error ? error.message : String(error)
         });
       }
     }
@@ -200,10 +200,10 @@ export class WebhookMonitor {
    */
   static async monitorWebhookHealth(): Promise<any> {
     const healthReport = {
-      overall: { healthy: true, issues: [] },
-      endpoints: {},
+      overall: { healthy: true, issues: [] as string[] },
+      endpoints: {} as Record<string, any>,
       failedWebhooks: this.failedWebhooks.length,
-      recommendations: []
+      recommendations: [] as string[]
     };
 
     // Check each endpoint
@@ -217,7 +217,7 @@ export class WebhookMonitor {
         averageResponseTime: stats.averageResponseTime,
         totalAttempts: stats.totalAttempts,
         recentFailures: 0,
-        issues: []
+        issues: [] as string[]
       };
 
       // Check success rate
@@ -329,7 +329,7 @@ export class WebhookMonitor {
    * Get webhook retry queue status
    */
   static getRetryQueueStatus(): any {
-    const queueByEndpoint = {};
+    const queueByEndpoint: Record<string, any> = {};
 
     this.failedWebhooks.forEach(webhook => {
       if (!queueByEndpoint[webhook.endpoint]) {
