@@ -36,7 +36,7 @@ export class OptimizedSubscriptionService extends SubscriptionService {
       console.error('Error getting optimized active subscription:', error);
       return {
         success: false,
-        error: error.message
+        error: error instanceof Error ? error.message : String(error)
       };
     }
   }
@@ -57,7 +57,7 @@ export class OptimizedSubscriptionService extends SubscriptionService {
       console.error('Error batch getting subscriptions:', error);
       return {
         success: false,
-        error: error.message
+        error: error instanceof Error ? error.message : String(error)
       };
     }
   }
@@ -89,7 +89,7 @@ export class OptimizedSubscriptionService extends SubscriptionService {
       console.error('Error getting optimized plan:', error);
       return {
         success: false,
-        error: error.message
+        error: error instanceof Error ? error.message : String(error)
       };
     }
   }
@@ -100,9 +100,10 @@ export class OptimizedSubscriptionService extends SubscriptionService {
   static async createSubscriptionOptimized(subscriptionData: any): Promise<any> {
     try {
       // Create subscription using parent method
-      const result = await super.createSubscription(subscriptionData);
+      const subscriptionService = new SubscriptionService();
+      const result = await subscriptionService.createSubscription(subscriptionData);
 
-      if (result.success && result.subscription) {
+      if (result.subscription) {
         // Cache the new subscription
         await SubscriptionCache.cacheSubscription(result.subscription);
 
@@ -115,7 +116,7 @@ export class OptimizedSubscriptionService extends SubscriptionService {
       console.error('Error creating optimized subscription:', error);
       return {
         success: false,
-        error: error.message
+        error: error instanceof Error ? error.message : String(error)
       };
     }
   }
@@ -126,7 +127,8 @@ export class OptimizedSubscriptionService extends SubscriptionService {
   static async updateSubscriptionOptimized(subscriptionId: string, updateData: any): Promise<any> {
     try {
       // Update subscription using parent method
-      const result = await super.updateSubscription(subscriptionId, updateData);
+      const subscriptionService = new SubscriptionService();
+      const result = await subscriptionService.updateSubscription(subscriptionId, updateData);
 
       if (result.success && result.subscription) {
         // Invalidate cache
@@ -144,7 +146,7 @@ export class OptimizedSubscriptionService extends SubscriptionService {
       console.error('Error updating optimized subscription:', error);
       return {
         success: false,
-        error: error.message
+        error: error instanceof Error ? error.message : String(error)
       };
     }
   }
@@ -155,7 +157,8 @@ export class OptimizedSubscriptionService extends SubscriptionService {
   static async cancelSubscriptionOptimized(subscriptionId: string, options: any = {}): Promise<any> {
     try {
       // Cancel subscription using parent method
-      const result = await super.cancelSubscription(subscriptionId, options);
+      const subscriptionService = new SubscriptionService();
+      const result = await subscriptionService.cancelSubscription(subscriptionId, options);
 
       if (result.success && result.subscription) {
         // Invalidate cache
@@ -173,7 +176,7 @@ export class OptimizedSubscriptionService extends SubscriptionService {
       console.error('Error cancelling optimized subscription:', error);
       return {
         success: false,
-        error: error.message
+        error: error instanceof Error ? error.message : String(error)
       };
     }
   }
@@ -299,7 +302,7 @@ export class OptimizedSubscriptionService extends SubscriptionService {
       console.error('Error getting subscription analytics:', error);
       return {
         success: false,
-        error: error.message
+        error: error instanceof Error ? error.message : String(error)
       };
     }
   }
@@ -382,7 +385,7 @@ export class OptimizedSubscriptionService extends SubscriptionService {
           }
         },
         {
-          $sort: { '_id.year': 1, '_id.month': 1, '_id.day': 1, '_id.hour': 1 }
+          $sort: { '_id': 1 as const }
         }
       ];
 
@@ -406,7 +409,7 @@ export class OptimizedSubscriptionService extends SubscriptionService {
       console.error('Error getting subscription trends:', error);
       return {
         success: false,
-        error: error.message
+        error: error instanceof Error ? error.message : String(error)
       };
     }
   }
@@ -469,7 +472,7 @@ export class OptimizedSubscriptionService extends SubscriptionService {
       console.error('Error getting cache metrics:', error);
       return {
         success: false,
-        error: error.message
+        error: error instanceof Error ? error.message : String(error)
       };
     }
   }
@@ -490,7 +493,7 @@ export class OptimizedSubscriptionService extends SubscriptionService {
       console.error('Error warming up cache:', error);
       return {
         success: false,
-        error: error.message
+        error: error instanceof Error ? error.message : String(error)
       };
     }
   }

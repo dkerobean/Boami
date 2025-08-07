@@ -224,7 +224,7 @@ export class SubscriptionMonitoringService {
 
         if (shouldAlert) {
           const existingAlert = this.alerts.find(
-            alert => alert.type === rule.type && !alert.resolved
+            alert => alert.type === (rule.type as any) && !alert.resolved
           );
 
           if (!existingAlert) {

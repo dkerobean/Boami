@@ -328,7 +328,7 @@ export class TemplateService {
     };
 
     if (type === 'expense') {
-      baseRules.vendor = {
+      (baseRules as any).vendor = {
         required: false,
         description: 'Vendor or supplier name (will be created if missing)',
         examples: ['Staples', 'Google', 'Adobe']

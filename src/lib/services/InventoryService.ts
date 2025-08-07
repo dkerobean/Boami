@@ -69,7 +69,7 @@ export class InventoryService {
         requestedQuantity,
         message: isValid
           ? 'Sufficient inventory available'
-          : `Insufficient inventory. Available: ${pt.qty}, Requested: ${requestedQuantity}`
+          : `Insufficient inventory. Available: ${product.qty}, Requested: ${requestedQuantity}`
       };
 
     } catch (error) {
@@ -121,7 +121,7 @@ export class InventoryService {
       if (product.qty <= 0) {
         product.stockStatus = product.backordersAllowed ? 'onbackorder' : 'outofstock';
         product.stock = false;
-      } else if (product.qty <= product.lowStockThreshold) {
+      } else if (product.lowStockThreshold && product.qty <= product.lowStockThreshold) {
         product.stockStatus = 'instock'; // Still in stock but low
         product.stock = true;
       } else {
@@ -300,9 +300,9 @@ export class InventoryService {
           lastSaleDate: sales.lastSaleDate
         },
         alerts: {
-          isLowStock: product.manageStock && product.qty <= product.lowStockThreshold,
+          isLowStock: product.manageStock && product.lowStockThreshold !== undefined && product.qty <= product.lowStockThreshold,
           isOutOfStock: product.stockStatus === 'outofstock',
-          needsRestocking: product.manageStock && product.qty <= product.lowStockThreshold
+          needsRestocking: product.manageStock && product.lowStockThreshold !== undefined && product.qty <= product.lowStockThreshold
         }
       };
 

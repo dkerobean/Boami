@@ -35,9 +35,9 @@ export class SubscriptionEmailIntegration {
       await SubscriptionEmailService.sendSubscriptionWelcome(user.email, {
         firstName: user.firstName,
         planName: plan.name,
-        planPrice: subscription.billingPeriod === 'annual' ? plan.price.annual : plan.price.monthly,
+        planPrice: (subscription as any).billingPeriod === 'annual' ? plan.price.annual : plan.price.monthly,
         currency: plan.price.currency,
-        billingPeriod: subscription.billingPeriod,
+        billingPeriod: (subscription as any).billingPeriod,
         features: plan.features || [],
         appUrl
       });
@@ -77,9 +77,9 @@ export class SubscriptionEmailIntegration {
       await SubscriptionEmailService.sendRenewalReminder(user.email, {
         firstName: user.firstName,
         planName: plan.name,
-        planPrice: subscription.billingPeriod === 'annual' ? plan.price.annual : plan.price.monthly,
+        planPrice: (subscription as any).billingPeriod === 'annual' ? plan.price.annual : plan.price.monthly,
         currency: plan.price.currency,
-        billingPiod: subscription.billingPeriod,
+        billingPeriod: (subscription as any).billingPeriod,
         renewalDate: subscription.currentPeriodEnd.toLocaleDateString(),
         appUrl
       });
@@ -119,7 +119,7 @@ export class SubscriptionEmailIntegration {
       await SubscriptionEmailService.sendSubscriptionCancelled(user.email, {
         firstName: user.firstName,
         planName: plan.name,
-        cancellationDate: subscription.cancelledAt?.toLocaleDateString() || new Date().toLocaleDateString(),
+        cancellationDate: (subscription as any).cancelledAt?.toLocaleDateString() || new Date().toLocaleDateString(),
         accessEndDate: subscription.currentPeriodEnd.toLocaleDateString(),
         reason,
         appUrl
@@ -167,7 +167,7 @@ export class SubscriptionEmailIntegration {
       await SubscriptionEmailService.sendPaymentFailed(user.email, {
         firstName: user.firstName,
         planName: plan.name,
-        amount: subscription.billingPeriod === 'annual' ? plan.price.annual : plan.price.monthly,
+        amount: (subscription as any).billingPeriod === 'annual' ? plan.price.annual : plan.price.monthly,
         currency: plan.price.currency,
         failureReason,
         retryDate: retryDate.toLocaleDateString(),
@@ -210,7 +210,7 @@ export class SubscriptionEmailIntegration {
       await SubscriptionEmailService.sendSubscriptionExpired(user.email, {
         firstName: user.firstName,
         planName: plan.name,
-        expiredDate: subscription.expiredAt?.toLocaleDateString() || new Date().toLocaleDateString(),
+        expiredDate: (subscription as any).expiredAt?.toLocaleDateString() || new Date().toLocaleDateString(),
         appUrl
       });
 
@@ -284,7 +284,7 @@ export class SubscriptionEmailIntegration {
 
       const emailPromises = subscriptionsToRemind.map(async (subscription) => {
         try {
-          await this.sendRenewalReminder(subscription._id);
+          await this.sendRenewalReminder(String(subscription._id));
 
           // Mark reminder as sent
           subscription.metadata = subscription.metadata || {};
@@ -294,7 +294,7 @@ export class SubscriptionEmailIntegration {
           return { subscriptionId: subscription._id, success: true };
         } catch (error) {
           console.error(`Error sending renewal reminder for subscription ${subscription._id}:`, error);
-          return { subscriptionId: subscription._id, success: false, error: error.message };
+          return { subscriptionId: subscription._id, success: false, error: error instanceof Error ? error.message : String(error) };
         }
       });
 
@@ -350,7 +350,7 @@ export class SubscriptionEmailIntegration {
       console.error('Error testing subscription emails:', error);
       return {
         success: false,
-        error: error.message
+        error: error instanceof Error ? error.message : String(error)
       };
     }
   }

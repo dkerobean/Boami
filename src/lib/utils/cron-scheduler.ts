@@ -81,7 +81,7 @@ export class CronScheduler {
     console.log('Starting cron scheduler...');
 
     // Schedule all enabled jobs
-    for (const [id, config] of this.jobs.entries()) {
+    for (const [id, config] of Array.from(this.jobs.entries())) {
       if (config.enabled) {
         this.scheduleJob(id);
       }
@@ -102,7 +102,7 @@ export class CronScheduler {
     this.isRunning = false;
 
     // Clear all intervals
-    for (const [id, interval] of this.intervals.entries()) {
+    for (const [id, interval] of Array.from(this.intervals.entries())) {
       clearTimeout(interval);
       console.log(`Stopped cron job: ${id}`);
     }
@@ -120,7 +120,7 @@ export class CronScheduler {
 
     const now = new Date();
     const nextRun = config.nextRun || this.calculateNextRun(config.schedule);
-    const delay = Math.max(0, nextRun.getTgetTime());
+    const delay = Math.max(0, nextRun.getTime() - now.getTime());
 
     // Clear existing interval if any
     const existingInterval = this.intervals.get(id);
@@ -208,8 +208,7 @@ export class CronScheduler {
       // Handle error
       ErrorHandler.handleError(error, {
         component: 'CronScheduler',
-        action: `executeJob:${id}`,
-        metadata: { jobId: id, duration }
+        action: `executeJob:${id}`
       });
 
       const jobResult: CronJobResult = {

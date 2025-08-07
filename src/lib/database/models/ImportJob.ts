@@ -51,7 +51,7 @@ export interface IImportJobModel extends mongoose.Model<IImportJob> {
   updateProgress(jobId: string, progress: any): Promise<IImportJob | null>;
   markCompleted(jobId: string, results: any): Promise<IImportJob | null>;
   markFailed(jobId: string, error: string): Promise<IImportJob | null>;
-  cleanupOldJobs(olderThanDays?: number): Promise<number>;
+  cleanupOldJobs(olderThanDays?: number): Promise<{ deletedCount?: number }>;
 }
 
 const ImportJobSchema = new Schema<IImportJob>({
@@ -272,6 +272,6 @@ ImportJobSchema.statics.cleanupOldJobs = function(maxAgeHours = 24) {
   });
 };
 
-const ImportJob = mongoose.models.ImportJob || mongoose.model<IImportJob>('ImportJob', ImportJobSchema);
+const ImportJob = (mongoose.models.ImportJob || mongoose.model<IImportJob, IImportJobModel>('ImportJob', ImportJobSchema)) as IImportJobModel;
 
 export default ImportJob;

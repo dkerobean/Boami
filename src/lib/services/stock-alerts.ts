@@ -79,6 +79,9 @@ export class StockAlertsService {
     try {
       await connectDB();
       const db = mongoose.connection.db;
+      if (!db) {
+        throw new Error('Database connection not established');
+      }
 
       // Find products that need alerts (stock <= threshold or out of stock)
       const productsNeedingAlerts = await db.collection('products').find({
@@ -142,7 +145,8 @@ export class StockAlertsService {
 
       // Insert new alerts
       if (alerts.length > 0) {
-        await db.collection('stockalerts').insertMany(alerts);
+        const alertsToInsert = alerts.map(({ _id, ...alert }) => alert);
+        await db.collection('stockalerts').insertMany(alertsToInsert);
       }
 
       // Auto-resolve alerts for products that are back in stock
@@ -162,6 +166,9 @@ export class StockAlertsService {
     try {
       await connectDB();
       const db = mongoose.connection.db;
+      if (!db) {
+        throw new Error('Database connection not established');
+      }
 
       // Find active alerts
       const activeAlerts = await db.collection('stockalerts').find({
@@ -209,6 +216,9 @@ export class StockAlertsService {
     try {
       await connectDB();
       const db = mongoose.connection.db;
+      if (!db) {
+        throw new Error('Database connection not established');
+      }
 
       // Generate fresh alerts before fetching
       await this.generateAlertsFromProducts();
@@ -266,7 +276,7 @@ export class StockAlertsService {
 
       // Add priority weight for sorting if needed
       if (sortBy === 'priority') {
-        pipeline.push({
+        (pipeline as any[]).push({
           $addFields: {
             _priorityWeight: {
               $switch: {
@@ -283,7 +293,7 @@ export class StockAlertsService {
         });
       }
 
-      pipeline.push(
+      (pipeline as any[]).push(
         { $sort: sortQuery },
         { $skip: (page - 1) * limit },
         { $limit: limit }
@@ -291,7 +301,7 @@ export class StockAlertsService {
 
       // Remove temporary fields
       if (sortBy === 'priority') {
-        pipeline.push({ $unset: '_priorityWeight' });
+        (pipeline as any[]).push({ $unset: '_priorityWeight' });
       }
 
       const alerts = await db.collection('stockalerts').aggregate(pipeline).toArray();
@@ -310,7 +320,7 @@ export class StockAlertsService {
       };
 
       return {
-        alerts: alerts.map(alert => ({
+        alerts: alerts.map((alert: any) => ({
           ...alert,
           _id: alert._id.toString()
         })),
@@ -337,6 +347,9 @@ export class StockAlertsService {
     try {
       await connectDB();
       const db = mongoose.connection.db;
+      if (!db) {
+        throw new Error('Database connection not established');
+      }
 
       const stats = await db.collection('stockalerts').aggregate([
         {
@@ -379,7 +392,7 @@ export class StockAlertsService {
         active: 0, acknowledged: 0, resolved: 0, outOfStock: 0, lowStock: 0
       };
 
-      return result;
+      return result as StockAlertStats;
     } catch (error) {
       console.error('Error calculating stock alert statistics:', error);
       return {
@@ -401,6 +414,9 @@ export class StockAlertsService {
     try {
       await connectDB();
       const db = mongoose.connection.db;
+      if (!db) {
+        throw new Error('Database connection not established');
+      }
 
       const objectIds = alertIds.map(id => new mongoose.Types.ObjectId(id));
 
@@ -428,6 +444,9 @@ export class StockAlertsService {
     try {
       await connectDB();
       const db = mongoose.connection.db;
+      if (!db) {
+        throw new Error('Database connection not established');
+      }
 
       const alert = await db.collection('stockalerts').findOne({
         _id: new mongoose.Types.ObjectId(alertId)
@@ -438,7 +457,7 @@ export class StockAlertsService {
       return {
         ...alert,
         _id: alert._id.toString()
-      };
+      } as StockAlert;
     } catch (error) {
       console.error('Error fetching stock alert by ID:', error);
       return null;
@@ -452,6 +471,9 @@ export class StockAlertsService {
     try {
       await connectDB();
       const db = mongoose.connection.db;
+      if (!db) {
+        throw new Error('Database connection not established');
+      }
 
       const objectIds = alertIds.map(id => new mongoose.Types.ObjectId(id));
 

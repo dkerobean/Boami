@@ -243,7 +243,7 @@ export class RecurringPaymentProcessor {
             type: 'info',
             message: `Deactivated expired recurring payment: ${payment._id}`,
             additionalData: {
-              recurringPaymentId: payment._id.toString(),
+              recurringPaymentId: String(payment._id),
               userId: payment.userId,
               endDate: payment.endDate
             }
@@ -261,7 +261,7 @@ export class RecurringPaymentProcessor {
             date: new Date(),
             categoryId: payment.categoryId,
             isRecurring: true,
-            recurringPaymentId: payment._id.toString(),
+            recurringPaymentId: String(payment._id),
             userId: payment.userId
           };
 
@@ -270,7 +270,7 @@ export class RecurringPaymentProcessor {
 
           createdRecords.push({
             type: 'income' as const,
-            recordId: createdRecord._id.toString(),
+            recordId: String(createdRecord._id),
             amount: createdRecord.amount,
             description: createdRecord.description
           });
@@ -283,7 +283,7 @@ export class RecurringPaymentProcessor {
             categoryId: payment.categoryId,
             vendorId: payment.vendorId,
             isRecurring: true,
-            recurringPaymentId: payment._id.toString(),
+            recurringPaymentId: String(payment._id),
             userId: payment.userId
           };
 
@@ -292,7 +292,7 @@ export class RecurringPaymentProcessor {
 
           createdRecords.push({
             type: 'expense' as const,
-            recordId: createdRecord._id.toString(),
+            recordId: String(createdRecord._id),
             amount: createdRecord.amount,
             description: createdRecord.description
           });
@@ -307,8 +307,8 @@ export class RecurringPaymentProcessor {
         paymentMonitor.logSuccess({
           message: `Successfully processed recurring payment: ${payment.description}`,
           userId: payment.userId,
-          recurringPaymentId: payment._id.toString(),
-          createdRecordId: createdRecord?._id.toString(),
+          recurringPaymentId: String(payment._id),
+          createdRecordId: createdRecord ? String(createdRecord._id) : undefined,
           amount: payment.amount,
           processingTime: paymentProcessingTime,
           additionalData: {
@@ -325,7 +325,7 @@ export class RecurringPaymentProcessor {
           message: `Failed to process recurring payment: ${payment._id}`,
           error: error instanceof Error ? error : new Error(String(error)),
           userId: payment.userId,
-          recurringPaymentId: payment._id.toString(),
+          recurringPaymentId: String(payment._id),
           additionalData: {
             processingTime: paymentProcessingTime,
             paymentType: payment.type,
@@ -334,7 +334,7 @@ export class RecurringPaymentProcessor {
         });
 
         errors.push({
-          recurringPaymentId: payment._id.toString(),
+          recurringPaymentId: String(payment._id),
           error: error instanceof Error ? error.message : 'Unknown error'
         });
       }
@@ -388,7 +388,7 @@ export class RecurringPaymentProcessor {
           : 0;
 
         return {
-          recurringPaymentId: payment._id.toString(),
+          recurringPaymentId: String(payment._id),
           type: payment.type,
           amount: payment.amount,
           description: payment.description,
@@ -423,7 +423,7 @@ export class RecurringPaymentProcessor {
         const daysPastDue = Math.floor((now.getTime() - payment.nextDueDate.getTime()) / (1000 * 60 * 60 * 24));
 
         return {
-          recurringPaymentId: payment._id.toString(),
+          recurringPaymentId: String(payment._id),
           type: payment.type,
           amount: payment.amount,
           description: payment.description,

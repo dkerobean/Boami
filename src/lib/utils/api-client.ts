@@ -61,7 +61,7 @@ class ApiClient {
 
       // Add authorization header if token exists
       if (token) {
-        headers['Authorization'] = `Bearer ${token}`;
+        (headers as any)['Authorization'] = `Bearer ${token}`;
       }
 
       const response = await fetch(`${this.baseUrl}${url}`, {

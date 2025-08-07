@@ -85,7 +85,7 @@ export class InvitationErrorHandler {
               details: {
                 existingInvitationId: pendingInvitation._id,
                 expiresAt: pendingInvitation.expiresAt,
-                roleName: pendingInvitation.role.name
+                roleName: (pendingInvitation.role as any)?.name || 'Unknown Role'
               },
               recoverable: true,
               retryable: false,
@@ -101,7 +101,7 @@ export class InvitationErrorHandler {
               code: 'INVITATION_ROLE_CONFLICT',
               message: 'A pending invitation exists for this email with a different role',
               details: {
-                existingRole: pendingInvitation.role.name,
+                existingRole: (pendingInvitation.role as any)?.name || 'Unknown Role',
                 newRoleId: newRoleId,
                 canUpdate: true
               },
@@ -128,7 +128,7 @@ export class InvitationErrorHandler {
             message: 'A recent invitation for this email has expired',
             details: {
               expiredAt: recentlyExpired.expiresAt,
-              roleName: recentlyExpired.role.name,
+              roleName: (recentlyExpired.role as any)?.name || 'Unknown Role',
               canResend: true
             },
             recoverable: true,
@@ -226,7 +226,7 @@ export class InvitationErrorHandler {
       }
 
       // Check if inviter is still active
-      if (!invitation.invitedBy || invitation.invitedBy.status !== 'active') {
+      if (!invitation.invitedBy || (invitation.invitedBy as any)?.status !== 'active') {
         return {
           canRenew: false,
           error: {
@@ -251,7 +251,7 @@ export class InvitationErrorHandler {
       // Mark old invitation as replaced
       await Invitation.findByIdAndUpdate(invitationId, {
         status: 'replaced',
-        replacedBy: newInvitation._id,
+        replacedBy: newInvitation.invitation?._id,
         replacedAt: new Date()
       });
 
@@ -283,7 +283,7 @@ export class InvitationErrorHandler {
     options: Partial<RetryOptions> = {}
   ): Promise<T> {
     const config = { ...this.DEFAULT_RETRY_OPTIONS, ...options };
-    let lastError: Error;
+    let lastError: Error = new Error('Operation failed after all retry attempts');
 
     for (let attempt = 0; attempt <= config.maxRetries; attempt++) {
       try {

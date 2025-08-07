@@ -150,33 +150,33 @@ export class RecurringPaymentScheduler {
     this.log('info', 'Starting payment processing run');
 
     try {
-      const result = await RecurringPaymentProcessor.processDuePayments();
+      const result = await RecurringPaymentProcessor.processAllDueRecurringPayments();
 
       if (result.success) {
         this.stats.successfulRuns++;
-        this.stats.totalPaymentsProcessed += result.processed;
-        this.stats.totalPaymentsCreated += result.created;
-        this.stats.totalErrors += result.errors;
+        this.stats.totalPaymentsProcessed += result.processedCount;
+        this.stats.totalPaymentsCreated += result.createdRecords.length;
+        this.stats.totalErrors += result.errors.length;
 
         this.log('info', 'Payment processing completed successfully', {
-          processed: result.processed,
-          created: result.created,
-          errors: result.errors
+          processed: result.processedCount,
+          created: result.createdRecords.length,
+          errors: result.errors.length
         });
 
         // Send notifications for processed payments
-        if (result.created > 0) {
-          const totalAmount = this.calculateTotalAmount(result.results);
-          NotificationSystem.financial.recurringPaymentProcessed(result.created, totalAmount);
+        if (result.createdRecords.length > 0) {
+          const totalAmount = this.calculateTotalAmount(result.createdRecords);
+          NotificationSystem.financial.recurringPaymentProcessed(result.createdRecords.length, totalAmount);
         }
 
         // Log individual payment results
-        result.results.forEach(payment => {
-          if (payment.status === 'processed') {
-            this.log('debug', `Payment processed: ${payment.id}`, payment);
-          } else if (payment.status === 'error') {
-            this.log('error', `Payment failed: ${payment.id}`, payment);
-          }
+        result.createdRecords.forEach(record => {
+          this.log('debug', `Payment processed: ${record.recordId}`, record);
+        });
+        
+        result.errors.forEach(error => {
+          this.log('error', `Payment failed: ${error.recurringPaymentId} - ${error.error}`, error);
         });
 
       } else {
@@ -324,12 +324,12 @@ export class RecurringPaymentScheduler {
     this.log('info', 'Forcing immediate payment processing run');
 
     try {
-      const result = await RecurringPaymentProcessor.processDuePayments();
+      const result = await RecurringPaymentProcessor.processAllDueRecurringPayments();
 
       this.log('info', 'Forced payment processing completed', {
-        processed: result.processed,
-        created: result.created,
-        errors: result.errors
+        processed: result.processedCount,
+        created: result.createdRecords.length,
+        errors: result.errors.length
       });
 
       return result;

@@ -23,6 +23,9 @@ export class RealNotificationsService {
     try {
       await connectToDatabase();
       const db = mongoose.connection.db;
+      if (!db) {
+        throw new Error('Database connection not established');
+      }
 
       const notifications: RealNotification[] = [];
 
@@ -59,6 +62,9 @@ export class RealNotificationsService {
   private static async getStockAlertNotifications(limit: number): Promise<RealNotification[]> {
     try {
       const db = mongoose.connection.db;
+      if (!db) {
+        throw new Error('Database connection not established');
+      }
 
       // Get recent low stock products
       const lowStockProducts = await db.collection('products').find({
@@ -93,6 +99,9 @@ export class RealNotificationsService {
   private static async getTaskNotifications(limit: number): Promise<RealNotification[]> {
     try {
       const db = mongoose.connection.db;
+      if (!db) {
+        throw new Error('Database connection not established');
+      }
 
       // Get recently completed tasks
       const completedTasks = await db.collection('kanbantasks').find({
@@ -147,6 +156,9 @@ export class RealNotificationsService {
   private static async getPaymentNotifications(limit: number): Promise<RealNotification[]> {
     try {
       const db = mongoose.connection.db;
+      if (!db) {
+        throw new Error('Database connection not established');
+      }
 
       // Get recent invoices
       const recentInvoices = await db.collection('invoices').find({
@@ -179,6 +191,9 @@ export class RealNotificationsService {
   private static async getUserActivityNotifications(limit: number): Promise<RealNotification[]> {
     try {
       const db = mongoose.connection.db;
+      if (!db) {
+        throw new Error('Database connection not established');
+      }
 
       // Get recently joined users
       const recentUsers = await db.collection('users').find({

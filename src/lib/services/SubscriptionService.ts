@@ -111,7 +111,7 @@ export class SubscriptionService {
           logo: process.env.COMPANY_LOGO_URL
         },
         meta: {
-          subscriptionId: subscription._id.toString(),
+          subscriptionId: String(subscription._id),
           planId: data.planId,
           userId: data.userId,
           paymentMethod: data.paymentMethod
@@ -227,7 +227,7 @@ export class SubscriptionService {
               logo: process.env.COMPANY_LOGO_URL
             },
             meta: {
-              subscriptionId: subscription._id.toString(),
+              subscriptionId: String(subscription._id),
               planId: data.planId,
               userId: subscription.userId.toString(),
               transactionType,

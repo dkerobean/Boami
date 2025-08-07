@@ -118,7 +118,10 @@ export class FlutterwaveService {
       throw new Error('Flutterwave API keys are required');
     }
 
-    this.flw = new Flutterwave(this.config.public_key, this.config.secret_key);
+    this.flw = new Flutterwave({
+      public_key: this.config.public_key,
+      secret_key: this.config.secret_key
+    });
   }
 
   /**

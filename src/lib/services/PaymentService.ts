@@ -389,7 +389,7 @@ export class PaymentService {
           logo: process.env.COMPANY_LOGO_URL
         },
         meta: {
-          originalTransactionId: transaction._id.toString(),
+          originalTransactionId: String(transaction._id),
           retryAttempt: true
         }
       };
@@ -411,7 +411,7 @@ export class PaymentService {
         customerPhone: transaction.customerPhone,
         metadata: {
           ...transaction.metadata,
-          originalTransactionId: transaction._id.toString(),
+          originalTransactionId: String(transaction._id),
           retryAttempt: true
         }
       });

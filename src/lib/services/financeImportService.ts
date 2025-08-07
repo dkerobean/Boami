@@ -622,7 +622,8 @@ export class FinanceImportService {
             } catch (individualError) {
               job.failedRows++;
               job.results.failed++;
-              job.errors.push({
+              if (!job.importErrors) job.importErrors = [];
+              job.importErrors.push({
                 row: processedCount + 2,
                 field: 'general',
                 message: individualError instanceof Error ? individualError.message : 'Unknown error'
@@ -636,14 +637,15 @@ export class FinanceImportService {
       for (const failedRecord of failedRecords) {
         job.failedRows++;
         job.results.failed++;
-        job.errors.push({
+        if (!job.importErrors) job.importErrors = [];
+        job.importErrors.push({
           row: failedRecord.rowNumber,
           field: 'general',
-          message: failedRecord.error
+          message: failedRecord.error || 'Unknown error'
         });
 
         if (!options.skipInvalidRows) {
-          throw new Error(`Row ${failedRecord.rowNumber}: ${failedRecord.error}`);
+          throw new Error(`Row ${failedRecord.rowNumber}: ${failedRecord.error || 'Unknown error'}`);
         }
       }
 
@@ -957,7 +959,20 @@ export class FinanceImportService {
   static async getUserImportJobs(userId: string, limit = 10): Promise<ImportJobResult[]> {
     try {
       const jobs = await ImportJob.findUserJobs(userId, limit);
-      return jobs as ImportJobResult[];
+      return jobs.map(job => ({
+        jobId: job.jobId,
+        status: job.status,
+        totalRows: job.totalRows,
+        processedRows: job.processedRows,
+        successfulRows: job.successfulRows,
+        failedRows: job.failedRows,
+        results: job.results,
+        errors: job.importErrors || [],
+        warnings: job.warnings || [],
+        createdAt: job.createdAt,
+        completedAt: job.completedAt,
+        userId: job.userId
+      }));
     } catch (error) {
       console.error(`Failed to get user import jobs for ${userId}:`, error);
       return [];

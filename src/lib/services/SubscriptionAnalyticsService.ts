@@ -93,7 +93,7 @@ export class SubscriptionAnalyticsService {
       console.error('Error getting subscription metrics:', error);
       return {
         success: false,
-        error: error.message
+        error: error instanceof Error ? error.message : String(error)
       };
     }
   }
@@ -298,7 +298,7 @@ export class SubscriptionAnalyticsService {
       console.error('Error getting conversion metrics:', error);
       return {
         success: false,
-        error: error.message
+        error: error instanceof Error ? error.message : String(error)
       };
     }
   }
@@ -411,7 +411,7 @@ export class SubscriptionAnalyticsService {
       console.error('Error getting churn analysis:', error);
       return {
         success: false,
-        error: error.message
+        error: error instanceof Error ? error.message : String(error)
       };
     }
   }
@@ -514,7 +514,7 @@ export class SubscriptionAnalyticsService {
       console.error('Error getting payment metrics:', error);
       return {
         success: false,
-        error: error.message
+        error: error instanceof Error ? error.message : String(error)
       };
     }
   }
@@ -597,7 +597,7 @@ export class SubscriptionAnalyticsService {
       console.error('Error getting cohort analysis:', error);
       return {
         success: false,
-        error: error.message
+        error: error instanceof Error ? error.message : String(error)
       };
     }
   }
@@ -685,7 +685,7 @@ export class SubscriptionAnalyticsService {
       console.error('Error getting subscription alerts:', error);
       return {
         success: false,
-        error: error.message
+        error: error instanceof Error ? error.message : String(error)
       };
     }
   }

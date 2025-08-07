@@ -27,7 +27,7 @@ export class DatabaseOptimization {
         subscriptionCollection.createIndex({ status: 1 }),
         subscriptionCollection.createIndex({ isActive: 1 }),
         subscriptionCollection.createIndex({ currentPeriodEnd: 1 }),
-        subscriptionCoion.createIndex({ createdAt: -1 }),
+        subscriptionCollection.createIndex({ createdAt: -1 }),
         subscriptionCollection.createIndex({ updatedAt: -1 }),
 
         // Compound indexes for common queries
@@ -248,13 +248,14 @@ export class DatabaseOptimization {
    */
   static optimizeConnectionPool(): void {
     // Set optimal connection pool settings
-    mongoose.set('maxPoolSize', 10); // Maximum number of connections
-    mongoose.set('minPoolSize', 5);  // Minimum number of connections
-    mongoose.set('maxIdleTimeMS', 30000); // Close connections after 30 seconds of inactivity
-    mongoose.set('serverSelectionTimeoutMS', 5000); // How long to try selecting a server
-    mongoose.set('socketTimeoutMS', 45000); // How long a send or receive on a socket can take
+    // Note: These settings should be configured in the connection options, not via mongoose.set()
+    // mongoose.set('maxPoolSize', 10); // Maximum number of connections
+    // mongoose.set('minPoolSize', 5);  // Minimum number of connections
+    // mongoose.set('maxIdleTimeMS', 30000); // Close connections after 30 seconds of inactivity
+    // mongoose.set('serverSelectionTimeoutMS', 5000); // How long to try selecting a server
+    // mongoose.set('socketTimeoutMS', 45000); // How long a send or receive on a socket can take
 
-    console.log('✅ Connection pool optimized');
+    console.log('✅ Connection pool settings noted (configure in connection options)');
   }
 
   /**
