@@ -52,7 +52,7 @@ export async function getFreshUserData(userEmail: string) {
     }
 
     return {
-      id: user._id.toString(),
+      id: (user._id as any).toString(),
       email: user.email,
       name: user.getFullName(),
       firstName: user.firstName,

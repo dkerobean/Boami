@@ -8,6 +8,11 @@ declare module 'next-auth' {
       name: string;
       firstName: string;
       lastName: string;
+      designation?: string;
+      phone?: string;
+      company?: string;
+      department?: string;
+      bio?: string;
       role?: {
         id: string;
         name: string;
@@ -15,6 +20,9 @@ declare module 'next-auth' {
       };
       isEmailVerified: boolean;
       profileImage?: string;
+      avatar?: string;
+      status?: string;
+      isActive?: boolean;
     };
   }
 
@@ -24,6 +32,11 @@ declare module 'next-auth' {
     name: string;
     firstName: string;
     lastName: string;
+    designation?: string;
+    phone?: string;
+    company?: string;
+    department?: string;
+    bio?: string;
     role?: {
       id: string;
       name: string;
@@ -31,6 +44,9 @@ declare module 'next-auth' {
     };
     isEmailVerified: boolean;
     profileImage?: string;
+    avatar?: string;
+    status?: string;
+    isActive?: boolean;
   }
 }
 
@@ -44,7 +60,15 @@ declare module 'next-auth/jwt' {
     };
     firstName: string;
     lastName: string;
+    designation?: string;
+    phone?: string;
+    company?: string;
+    department?: string;
+    bio?: string;
     isEmailVerified: boolean;
     profileImage?: string;
+    avatar?: string;
+    status?: string;
+    isActive?: boolean;
   }
 }
