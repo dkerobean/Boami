@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { put, del } from '@vercel/blob';
-import fs from 'node:fs';
-import path from 'node:path';
+import { writeFile, mkdir } from 'fs/promises';
+import { existsSync, unlinkSync } from 'fs';
+import path from 'path';
+import crypto from 'crypto';
 import { authenticateApiRequest, createApiResponse } from '@/lib/auth/nextauth-middleware';
 import User from '@/lib/database/models/User';
 import { connectToDatabase } from '@/lib/database/connection';
@@ -24,6 +25,9 @@ export async function POST(request: NextRequest) {
     console.log('✅ User authenticated:', authResult.user.email);
 
     await connectToDatabase();
+
+    // Get current user to check for existing profile image
+    const existingUser = await User.findOne({ _id: authResult.user.id });
 
     const formData = await request.formData();
     const file = formData.get('profileImage') as File;
@@ -62,35 +66,42 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(response, { status });
     }
 
-    // Generate unique filename
+    // Generate unique filename with random string for security
     const timestamp = Date.now();
+    const randomString = crypto.randomBytes(8).toString('hex');
     const fileExtension = file.name.split('.').pop();
-    const fileName = `${authResult.user.id}_${timestamp}.${fileExtension}`;
+    const uniqueFilename = `${authResult.user.id}_${timestamp}_${randomString}.${fileExtension}`;
 
-    let profileImagePath: string;
-    const blobToken = process.env.BLOB_READ_WRITE_TOKEN;
+    // Define upload path
+    const uploadsDir = path.join(process.cwd(), 'public', 'uploads', 'profiles');
+    const filePath = path.join(uploadsDir, uniqueFilename);
 
-    if (blobToken) {
-      // Upload to Vercel Blob storage
-      const blob = await put(`profiles/${fileName}`, file, {
-        access: 'public',
-        token: blobToken,
-        contentType: file.type,
-      });
-      profileImagePath = blob.url;
-    } else {
-      // Fallback for local development when no Blob token is configured
-      const uploadsDir = path.join(process.cwd(), 'public', 'uploads', 'profiles');
-      try {
-        fs.mkdirSync(uploadsDir, { recursive: true });
-      } catch (_) {}
-
-      const fileBuffer = Buffer.from(await file.arrayBuffer());
-      const localFilename = `${authResult.user.id}_${timestamp}.${fileExtension}`;
-      const localPath = path.join(uploadsDir, localFilename);
-      fs.writeFileSync(localPath, fileBuffer);
-      profileImagePath = `/uploads/profiles/${localFilename}`;
+    // Ensure upload directory exists
+    if (!existsSync(uploadsDir)) {
+      await mkdir(uploadsDir, { recursive: true });
     }
+
+    // Convert file to buffer and save
+    const bytes = await file.arrayBuffer();
+    const buffer = Buffer.from(bytes);
+    await writeFile(filePath, buffer);
+
+    // Delete old profile image if it exists
+    if (existingUser?.profileImage && existingUser.profileImage.startsWith('/uploads/')) {
+      try {
+        const oldFilePath = path.join(process.cwd(), 'public', existingUser.profileImage);
+        if (existsSync(oldFilePath)) {
+          unlinkSync(oldFilePath);
+          console.log('✅ Successfully deleted old profile image:', existingUser.profileImage);
+        }
+      } catch (deleteError) {
+        console.warn('⚠️ Failed to delete old profile image:', deleteError);
+        // Continue with upload - deletion failure shouldn't block new upload
+      }
+    }
+
+    // Set the public URL path
+    const profileImagePath = `/uploads/profiles/${uniqueFilename}`;
     const user = await User.findOneAndUpdate(
       { _id: authResult.user.id },
       {
@@ -165,23 +176,17 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json(response, { status });
     }
 
-    // Delete from Vercel Blob if exists
-    if (existingUser.profileImage && existingUser.profileImage.includes('vercel-storage.com')) {
-      try {
-        await del(existingUser.profileImage);
-      } catch (blobError) {
-        console.warn('Failed to delete blob:', blobError);
-      }
-    }
-    // If existing image was stored locally, attempt to remove it as cleanup (best-effort)
+    // Delete existing profile image file if it exists
     if (existingUser.profileImage && existingUser.profileImage.startsWith('/uploads/')) {
       try {
         const localFilePath = path.join(process.cwd(), 'public', existingUser.profileImage);
-        if (fs.existsSync(localFilePath)) {
-          fs.unlinkSync(localFilePath);
+        if (existsSync(localFilePath)) {
+          unlinkSync(localFilePath);
+          console.log('✅ Successfully deleted existing profile image:', existingUser.profileImage);
         }
-      } catch (localDelErr) {
-        console.warn('Failed to delete local image:', localDelErr);
+      } catch (deleteError) {
+        console.warn('⚠️ Failed to delete existing profile image:', deleteError);
+        // Continue with the operation - deletion failure shouldn't block the update
       }
     }
 
