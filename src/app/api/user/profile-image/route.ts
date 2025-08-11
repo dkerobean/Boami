@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { writeFile, mkdir } from 'fs/promises';
-import { join } from 'path';
-import { existsSync } from 'fs';
-import { JWTManager } from '@/lib/auth/jwt';
+import { put, del } from '@vercel/blob';
+import fs from 'node:fs';
+import path from 'node:path';
+import { authenticateApiRequest, createApiResponse } from '@/lib/auth/nextauth-middleware';
 import User from '@/lib/database/models/User';
 import { connectToDatabase } from '@/lib/database/connection';
 
@@ -11,68 +11,89 @@ import { connectToDatabase } from '@/lib/database/connection';
  */
 export async function POST(request: NextRequest) {
   try {
-    await connectToDatabase();
-    
-    // Get current user from JWT token
-    const currentUser = JWTManager.getCurrentUser();
-    
-    if (!currentUser) {
-      return NextResponse.json({ 
-        success: false, 
-        error: 'Unauthorized' 
-      }, { status: 401 });
+    console.log('📸 Profile image upload API called');
+
+    // Verify authentication using NextAuth middleware
+    const authResult = await authenticateApiRequest(request);
+    if (!authResult.success || !authResult.user) {
+      console.log('❌ Authentication failed:', authResult.error);
+      const { response, status } = createApiResponse(false, null, authResult.error, 401);
+      return NextResponse.json(response, { status });
     }
+
+    console.log('✅ User authenticated:', authResult.user.email);
+
+    await connectToDatabase();
 
     const formData = await request.formData();
     const file = formData.get('profileImage') as File;
 
     if (!file) {
-      return NextResponse.json({
-        success: false,
-        error: 'No image file provided'
-      }, { status: 400 });
+      const { response, status } = createApiResponse(
+        false,
+        null,
+        { code: 'VALIDATION_ERROR', message: 'No image file provided' },
+        400
+      );
+      return NextResponse.json(response, { status });
     }
 
-    // Validate file type
-    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+    // Validate file type (allow GIF to match UI copy)
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/gif'];
     if (!allowedTypes.includes(file.type)) {
-      return NextResponse.json({
-        success: false,
-        error: 'Invalid file type. Only JPEG, PNG, and WebP images are allowed.'
-      }, { status: 400 });
+      const { response, status } = createApiResponse(
+        false,
+        null,
+        { code: 'VALIDATION_ERROR', message: 'Invalid file type. Only JPEG, PNG, and WebP images are allowed.' },
+        400
+      );
+      return NextResponse.json(response, { status });
     }
 
     // Validate file size (5MB limit)
     const maxSize = 5 * 1024 * 1024; // 5MB
     if (file.size > maxSize) {
-      return NextResponse.json({
-        success: false,
-        error: 'File size too large. Maximum size is 5MB.'
-      }, { status: 400 });
-    }
-
-    // Create uploads directory if it doesn't exist
-    const uploadsDir = join(process.cwd(), 'public', 'uploads', 'profiles');
-    if (!existsSync(uploadsDir)) {
-      await mkdir(uploadsDir, { recursive: true });
+      const { response, status } = createApiResponse(
+        false,
+        null,
+        { code: 'VALIDATION_ERROR', message: 'File size too large. Maximum size is 5MB.' },
+        400
+      );
+      return NextResponse.json(response, { status });
     }
 
     // Generate unique filename
     const timestamp = Date.now();
     const fileExtension = file.name.split('.').pop();
-    const fileName = `${currentUser.email.replace('@', '_').replace('.', '_')}_${timestamp}.${fileExtension}`;
-    const filePath = join(uploadsDir, fileName);
+    const fileName = `${authResult.user.id}_${timestamp}.${fileExtension}`;
 
-    // Convert file to buffer and save
-    const bytes = await file.arrayBuffer();
-    const buffer = Buffer.from(bytes);
-    await writeFile(filePath, buffer);
+    let profileImagePath: string;
+    const blobToken = process.env.BLOB_READ_WRITE_TOKEN;
 
-    // Update user's profile image in database
-    const profileImagePath = `/uploads/profiles/${fileName}`;
+    if (blobToken) {
+      // Upload to Vercel Blob storage
+      const blob = await put(`profiles/${fileName}`, file, {
+        access: 'public',
+        token: blobToken,
+        contentType: file.type,
+      });
+      profileImagePath = blob.url;
+    } else {
+      // Fallback for local development when no Blob token is configured
+      const uploadsDir = path.join(process.cwd(), 'public', 'uploads', 'profiles');
+      try {
+        fs.mkdirSync(uploadsDir, { recursive: true });
+      } catch (_) {}
+
+      const fileBuffer = Buffer.from(await file.arrayBuffer());
+      const localFilename = `${authResult.user.id}_${timestamp}.${fileExtension}`;
+      const localPath = path.join(uploadsDir, localFilename);
+      fs.writeFileSync(localPath, fileBuffer);
+      profileImagePath = `/uploads/profiles/${localFilename}`;
+    }
     const user = await User.findOneAndUpdate(
-      { email: currentUser.email },
-      { 
+      { _id: authResult.user.id },
+      {
         profileImage: profileImagePath,
         avatar: profileImagePath // Keep both fields updated for compatibility
       },
@@ -80,27 +101,35 @@ export async function POST(request: NextRequest) {
     ).select('-password');
 
     if (!user) {
-      return NextResponse.json({
-        success: false,
-        error: 'User not found'
-      }, { status: 404 });
+      const { response, status } = createApiResponse(
+        false,
+        null,
+        { code: 'NOT_FOUND', message: 'User not found' },
+        404
+      );
+      return NextResponse.json(response, { status });
     }
 
-    return NextResponse.json({
-      success: true,
-      message: 'Profile image uploaded successfully',
-      data: {
+    const { response, status } = createApiResponse(
+      true,
+      {
         profileImage: profileImagePath,
         user: user
-      }
-    });
+      },
+      undefined,
+      200
+    );
+    return NextResponse.json(response, { status });
 
   } catch (error) {
     console.error('Profile image upload error:', error);
-    return NextResponse.json({
-      success: false,
-      error: 'Failed to upload profile image'
-    }, { status: 500 });
+    const { response, status } = createApiResponse(
+      false,
+      null,
+      { code: 'INTERNAL_ERROR', message: 'Failed to upload profile image' },
+      500
+    );
+    return NextResponse.json(response, { status });
   }
 }
 
@@ -109,46 +138,79 @@ export async function POST(request: NextRequest) {
  */
 export async function DELETE(request: NextRequest) {
   try {
+    console.log('🗑️ Profile image deletion API called');
+
+    // Verify authentication using NextAuth middleware
+    const authResult = await authenticateApiRequest(request);
+    if (!authResult.success || !authResult.user) {
+      console.log('❌ Authentication failed:', authResult.error);
+      const { response, status } = createApiResponse(false, null, authResult.error, 401);
+      return NextResponse.json(response, { status });
+    }
+
+    console.log('✅ User authenticated:', authResult.user.email);
+
     await connectToDatabase();
-    
-    // Get current user from JWT token
-    const currentUser = JWTManager.getCurrentUser();
-    
-    if (!currentUser) {
-      return NextResponse.json({ 
-        success: false, 
-        error: 'Unauthorized' 
-      }, { status: 401 });
+
+    // Get current user to find existing profile image
+    const existingUser = await User.findOne({ _id: authResult.user.id });
+
+    if (!existingUser) {
+      const { response, status } = createApiResponse(
+        false,
+        null,
+        { code: 'NOT_FOUND', message: 'User not found' },
+        404
+      );
+      return NextResponse.json(response, { status });
+    }
+
+    // Delete from Vercel Blob if exists
+    if (existingUser.profileImage && existingUser.profileImage.includes('vercel-storage.com')) {
+      try {
+        await del(existingUser.profileImage);
+      } catch (blobError) {
+        console.warn('Failed to delete blob:', blobError);
+      }
+    }
+    // If existing image was stored locally, attempt to remove it as cleanup (best-effort)
+    if (existingUser.profileImage && existingUser.profileImage.startsWith('/uploads/')) {
+      try {
+        const localFilePath = path.join(process.cwd(), 'public', existingUser.profileImage);
+        if (fs.existsSync(localFilePath)) {
+          fs.unlinkSync(localFilePath);
+        }
+      } catch (localDelErr) {
+        console.warn('Failed to delete local image:', localDelErr);
+      }
     }
 
     // Update user to remove profile image
     const user = await User.findOneAndUpdate(
-      { email: currentUser.email },
-      { 
+      { _id: authResult.user.id },
+      {
         profileImage: null,
         avatar: null
       },
       { new: true }
     ).select('-password');
 
-    if (!user) {
-      return NextResponse.json({
-        success: false,
-        error: 'User not found'
-      }, { status: 404 });
-    }
-
-    return NextResponse.json({
-      success: true,
-      message: 'Profile image removed successfully',
-      data: { user }
-    });
+    const { response, status } = createApiResponse(
+      true,
+      { user },
+      undefined,
+      200
+    );
+    return NextResponse.json(response, { status });
 
   } catch (error) {
     console.error('Profile image deletion error:', error);
-    return NextResponse.json({
-      success: false,
-      error: 'Failed to remove profile image'
-    }, { status: 500 });
+    const { response, status } = createApiResponse(
+      false,
+      null,
+      { code: 'INTERNAL_ERROR', message: 'Failed to remove profile image' },
+      500
+    );
+    return NextResponse.json(response, { status });
   }
 }

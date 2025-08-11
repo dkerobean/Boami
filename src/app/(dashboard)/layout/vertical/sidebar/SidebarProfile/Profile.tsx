@@ -48,8 +48,20 @@ export const Profile = () => {
         <>
           <Avatar
             alt="User Profile"
-            src={user?.profileImage || user?.avatar || "/images/profile/user-1.jpg"}
+            src={
+              (() => {
+                const profileImage = user?.profileImage || user?.avatar;
+                if (!profileImage) return "/images/profile/user-1.jpg";
+                return profileImage;
+              })()
+            }
             sx={{height: 40, width: 40}}
+            onError={(e) => {
+              const target = e.target as HTMLImageElement;
+              if (target.src !== "/images/profile/user-1.jpg") {
+                target.src = "/images/profile/user-1.jpg";
+              }
+            }}
           />
 
           <Box>

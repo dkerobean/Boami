@@ -68,6 +68,7 @@ const AuthLogin = ({ title, subtitle, subtext }: loginType) => {
       const result = await login({
         email: values.email,
         password: values.password,
+        rememberMe: values.rememberMe,
       });
 
       if (result.success) {
@@ -85,7 +86,7 @@ const AuthLogin = ({ title, subtitle, subtext }: loginType) => {
       } else {
         // Stop loading on error
         stopTransition();
-        
+
         // Check if it's a verification error
         if (result.message?.includes('verify') || result.message?.includes('verification')) {
           setVerificationRequired(values.email);

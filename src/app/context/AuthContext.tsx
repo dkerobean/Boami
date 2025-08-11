@@ -164,6 +164,44 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
       console.log('✅ User found in session:', session.user.email);
 
+      // Respect Remember Me
+      try {
+        const cookies = typeof document !== 'undefined' ? document.cookie : '';
+        const hasRememberPersistent = cookies.includes('boami_remember_me=1');
+        const hasSessionOnly = cookies.includes('boami_session_only=1');
+        if (!hasRememberPersistent && !hasSessionOnly) {
+          console.log('🔒 Session present but Remember Me/session cookie missing. Enforcing logout.');
+          await signOut({ redirect: false });
+          dispatch({ type: 'SET_USER', payload: null });
+          return;
+        }
+
+        // If session-only, enforce default timeout (24h) from first login
+        if (hasSessionOnly) {
+          const startMatch = cookies
+            .split(';')
+            .map(c => c.trim())
+            .find(c => c.startsWith('boami_session_start='));
+          const startValue = startMatch?.split('=')[1];
+          const startMs = startValue ? Number(decodeURIComponent(startValue)) : NaN;
+          const defaultTimeoutMs = 24 * 60 * 60 * 1000; // 24 hours
+          if (!Number.isFinite(startMs)) {
+            // Initialize on first detection
+            document.cookie = `boami_session_start=${Date.now()}; Path=/; SameSite=Strict`;
+          } else {
+            const age = Date.now() - startMs;
+            if (age > defaultTimeoutMs) {
+              console.log('⏳ Session-only default timeout reached. Logging out.');
+              await signOut({ redirect: false });
+              dispatch({ type: 'RESET_STATE' });
+              return;
+            }
+          }
+        }
+      } catch (cookieErr) {
+        console.warn('Failed to evaluate Remember Me cookies:', cookieErr);
+      }
+
       // Transform NextAuth session data to match our UserData interface
       const userData: UserData = {
         _id: session.user.id,
@@ -220,6 +258,25 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
       if (result?.ok) {
         console.log('✅ NextAuth login successful');
+        // Set Remember Me cookies
+        try {
+          const remember = Boolean(credentials.rememberMe);
+          // Clear previous flags
+          document.cookie = 'boami_remember_me=; Path=/; Max-Age=0';
+          document.cookie = 'boami_session_only=; Path=/; Max-Age=0';
+          document.cookie = 'boami_session_start=; Path=/; Max-Age=0';
+          if (remember) {
+            // Persistent for 30 days
+            const maxAgeSeconds = 30 * 24 * 60 * 60;
+            document.cookie = `boami_remember_me=1; Path=/; Max-Age=${maxAgeSeconds}; SameSite=Strict`;
+          } else {
+            // Session-only cookie (no Expires/Max-Age)
+            document.cookie = 'boami_session_only=1; Path=/; SameSite=Strict';
+            document.cookie = `boami_session_start=${Date.now()}; Path=/; SameSite=Strict`;
+          }
+        } catch (cookieErr) {
+          console.warn('Failed to set Remember Me cookie:', cookieErr);
+        }
         // Fetch user data after successful login
         await fetchUser();
         return { success: true, message: 'Login successful' };
@@ -260,6 +317,13 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
       // Clear state
       dispatch({ type: 'RESET_STATE' });
+
+      // Clear Remember Me cookies
+      if (typeof document !== 'undefined') {
+        document.cookie = 'boami_remember_me=; Path=/; Max-Age=0';
+        document.cookie = 'boami_session_only=; Path=/; Max-Age=0';
+        document.cookie = 'boami_session_start=; Path=/; Max-Age=0';
+      }
 
       console.log('✅ Logout successful');
 

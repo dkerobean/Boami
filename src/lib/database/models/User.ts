@@ -406,7 +406,7 @@ userSchema.statics.createFromInvitation = async function(
   const user = new this({
     email: email.toLowerCase(),
     role: roleId,
-    status: 'pending',
+    status: 'active', // Set to active for consistency with registration flow
     invitedBy,
     invitedAt: new Date(),
     isActive: true,

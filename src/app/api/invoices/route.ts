@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import * as yup from 'yup';
-import { JWTManager } from '@/lib/auth/jwt';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/app/api/auth/[...nextauth]/route';
 import { connectToDatabase } from '@/lib/database/connection';
 import Invoice, { IInvoice } from '@/lib/database/models/Invoice';
 
@@ -55,9 +56,9 @@ const invoiceSchema = yup.object({
 export async function GET(req: NextRequest) {
   try {
     // Check authentication
-    const currentUser = JWTManager.getCurrentUser();
+    const session = await getServerSession(authOptions);
     
-    if (!currentUser) {
+    if (!session?.user?.id) {
       return NextResponse.json({ 
         success: false,
         message: 'Unauthorized' 
@@ -73,7 +74,7 @@ export async function GET(req: NextRequest) {
     const skip = (page - 1) * limit;
 
     // Build query
-    let query: any = { userId: currentUser.userId };
+    let query: any = { userId: session.user.id };
     
     if (status && status !== 'all') {
       query.status = status;
@@ -115,9 +116,9 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     // Check authentication
-    const currentUser = JWTManager.getCurrentUser();
+    const session = await getServerSession(authOptions);
     
-    if (!currentUser) {
+    if (!session?.user?.id) {
       return NextResponse.json({ 
         success: false,
         message: 'Unauthorized' 
@@ -132,8 +133,8 @@ export async function POST(req: NextRequest) {
     // Create invoice with user data  
     const invoiceData = {
       ...validatedData,
-      userId: currentUser.userId,
-      createdBy: currentUser.email
+      userId: session.user.id,
+      createdBy: session.user.email
     };
 
     const invoice = new Invoice(invoiceData);

@@ -7,6 +7,7 @@ import ProductVariant from '@/lib/database/models/ProductVariant';
 import InventoryLog from '@/lib/database/models/InventoryLog';
 import StockAlert from '@/lib/database/models/StockAlert';
 import { InventoryManager } from '@/lib/utils/inventory-manager';
+import { authenticateApiRequest, createApiResponse } from '@/lib/auth/nextauth-middleware';
 
 const productUpdateSchema = yup.object({
   title: yup.string().max(200),
@@ -45,14 +46,18 @@ function isValidObjectId(id: string): boolean {
 
 /**
  * Helper function to find a product using multiple lookup strategies
+ * Now includes user ownership verification
  */
-async function findProductById(id: string) {
+async function findProductById(id: string, userId?: string) {
   let product = null;
+
+  // Base query with user ownership filter
+  const baseQuery = userId ? { createdBy: userId } : {};
 
   // Strategy 1: Try as MongoDB ObjectId first (most common case)
   if (isValidObjectId(id)) {
     try {
-      product = await Product.findById(id).lean();
+      product = await Product.findOne({ _id: id, ...baseQuery }).lean();
       if (product) return product;
     } catch (error) {
       console.warn('ObjectId lookup failed:', error);
@@ -63,7 +68,7 @@ async function findProductById(id: string) {
   const numericId = Number(id);
   if (!isNaN(numericId) && Number.isInteger(numericId)) {
     try {
-      product = await Product.findOne({ 'wordpress.id': numericId }).lean();
+      product = await Product.findOne({ 'wordpress.id': numericId, ...baseQuery }).lean();
       if (product) return product;
     } catch (error) {
       console.warn('WordPress ID lookup failed:', error);
@@ -73,7 +78,7 @@ async function findProductById(id: string) {
   // Strategy 3: Try as custom numeric ID field (if exists)
   if (!isNaN(numericId) && Number.isInteger(numericId)) {
     try {
-      product = await Product.findOne({ numericId: numericId }).lean();
+      product = await Product.findOne({ numericId: numericId, ...baseQuery }).lean();
       if (product) return product;
     } catch (error) {
       console.warn('Numeric ID lookup failed:', error);
@@ -83,10 +88,15 @@ async function findProductById(id: string) {
   // Strategy 4: Try as string ID in other fields (like SKU or custom ID)
   try {
     product = await Product.findOne({ 
-      $or: [
-        { sku: id },
-        { customId: id },
-        { externalId: id }
+      $and: [
+        baseQuery,
+        {
+          $or: [
+            { sku: id },
+            { customId: id },
+            { externalId: id }
+          ]
+        }
       ]
     }).lean();
     if (product) return product;
@@ -106,25 +116,39 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   try {
+    // Verify authentication using unified middleware
+    const authResult = await authenticateApiRequest(request);
+    if (!authResult.success || !authResult.user) {
+      console.log('❌ Authentication failed:', authResult.error);
+      const { response, status } = createApiResponse(false, null, authResult.error, 401);
+      return NextResponse.json(response, { status });
+    }
+
     await connectToDatabase();
 
     const productId = params.id;
     
     if (!productId || typeof productId !== 'string' || productId.trim() === '') {
-      return NextResponse.json({
-        success: false,
-        error: 'Product ID is required'
-      }, { status: 400 });
+      const { response, status } = createApiResponse(
+        false,
+        null,
+        { code: 'VALIDATION_ERROR', message: 'Product ID is required' },
+        400
+      );
+      return NextResponse.json(response, { status });
     }
 
-    // Use flexible product lookup
-    const product = await findProductById(productId.trim());
+    // Use flexible product lookup with user ownership filter
+    const product = await findProductById(productId.trim(), authResult.user.id);
     
     if (!product) {
-      return NextResponse.json({
-        success: false,
-        error: 'Product not found'
-      }, { status: 404 });
+      const { response, status } = createApiResponse(
+        false,
+        null,
+        { code: 'NOT_FOUND', message: 'Product not found or access denied' },
+        404
+      );
+      return NextResponse.json(response, { status });
     }
 
     // Use the actual MongoDB _id for related data queries
@@ -155,22 +179,23 @@ export async function GET(
       regularPrice: product.regularPrice || product.price,
     };
 
-    return NextResponse.json({
-      success: true,
-      data: {
-        product: mappedProduct,
-        variants,
-        inventoryLogs,
-        stockAlerts
-      }
+    const { response, status } = createApiResponse(true, {
+      product: mappedProduct,
+      variants,
+      inventoryLogs,
+      stockAlerts
     });
+    return NextResponse.json(response, { status });
 
   } catch (error) {
     console.error('Product GET error:', error);
-    return NextResponse.json({
-      success: false,
-      error: 'Failed to fetch product'
-    }, { status: 500 });
+    const { response, status } = createApiResponse(
+      false,
+      null,
+      { code: 'INTERNAL_ERROR', message: 'Failed to fetch product' },
+      500
+    );
+    return NextResponse.json(response, { status });
   }
 }
 
@@ -182,6 +207,14 @@ export async function PUT(
   { params }: { params: { id: string } }
 ) {
   try {
+    // Verify authentication using unified middleware
+    const authResult = await authenticateApiRequest(request);
+    if (!authResult.success || !authResult.user) {
+      console.log('❌ Authentication failed:', authResult.error);
+      const { response, status } = createApiResponse(false, null, authResult.error, 401);
+      return NextResponse.json(response, { status });
+    }
+
     await connectToDatabase();
 
     const productId = params.id;
@@ -215,8 +248,8 @@ export async function PUT(
       throw validationError;
     }
 
-    // Find existing product using flexible lookup
-    const existingProduct = await findProductById(productId.trim());
+    // Find existing product using flexible lookup with user ownership filter
+    const existingProduct = await findProductById(productId.trim(), authResult.user.id);
     
     console.log('PUT /api/products/[id] - Product lookup result:', {
       found: !!existingProduct,
@@ -284,6 +317,7 @@ export async function PUT(
         existingProduct._id,
         {
           ...validatedData,
+          updatedBy: authResult.user.id,
           updatedAt: new Date()
         },
         { new: true, runValidators: true }
@@ -341,25 +375,39 @@ export async function DELETE(
   { params }: { params: { id: string } }
 ) {
   try {
+    // Verify authentication using unified middleware
+    const authResult = await authenticateApiRequest(request);
+    if (!authResult.success || !authResult.user) {
+      console.log('❌ Authentication failed:', authResult.error);
+      const { response, status } = createApiResponse(false, null, authResult.error, 401);
+      return NextResponse.json(response, { status });
+    }
+
     await connectToDatabase();
 
     const productId = params.id;
     
     if (!productId) {
-      return NextResponse.json({
-        success: false,
-        error: 'Product ID is required'
-      }, { status: 400 });
+      const { response, status } = createApiResponse(
+        false,
+        null,
+        { code: 'VALIDATION_ERROR', message: 'Product ID is required' },
+        400
+      );
+      return NextResponse.json(response, { status });
     }
 
-    // Find product using flexible lookup
-    const product = await findProductById(productId.trim());
+    // Find product using flexible lookup with user ownership filter
+    const product = await findProductById(productId.trim(), authResult.user.id);
     
     if (!product) {
-      return NextResponse.json({
-        success: false,
-        error: 'Product not found'
-      }, { status: 404 });
+      const { response, status } = createApiResponse(
+        false,
+        null,
+        { code: 'NOT_FOUND', message: 'Product not found or access denied' },
+        404
+      );
+      return NextResponse.json(response, { status });
     }
 
     // Check if product has active orders (you might want to add this check)
@@ -391,10 +439,10 @@ export async function DELETE(
         await Product.findByIdAndDelete(product._id, { session });
       });
 
-      return NextResponse.json({
-        success: true,
+      const { response, status } = createApiResponse(true, {
         message: 'Product deleted successfully'
       });
+      return NextResponse.json(response, { status });
 
     } finally {
       await session.endSession();
@@ -402,9 +450,12 @@ export async function DELETE(
 
   } catch (error) {
     console.error('Product deletion error:', error);
-    return NextResponse.json({
-      success: false,
-      error: 'Failed to delete product'
-    }, { status: 500 });
+    const { response, status } = createApiResponse(
+      false,
+      null,
+      { code: 'INTERNAL_ERROR', message: 'Failed to delete product' },
+      500
+    );
+    return NextResponse.json(response, { status });
   }
 }

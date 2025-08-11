@@ -102,11 +102,23 @@ const Profile = () => {
         onClick={handleClick2}
       >
         <Avatar
-          src={user?.profileImage || user?.avatar || "/images/profile/user-1.jpg"}
+          src={
+            (() => {
+              const profileImage = user?.profileImage || user?.avatar;
+              if (!profileImage) return "/images/profile/user-1.jpg";
+              return profileImage;
+            })()
+          }
           alt={'ProfileImg'}
           sx={{
             width: 35,
             height: 35,
+          }}
+          onError={(e) => {
+            const target = e.target as HTMLImageElement;
+            if (target.src !== "/images/profile/user-1.jpg") {
+              target.src = "/images/profile/user-1.jpg";
+            }
           }}
         />
       </IconButton>
@@ -131,9 +143,21 @@ const Profile = () => {
         <Typography variant="h5">User Profile</Typography>
         <Stack direction="row" py={3} spacing={2} alignItems="center">
         <Avatar
-          src={user?.profileImage || user?.avatar || "/images/profile/user-1.jpg"}
+          src={
+            (() => {
+              const profileImage = user?.profileImage || user?.avatar;
+              if (!profileImage) return "/images/profile/user-1.jpg";
+              return profileImage;
+            })()
+          }
           alt={"ProfileImg"}
           sx={{ width: 95, height: 95 }}
+          onError={(e) => {
+            const target = e.target as HTMLImageElement;
+            if (target.src !== "/images/profile/user-1.jpg") {
+              target.src = "/images/profile/user-1.jpg";
+            }
+          }}
         />
           <Box>
             <Typography variant="subtitle2" color="textPrimary" fontWeight={600}>

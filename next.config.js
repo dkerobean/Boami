@@ -41,8 +41,26 @@ const nextConfig = {
               test: /[\\/]node_modules[\\/]/,
               name: 'vendors',
               chunks: 'all',
+              enforce: true,
+              minChunks: 1,
+              maxSize: 244000,
+            },
+            mui: {
+              test: /[\\/]node_modules[\\/]@mui[\\/]/,
+              name: 'mui',
+              chunks: 'all',
+              enforce: true,
+            },
+            common: {
+              name: 'common',
+              minChunks: 2,
+              chunks: 'all',
+              enforce: true,
             },
           },
+        },
+        runtimeChunk: {
+          name: 'webpack-runtime',
         },
       };
     }

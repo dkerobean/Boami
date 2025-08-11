@@ -20,7 +20,7 @@ import CustomSelect from '../../forms/theme-elements/CustomSelect';
 
 // images
 import { Stack } from '@mui/system';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuthContext } from '@/app/context/AuthContext';
 
 // locations
 const locations = [
@@ -71,7 +71,7 @@ const validationSchema = Yup.object({
 });
 
 const AccountTab = () => {
-  const { user, loading, error, updateUser } = useAuth();
+  const { user, isLoading: loading, error, updateProfile } = useAuthContext();
   const [successMessage, setSuccessMessage] = React.useState('');
   const [errorMessage, setErrorMessage] = React.useState('');
   const [profileImageFile, setProfileImageFile] = React.useState<File | null>(null);
@@ -90,7 +90,7 @@ const AccountTab = () => {
     enableReinitialize: true,
     onSubmit: async (values) => {
       try {
-        const success = await updateUser(values);
+        const success = await updateProfile(values);
         if (success) {
           setSuccessMessage('Profile updated successfully!');
         } else {
@@ -118,7 +118,7 @@ const AccountTab = () => {
       }
 
       setProfileImageFile(file);
-      
+
       // Create preview
       const reader = new FileReader();
       reader.onload = (e) => {
@@ -241,9 +241,9 @@ const AccountTab = () => {
                       </Button>
                     )}
                   </Stack>
-                  <Typography variant="subtitle1" color="textSecondary" mb={4}>
-                    Allowed JPG, GIF or PNG. Max size of 800K
-                  </Typography>
+                   <Typography variant="subtitle1" color="textSecondary" mb={4}>
+                     Allowed JPG, GIF, PNG or WebP. Max size of 800K
+                   </Typography>
                 </Box>
               </Box>
             </CardContent>

@@ -21,12 +21,12 @@ import {
 } from "@tabler/icons-react";
 import ProfileTab from "./ProfileTab";
 import BlankCard from "../../../shared/BlankCard";
-import { useAuth } from "@/hooks/useAuth";
+import { useAuthContext } from "@/app/context/AuthContext";
 import React from "react";
 
 const ProfileBanner = () => {
-  const { user, loading, error } = useAuth();
-  
+  const { user, isLoading: loading, error } = useAuthContext();
+
   const ProfileImage = styled(Box)(() => ({
     backgroundImage: "linear-gradient(#50b2fc,#f44c66)",
     borderRadius: "50%",
@@ -48,7 +48,10 @@ const ProfileBanner = () => {
   };
 
   const getProfileImage = () => {
-    return user?.profileImage || user?.avatar || "/images/profile/user-1.jpg";
+    const profileImage = user?.profileImage || user?.avatar;
+    if (!profileImage) return "/images/profile/user-1.jpg";
+
+    return profileImage;
   };
 
   if (loading) {
@@ -172,6 +175,12 @@ const ProfileBanner = () => {
                       width: "100px",
                       height: "100px",
                       border: "4px solid #fff",
+                    }}
+                    onError={(e) => {
+                      const target = e.target as HTMLImageElement;
+                      if (target.src !== "/images/profile/user-1.jpg") {
+                        target.src = "/images/profile/user-1.jpg";
+                      }
                     }}
                   />
                 </ProfileImage>

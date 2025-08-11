@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import {
   Box,
+  Button,
   Card,
   CardContent,
   TextField,
@@ -11,12 +12,13 @@ import {
   Chip,
   Stack,
 } from '@mui/material';
-import { IconSearch, IconPackage } from '@tabler/icons-react';
+import { IconSearch, IconPackage, IconPlus } from '@tabler/icons-react';
 import Breadcrumb from '@/app/(dashboard)/layout/shared/breadcrumb/Breadcrumb';
 import PageContainer from '@/app/components/container/PageContainer';
 import ProductTableList from '@/app/components/apps/ecommerce/ProductTableList/ProductTableList';
 import BlankCard from '@/app/components/shared/BlankCard';
 import { useSelector } from '@/store/hooks';
+import { useRouter } from 'next/navigation';
 
 const BCrumb = [
   {
@@ -31,6 +33,7 @@ const BCrumb = [
 const EcomProductList = () => {
   const [searchValue, setSearchValue] = useState('');
   const [filteredCount, setFilteredCount] = useState(0);
+  const router = useRouter();
 
   // Get products from Redux store to calculate filtered count
   const getProducts = useSelector((state) => state.ecommerceReducer.products);
@@ -82,48 +85,64 @@ const EcomProductList = () => {
               </Typography>
             </Box>
             
-            <Box display="flex" flexDirection={{ xs: 'column', md: 'row' }} gap={2} alignItems={{ md: 'center' }}>
-              <TextField
-                placeholder="Search products by name, SKU, category, or description..."
-                value={searchValue}
-                onChange={(e) => setSearchValue(e.target.value)}
-                fullWidth
-                size="medium"
-                InputProps={{
-                  startAdornment: (
-                    <InputAdornment position="start">
-                      <IconSearch size={20} />
-                    </InputAdornment>
-                  ),
-                }}
-                sx={{
-                  '& .MuiOutlinedInput-root': {
-                    borderRadius: 2,
-                  },
-                  maxWidth: { md: 400 }
-                }}
-              />
-              
-              <Box display="flex" gap={1} alignItems="center" flexWrap="wrap">
-                <Chip
-                  icon={<IconPackage size={16} />}
-                  label={searchValue.trim() 
-                    ? `${filteredCount} of ${getProducts?.length || 0} products`
-                    : `${filteredCount} products`
-                  }
-                  variant="outlined"
-                  size="small"
+            <Box display="flex" flexDirection={{ xs: 'column', md: 'row' }} gap={2} alignItems={{ md: 'center' }} justifyContent="space-between">
+              <Box display="flex" flexDirection={{ xs: 'column', sm: 'row' }} gap={2} alignItems={{ sm: 'center' }} flex={1}>
+                <TextField
+                  placeholder="Search products by name, SKU, category, or description..."
+                  value={searchValue}
+                  onChange={(e) => setSearchValue(e.target.value)}
+                  fullWidth
+                  size="medium"
+                  InputProps={{
+                    startAdornment: (
+                      <InputAdornment position="start">
+                        <IconSearch size={20} />
+                      </InputAdornment>
+                    ),
+                  }}
+                  sx={{
+                    '& .MuiOutlinedInput-root': {
+                      borderRadius: 2,
+                    },
+                    maxWidth: { md: 400 }
+                  }}
                 />
-                {searchValue.trim() && (
+                
+                <Box display="flex" gap={1} alignItems="center" flexWrap="wrap">
                   <Chip
-                    label={`"${searchValue}"`}
-                    onDelete={() => setSearchValue('')}
-                    size="small"
-                    color="primary"
+                    icon={<IconPackage size={16} />}
+                    label={searchValue.trim() 
+                      ? `${filteredCount} of ${getProducts?.length || 0} products`
+                      : `${filteredCount} products`
+                    }
                     variant="outlined"
+                    size="small"
                   />
-                )}
+                  {searchValue.trim() && (
+                    <Chip
+                      label={`"${searchValue}"`}
+                      onDelete={() => setSearchValue('')}
+                      size="small"
+                      color="primary"
+                      variant="outlined"
+                    />
+                  )}
+                </Box>
               </Box>
+
+              <Button
+                variant="contained"
+                color="primary"
+                startIcon={<IconPlus />}
+                onClick={() => router.push('/apps/ecommerce/add-product')}
+                sx={{ 
+                  borderRadius: 2,
+                  minWidth: { xs: '100%', md: 'auto' },
+                  mt: { xs: 1, md: 0 }
+                }}
+              >
+                Add Product
+              </Button>
             </Box>
           </Stack>
         </CardContent>

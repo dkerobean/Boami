@@ -98,8 +98,13 @@ export async function POST(request: NextRequest) {
     // Connect to database
     await connectToDatabase();
 
-    // Get Admin role for new users (allows them to manage other users)
-    const defaultRoleId = await getDefaultRoleId('Admin');
+    // Check if this is the first user in the system
+    const userCount = await User.countDocuments();
+    const isFirstUser = userCount === 0;
+    
+    // Get appropriate role - first user gets Super Admin, others get Admin
+    const roleName = isFirstUser ? 'Super Admin' : 'Admin';
+    const defaultRoleId = await getDefaultRoleId(roleName);
     if (!defaultRoleId) {
       return NextResponse.json(
         {
@@ -124,12 +129,14 @@ export async function POST(request: NextRequest) {
     }
 
     // Create new user (password will be hashed by User model's pre-save middleware)
+    // First user gets active status immediately, others get active status too (since they have admin permissions)
     const user = new User({
       email,
       password: password,
       firstName,
       lastName,
       role: defaultRoleId,
+      status: 'active', // Set to active immediately for admin-level users
       isEmailVerified: false,
       emailVerifiedAt: null,
       createdAt: new Date(),
@@ -171,7 +178,7 @@ export async function POST(request: NextRequest) {
       // User can request resend later
     }
 
-    console.log(`✅ User registered successfully: ${email}`);
+    console.log(`✅ User registered successfully: ${email} with role: ${roleName}${isFirstUser ? ' (First User - Super Admin)' : ''}`);
     return NextResponse.json(
       {
         success: true,

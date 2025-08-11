@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import * as yup from 'yup';
-import { JWTManager } from '@/lib/auth/jwt';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/app/api/auth/[...nextauth]/route';
 import { connectToDatabase } from '@/lib/database/connection';
 import Invoice from '@/lib/database/models/Invoice';
 import mongoose from 'mongoose';
@@ -53,9 +54,9 @@ export async function GET(
 ) {
   try {
     // Check authentication
-    const currentUser = JWTManager.getCurrentUser();
+    const session = await getServerSession(authOptions);
     
-    if (!currentUser) {
+    if (!session?.user?.id) {
       return NextResponse.json({ 
         success: false,
         message: 'Unauthorized' 
@@ -110,9 +111,9 @@ export async function PUT(
 ) {
   try {
     // Check authentication
-    const currentUser = JWTManager.getCurrentUser();
+    const session = await getServerSession(authOptions);
     
-    if (!currentUser) {
+    if (!session?.user?.id) {
       return NextResponse.json({ 
         success: false,
         message: 'Unauthorized' 
@@ -136,10 +137,10 @@ export async function PUT(
 
     // Find and update invoice, ensuring it belongs to the current user
     const invoice = await Invoice.findOneAndUpdate(
-      { _id: id, userId: (currentUser as any)?.id },
+      { _id: id, userId: session.user.id },
       { 
         ...validatedData,
-        updatedBy: currentUser.email
+        updatedBy: session.user.email
       },
       { new: true, runValidators: true }
     );
@@ -184,9 +185,9 @@ export async function DELETE(
 ) {
   try {
     // Check authentication
-    const currentUser = JWTManager.getCurrentUser();
+    const session = await getServerSession(authOptions);
     
-    if (!currentUser) {
+    if (!session?.user?.id) {
       return NextResponse.json({ 
         success: false,
         message: 'Unauthorized' 

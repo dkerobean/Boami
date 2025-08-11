@@ -15,13 +15,13 @@ import {
 import { IconHome, IconUser } from '@tabler/icons-react';
 import ProfileImageUpload from './ProfileImageUpload';
 import ProfileForm from './ProfileForm';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuthContext } from '@/app/context/AuthContext';
 import { SubscriptionStatus } from '@/components/subscription';
 import { useSubscription } from '@/app/context/SubscriptionContext';
 import SubscriptionManagement from './SubscriptionManagement';
 
 const SimpleProfilePage: React.FC = () => {
-  const { user, loading, error, updateUser, refetch } = useAuth();
+  const { user, isLoading: loading, error, updateProfile, refreshAuth } = useAuthContext();
   const [successMessage, setSuccessMessage] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
 
@@ -44,7 +44,7 @@ const SimpleProfilePage: React.FC = () => {
 
       if (result.success) {
         setSuccessMessage('Profile image updated successfully!');
-        await refetch(); // Refresh user data
+        await refreshAuth(); // Refresh user data
         return true;
       } else {
         setErrorMessage(result.message || 'Failed to upload image');
@@ -58,7 +58,7 @@ const SimpleProfilePage: React.FC = () => {
 
   const handleFormSubmit = async (formData: any): Promise<boolean> => {
     try {
-      const success = await updateUser(formData);
+      const success = await updateProfile(formData);
       if (success) {
         setSuccessMessage('Profile updated successfully!');
         return true;

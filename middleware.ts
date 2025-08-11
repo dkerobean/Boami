@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { JWTManager } from '@/lib/auth/jwt';
+import { getToken } from 'next-auth/jwt';
 
 /**
  * Protected routes that require authentication
@@ -114,17 +114,36 @@ function isValidRedirect(redirectUrl: string): boolean {
 /**
  * Check if user is authenticated by verifying JWT token
  */
-function isAuthenticated(request: NextRequest): boolean {
+async function isAuthenticated(request: NextRequest): Promise<boolean> {
   try {
-    const accessToken = request.cookies.get('accessToken')?.value;
+    // Use NextAuth JWT (session.strategy = 'jwt')
+    const token = await getToken({ req: request, secret: process.env.NEXTAUTH_SECRET });
+    if (!token) return false;
 
-    if (!accessToken) {
+    // Enforce Remember Me semantics
+    const rememberCookie = request.cookies.get('boami_remember_me');
+    const sessionOnlyCookie = request.cookies.get('boami_session_only');
+    const sessionStartCookie = request.cookies.get('boami_session_start');
+
+    // If neither persistent nor session-only marker exists, treat as logged out
+    if (!rememberCookie && !sessionOnlyCookie) {
       return false;
     }
 
-    const payload = JWTManager.verifyAccessToken(accessToken);
+    // If session-only, enforce default timeout of 24h from first login
+    if (sessionOnlyCookie) {
+      const defaultTimeoutMs = 24 * 60 * 60 * 1000;
+      const startMs = sessionStartCookie ? Number(sessionStartCookie.value) : NaN;
+      if (!Number.isFinite(startMs)) {
+        // No start marker -> treat as invalid session-only state
+        return false;
+      }
+      if (Date.now() - startMs > defaultTimeoutMs) {
+        return false;
+      }
+    }
 
-    return !!payload;
+    return true;
   } catch (error) {
     console.error('Authentication check failed:', error);
     return false;
@@ -134,7 +153,7 @@ function isAuthenticated(request: NextRequest): boolean {
 /**
  * Next.js middleware function
  */
-export function middleware(request: NextRequest) {
+export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // Skip middleware for API routes (except auth routes), static files, and Next.js internals
@@ -147,7 +166,7 @@ export function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  const authenticated = isAuthenticated(request);
+  const authenticated = await isAuthenticated(request);
 
   // Handle protected routes
   if (matchesRoute(pathname, protectedRoutes)) {

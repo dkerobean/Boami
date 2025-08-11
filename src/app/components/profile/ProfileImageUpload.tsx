@@ -33,12 +33,12 @@ const DropZone = styled(Paper)(({ theme }) => ({
   cursor: 'pointer',
   transition: 'all 0.2s ease-in-out',
   backgroundColor: alpha(theme.palette.primary.main, 0.02),
-  
+
   '&:hover': {
     borderColor: theme.palette.primary.main,
     backgroundColor: alpha(theme.palette.primary.main, 0.08),
   },
-  
+
   '&.dragover': {
     borderColor: theme.palette.primary.main,
     backgroundColor: alpha(theme.palette.primary.main, 0.12),
@@ -59,7 +59,9 @@ const ProfileImageUpload: React.FC<ProfileImageUploadProps> = ({
 
   const getDisplayImage = () => {
     if (preview) return preview;
-    if (currentImage) return currentImage;
+    if (currentImage) {
+      return currentImage;
+    }
     return "/images/profile/user-1.jpg";
   };
 
@@ -68,12 +70,12 @@ const ProfileImageUpload: React.FC<ProfileImageUploadProps> = ({
     if (!file.type.startsWith('image/')) {
       return 'Please select a valid image file';
     }
-    
+
     // Check file size (max 800KB)
     if (file.size > 800 * 1024) {
       return 'Image size must be less than 800KB';
     }
-    
+
     return null;
   };
 
@@ -85,7 +87,7 @@ const ProfileImageUpload: React.FC<ProfileImageUploadProps> = ({
     }
 
     setSelectedFile(file);
-    
+
     // Create preview
     const reader = new FileReader();
     reader.onload = (e) => {
@@ -114,7 +116,7 @@ const ProfileImageUpload: React.FC<ProfileImageUploadProps> = ({
   const handleDrop = (event: React.DragEvent) => {
     event.preventDefault();
     setDragOver(false);
-    
+
     const file = event.dataTransfer.files[0];
     if (file) {
       handleFileSelect(file);
@@ -157,6 +159,12 @@ const ProfileImageUpload: React.FC<ProfileImageUploadProps> = ({
             borderColor: 'background.paper',
             boxShadow: 3,
           }}
+          onError={(e) => {
+            const target = e.target as HTMLImageElement;
+            if (target.src !== "/images/profile/user-1.jpg") {
+              target.src = "/images/profile/user-1.jpg";
+            }
+          }}
         />
         {(loading || uploading) && (
           <Box
@@ -192,7 +200,7 @@ const ProfileImageUpload: React.FC<ProfileImageUploadProps> = ({
             onChange={handleFileInput}
             style={{ display: 'none' }}
           />
-          
+
           <IconCamera size={32} style={{ opacity: 0.6, marginBottom: 8 }} />
           <Typography variant="body1" fontWeight={500} gutterBottom>
             Upload Profile Picture

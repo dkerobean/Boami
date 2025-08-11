@@ -1,7 +1,8 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import * as yup from 'yup';
-import { JWTManager } from '@/lib/auth/jwt';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/app/api/auth/[...nextauth]/route';
 import User from '@/lib/database/models/User';
 import { connectToDatabase } from '@/lib/database/connection';
 
@@ -23,17 +24,17 @@ export async function GET(req: NextRequest) {
   try {
     await connectToDatabase();
     
-    // Get current user from JWT token
-    const currentUser = JWTManager.getCurrentUser();
+    // Get current user from NextAuth session
+    const session = await getServerSession(authOptions);
     
-    if (!currentUser) {
+    if (!session?.user?.email) {
       return NextResponse.json({ 
         success: false,
         message: 'Unauthorized' 
       }, { status: 401 });
     }
 
-    const user = await User.findOne({ email: currentUser.email }).select('-password');
+    const user = await User.findOne({ email: session.user.email }).select('-password');
 
     if (!user) {
       return NextResponse.json({ 
@@ -62,10 +63,10 @@ export async function PUT(req: NextRequest) {
   try {
     await connectToDatabase();
     
-    // Get current user from JWT token
-    const currentUser = JWTManager.getCurrentUser();
+    // Get current user from NextAuth session
+    const session = await getServerSession(authOptions);
     
-    if (!currentUser) {
+    if (!session?.user?.email) {
       return NextResponse.json({ 
         success: false,
         message: 'Unauthorized' 
@@ -76,7 +77,7 @@ export async function PUT(req: NextRequest) {
     const validatedData = await userUpdateSchema.validate(body);
 
     const user = await User.findOneAndUpdate(
-      { email: currentUser.email },
+      { email: session.user.email },
       {
         ...validatedData,
         updatedAt: new Date()
