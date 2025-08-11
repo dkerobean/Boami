@@ -117,7 +117,7 @@ export async function GET(request: NextRequest) {
 
     // Test actual NextAuth route import
     try {
-      const { authOptions } = await import('@/app/api/auth/[...nextauth]/route');
+      const { authOptions } = await import('@/lib/auth/nextauth.config');
       diagnostics.nextauth.routeImport = '✅ Success';
       diagnostics.nextauth.authOptions = !!authOptions ? '✅ Success' : '❌ Missing';
     } catch (error: any) {

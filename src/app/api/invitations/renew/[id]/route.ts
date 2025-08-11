@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
-import { authOptions } from '@/app/api/auth/[...nextauth]/route';
+import { authOptions } from '@/lib/auth/nextauth.config';
 import { connectToDatabase } from '@/lib/database/connection';
 import { PermissionService } from '@/lib/services/permission.service';
 import { InvitationErrorHandler } from '@/lib/services/invitation-error-handler.service';

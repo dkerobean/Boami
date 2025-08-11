@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import * as yup from 'yup';
 import { getServerSession } from 'next-auth';
-import { authOptions } from '@/app/api/auth/[...nextauth]/route';
+import { authOptions } from '@/lib/auth/nextauth.config';
 import { connectToDatabase } from '@/lib/database/connection';
 import Invoice, { IInvoice } from '@/lib/database/models/Invoice';
 

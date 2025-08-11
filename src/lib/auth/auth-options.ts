@@ -1,2 +1,2 @@
-// Re-export authOptions from NextAuth route for consistency
-export { authOptions } from '@/app/api/auth/[...nextauth]/route';
+// Re-export authOptions from NextAuth config for consistency
+export { authOptions } from '@/lib/auth/nextauth.config';

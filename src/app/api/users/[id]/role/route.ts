@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
-import { authOptions } from '@/app/api/auth/[...nextauth]/route';
+import { authOptions } from '@/lib/auth/nextauth.config';
 import { User, Role } from '@/lib/database/models';
 import { PermissionService } from '@/lib/services/permission.service';
 import { validateRoleAssignment } from '@/lib/utils/server-permissions';
