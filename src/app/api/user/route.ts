@@ -5,6 +5,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth/nextauth.config';
 import User from '@/lib/database/models/User';
 import { connectToDatabase } from '@/lib/database/connection';
+import { refreshUserSession } from '@/lib/auth/session-utils';
 
 const userUpdateSchema = yup.object({
   firstName: yup.string().max(50, 'First name cannot exceed 50 characters'),
@@ -90,6 +91,15 @@ export async function PUT(req: NextRequest) {
         success: false,
         message: 'User not found' 
       }, { status: 404 });
+    }
+
+    // Trigger session refresh to update NextAuth JWT with fresh user data
+    try {
+      await refreshUserSession(session.user.email);
+      console.log('✅ Session refresh triggered after profile update');
+    } catch (refreshError) {
+      console.warn('⚠️ Session refresh failed, but profile update succeeded:', refreshError);
+      // Don't fail the request if session refresh fails
     }
 
     return NextResponse.json({

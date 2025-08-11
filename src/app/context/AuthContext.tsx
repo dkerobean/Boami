@@ -12,6 +12,8 @@ interface UserData {
   designation?: string;
   phone?: string;
   company?: string;
+  department?: string;
+  bio?: string;
   avatar?: string;
   profileImage?: string;
   role: string;
@@ -208,10 +210,16 @@ export function AuthProvider({ children }: AuthProviderProps) {
         email: session.user.email,
         firstName: session.user.firstName,
         lastName: session.user.lastName,
+        designation: session.user.designation,
+        phone: session.user.phone,
+        company: session.user.company,
+        department: session.user.department,
+        bio: session.user.bio,
         role: session.user.role?.name || session.user.role || 'user',
-        isActive: true,
+        isActive: session.user.isActive ?? true,
         isEmailVerified: session.user.isEmailVerified,
         profileImage: session.user.profileImage,
+        avatar: session.user.avatar,
         createdAt: new Date(),
         updatedAt: new Date(),
       };
@@ -376,7 +384,26 @@ export function AuthProvider({ children }: AuthProviderProps) {
         throw new Error(result.message || 'Failed to update user profile');
       }
 
+      // Update local state with fresh data
       dispatch({ type: 'SET_USER', payload: result.data });
+
+      // Trigger session refresh to ensure NextAuth session is updated
+      try {
+        const refreshResponse = await fetch('/api/auth/refresh-session', {
+          method: 'POST',
+          credentials: 'include',
+        });
+
+        if (refreshResponse.ok) {
+          console.log('✅ Session refreshed after profile update');
+        } else {
+          console.warn('⚠️ Session refresh failed, but profile update succeeded');
+        }
+      } catch (refreshError) {
+        console.warn('⚠️ Session refresh error:', refreshError);
+        // Don't fail the profile update if session refresh fails
+      }
+
       return true;
 
     } catch (error) {

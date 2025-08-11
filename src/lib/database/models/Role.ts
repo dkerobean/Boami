@@ -74,13 +74,39 @@ roleSchema.index({ createdAt: -1 });
  */
 roleSchema.methods.hasPermission = async function(resource: string, action: string): Promise<boolean> {
   const Permission = mongoose.model('Permission') as IPermissionModel;
-  const permission = await Permission.findByResourceAndAction(resource, action);
+  
+  // First check for exact match
+  const exactPermission = await Permission.findByResourceAndAction(resource, action);
+  if (exactPermission && this.permissions.some((permId: Types.ObjectId) =>
+    permId.toString() === (exactPermission._id as any).toString()
+  )) {
+    return true;
+  }
 
-  if (!permission) return false;
+  // Check for higher-level permissions that imply this action
+  // Permission hierarchy: manage > create/read/update/delete > read
+  const PERMISSION_HIERARCHY = {
+    'manage': ['create', 'read', 'update', 'delete'],
+    'update': ['read'],
+    'delete': ['read'],
+    'create': ['read']
+  };
 
-  return this.permissions.some((permId: Types.ObjectId) =>
-    permId.toString() === (permission._id as any).toString()
-  );
+  // Find permissions that imply the requested action
+  for (const [higherAction, impliedActions] of Object.entries(PERMISSION_HIERARCHY)) {
+    if (impliedActions.includes(action)) {
+      const higherPermission = await Permission.findByResourceAndAction(resource, higherAction);
+      if (higherPermission && this.permissions.some((permId: Types.ObjectId) =>
+        permId.toString() === (higherPermission._id as any).toString()
+      )) {
+        console.log(`✅ Permission granted: ${resource}.${action} implied by ${resource}.${higherAction}`);
+        return true;
+      }
+    }
+  }
+
+  console.log(`❌ Permission denied: ${resource}.${action} not found`);
+  return false;
 };
 
 /**

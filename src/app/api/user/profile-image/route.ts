@@ -54,13 +54,13 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(response, { status });
     }
 
-    // Validate file size (5MB limit)
-    const maxSize = 5 * 1024 * 1024; // 5MB
+    // Validate file size (800KB limit to match frontend)
+    const maxSize = 800 * 1024; // 800KB
     if (file.size > maxSize) {
       const { response, status } = createApiResponse(
         false,
         null,
-        { code: 'VALIDATION_ERROR', message: 'File size too large. Maximum size is 5MB.' },
+        { code: 'VALIDATION_ERROR', message: 'File size too large. Maximum size is 800KB.' },
         400
       );
       return NextResponse.json(response, { status });

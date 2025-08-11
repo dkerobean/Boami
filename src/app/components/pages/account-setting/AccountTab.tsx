@@ -71,7 +71,7 @@ const validationSchema = Yup.object({
 });
 
 const AccountTab = () => {
-  const { user, isLoading: loading, error, updateProfile } = useAuthContext();
+  const { user, isLoading: loading, error, updateProfile, refreshAuth } = useAuthContext();
   const [successMessage, setSuccessMessage] = React.useState('');
   const [errorMessage, setErrorMessage] = React.useState('');
   const [profileImageFile, setProfileImageFile] = React.useState<File | null>(null);
@@ -148,8 +148,8 @@ const AccountTab = () => {
           setSuccessMessage('Profile image updated successfully!');
           setPreviewImage(null);
           setProfileImageFile(null);
-          // Refresh user data
-          window.location.reload();
+          // Refresh user data without full page reload
+          await refreshAuth();
         } else {
           setErrorMessage(result.message || 'Failed to upload image');
         }

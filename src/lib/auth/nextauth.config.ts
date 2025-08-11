@@ -78,13 +78,21 @@ export const authOptions: NextAuthOptions = {
             name: user.getFullName(),
             firstName: user.firstName,
             lastName: user.lastName,
+            designation: user.designation,
+            phone: user.phone,
+            company: user.company,
+            department: user.department,
+            bio: user.bio,
             role: user.role ? {
               id: (user.role as any)._id.toString(),
               name: (user.role as any).name,
               permissions: (user.role as any).permissions || []
             } : undefined,
             isEmailVerified: user.isEmailVerified,
-            profileImage: user.profileImage
+            profileImage: user.profileImage,
+            avatar: user.avatar,
+            status: user.status,
+            isActive: user.isActive
           };
 
           console.log('Auth successful for user:', userResult.email);
@@ -110,15 +118,58 @@ export const authOptions: NextAuthOptions = {
     error: '/auth/error',
   },
   callbacks: {
-    async jwt({ token, user }) {
+    async jwt({ token, user, trigger }) {
+      // On initial sign-in, save user data to token
       if (user) {
         token.id = user.id;
         token.role = user.role;
         token.firstName = user.firstName;
         token.lastName = user.lastName;
+        token.designation = user.designation;
+        token.phone = user.phone;
+        token.company = user.company;
+        token.department = user.department;
+        token.bio = user.bio;
         token.isEmailVerified = user.isEmailVerified;
         token.profileImage = user.profileImage;
+        token.avatar = user.avatar;
+        token.status = user.status;
+        token.isActive = user.isActive;
       }
+
+      // Refresh user data from database on each token refresh
+      // This ensures the session stays in sync with database changes
+      if (token.id && token.sub) {
+        try {
+          await connectDB();
+          const freshUser = await User.findById(token.id).populate('role').select('-password');
+          
+          if (freshUser) {
+            // Update token with fresh user data
+            token.role = freshUser.role ? {
+              id: (freshUser.role as any)._id.toString(),
+              name: (freshUser.role as any).name,
+              permissions: (freshUser.role as any).permissions || []
+            } : undefined;
+            token.firstName = freshUser.firstName;
+            token.lastName = freshUser.lastName;
+            token.designation = freshUser.designation;
+            token.phone = freshUser.phone;
+            token.company = freshUser.company;
+            token.department = freshUser.department;
+            token.bio = freshUser.bio;
+            token.isEmailVerified = freshUser.isEmailVerified;
+            token.profileImage = freshUser.profileImage;
+            token.avatar = freshUser.avatar;
+            token.status = freshUser.status;
+            token.isActive = freshUser.isActive;
+          }
+        } catch (error) {
+          console.error('Error refreshing user data in JWT callback:', error);
+          // Continue with existing token data if refresh fails
+        }
+      }
+
       return token;
     },
     async session({ session, token }) {
@@ -127,8 +178,16 @@ export const authOptions: NextAuthOptions = {
         session.user.role = token.role as any;
         session.user.firstName = token.firstName as string;
         session.user.lastName = token.lastName as string;
+        session.user.designation = token.designation as string;
+        session.user.phone = token.phone as string;
+        session.user.company = token.company as string;
+        session.user.department = token.department as string;
+        session.user.bio = token.bio as string;
         session.user.isEmailVerified = token.isEmailVerified as boolean;
         session.user.profileImage = token.profileImage as string;
+        session.user.avatar = token.avatar as string;
+        session.user.status = token.status as string;
+        session.user.isActive = token.isActive as boolean;
       }
       return session;
     },
