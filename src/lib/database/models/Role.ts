@@ -75,11 +75,17 @@ roleSchema.index({ createdAt: -1 });
 roleSchema.methods.hasPermission = async function(resource: string, action: string): Promise<boolean> {
   const Permission = mongoose.model('Permission') as IPermissionModel;
   
+  console.log(`🔍 Role.hasPermission: Checking ${resource}.${action} for role: ${this.name}`);
+  console.log(`📋 Role permissions IDs:`, this.permissions.map((p: Types.ObjectId) => p.toString()));
+  
   // First check for exact match
   const exactPermission = await Permission.findByResourceAndAction(resource, action);
+  console.log(`🎯 Exact permission ${resource}.${action} found:`, exactPermission ? `ID: ${exactPermission._id}` : 'Not found');
+  
   if (exactPermission && this.permissions.some((permId: Types.ObjectId) =>
     permId.toString() === (exactPermission._id as any).toString()
   )) {
+    console.log(`✅ Exact match found for ${resource}.${action}`);
     return true;
   }
 
@@ -92,10 +98,15 @@ roleSchema.methods.hasPermission = async function(resource: string, action: stri
     'create': ['read']
   };
 
+  console.log(`🔄 Checking hierarchy for ${resource}.${action}`);
+  
   // Find permissions that imply the requested action
   for (const [higherAction, impliedActions] of Object.entries(PERMISSION_HIERARCHY)) {
     if (impliedActions.includes(action)) {
+      console.log(`🎯 Checking if ${resource}.${higherAction} implies ${resource}.${action}`);
       const higherPermission = await Permission.findByResourceAndAction(resource, higherAction);
+      console.log(`📝 Higher permission ${resource}.${higherAction} found:`, higherPermission ? `ID: ${higherPermission._id}` : 'Not found');
+      
       if (higherPermission && this.permissions.some((permId: Types.ObjectId) =>
         permId.toString() === (higherPermission._id as any).toString()
       )) {

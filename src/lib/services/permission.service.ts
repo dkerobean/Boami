@@ -15,6 +15,8 @@ export class PermissionService {
     action: string
   ): Promise<boolean> {
     try {
+      console.log(`🔍 Checking permission: ${resource}.${action} for user ${userId}`);
+      
       const user = await User.findById(userId).populate({
         path: 'role',
         populate: {
@@ -22,11 +24,22 @@ export class PermissionService {
         }
       });
 
-      if (!user || user.status !== 'active') {
+      if (!user) {
+        console.log('❌ User not found');
         return false;
       }
 
-      return await user.hasPermission(resource, action);
+      if (user.status !== 'active') {
+        console.log(`❌ User status is not active: ${user.status}`);
+        return false;
+      }
+
+      console.log(`✅ User found: ${user.email}, Role: ${user.role ? (user.role as any).name : 'No role'}`);
+      
+      const hasPermission = await user.hasPermission(resource, action);
+      console.log(`🎯 Permission result: ${hasPermission} for ${resource}.${action}`);
+      
+      return hasPermission;
     } catch (error) {
       console.error('Error checking permission:', error);
       return false;
